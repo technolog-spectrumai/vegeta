@@ -1,0 +1,41 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  Aeromant template case (OpenFOAM.org dialect) — placeholder values are inserted by aeromant.prepare()
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volVectorField;
+    object      U;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 1 -1 0 0 0 0];
+
+internalField   uniform ({{INFLOW_VELOCITY}});
+
+boundaryField
+{
+    inlet
+    {
+        type            freestreamVelocity;
+        freestreamValue uniform ({{INFLOW_VELOCITY}});
+    }
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      uniform (0 0 0);
+        value           uniform ({{INFLOW_VELOCITY}});
+    }
+    sides
+    {
+        // the inflow has a component across the axis: the lateral faces take flow in and out (free stream)
+        type            freestreamVelocity;
+        freestreamValue uniform ({{INFLOW_VELOCITY}});
+    }
+    "body.*"
+    {
+        type            noSlip;
+    }
+}
+
+// ************************************************************************* //

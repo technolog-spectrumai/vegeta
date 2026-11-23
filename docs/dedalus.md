@@ -45,6 +45,8 @@ The result follows the common shape (`docs/result-shape.md`); `metadata` records
 source identity (module, qualname, SHA-256 of the `build` source) and the CadQuery version.
 
 Existing STEP files from any CAD program: `dedalus.load_step("part.step").measure()`.
+A design from a file or module: `dedalus.load_design("designs/bracket.py:Bracket")` (what the CLI and
+`vegeta.core` use).
 
 ## CLI
 ```
@@ -55,5 +57,5 @@ dedalus measure out/plate/Plate.step [--json]
 Exit codes: 0 success, 1 failed run (e.g. build error), 2 invalid input.
 
 ## Examples
-`dedalus.examples`: `CantileverBeam`, `Bracket`, `StreamlinedBody`, `Cube` — illustrations only.
-Notebook: `notebooks/01_dedalus_cad.ipynb`.
+`dedalus.examples`: `CantileverBeam`, `Bracket`, `StreamlinedBody`, `Propeller`, `Cube` — illustrations only.
+Notebook: `labs/studio/notebooks/01_dedalus_cad.ipynb`.

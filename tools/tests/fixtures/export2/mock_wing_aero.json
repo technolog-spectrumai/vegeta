@@ -1,0 +1,21 @@
+{
+  "_what": "docs/engineering.md: a mock wing's aerodynamics on its link, and the whole machine's, as the file must hold them",
+  "link:wing/data:aero": {
+    "name": "mock wing", "method": "analytic",
+    "reference": {"area_m2": 0.32, "span_m": 1.6, "chord_m": 0.2, "source": "mock planform"},
+    "frame": "link:wing", "axes": {"x": "forward", "y": "left", "z": "up", "alpha": "nose up positive"},
+    "reference_point_m": [0.05, 0.0, 0.0], "center_of_pressure_m": [0.055, 0.0, 0.0],
+    "coefficients": {"CD0": 0.012, "CL0": 0.25, "CLalpha": 5.1, "CLmax": 1.3, "Cm0": -0.05, "e": 0.85},
+    "derivatives": {"CLq": 4.2, "Cmq": -8.5},
+    "tables": [{"name": "polar", "inputs": {"alpha_deg": [-4, 0, 4, 8, 12], "re": [100000, 300000]},
+                "values": {"CL": [[-0.1, -0.08], [0.25, 0.27], [0.6, 0.62], [0.95, 0.97], [1.2, 1.25]],
+                           "CD": [[0.02, 0.016], [0.013, 0.012], [0.02, 0.018], [0.038, 0.034], [0.07, 0.062]]},
+                "source": "mock section polar", "validity": {"alpha_deg": [-4, 12]}}],
+    "assumptions": ["thin airfoil lift slope", "no flap"], "source": "mock", "validity": {"mach": [0, 0.3]}
+  },
+  "data:aerodynamics": {
+    "name": "mock aircraft", "method": "cfd", "reference": {"area_m2": 0.32, "chord_m": 0.2, "span_m": 1.6},
+    "reference_point_m": [0.0, 0.0, 0.0], "coefficients": {"CD": 0.031, "CL": 0.42, "Cm": -0.012},
+    "source": "mock CFD run at 16 m/s", "validity": {"v_m_s": [12, 20]}
+  }
+}

@@ -1,0 +1,71 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  Aeromant template case (OpenFOAM.org dialect) — placeholder values are inserted by aeromant.prepare()
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solver          incompressibleFluid;
+startFrom       startTime;
+startTime       0;
+stopAt          endTime;
+endTime         {{ITERATIONS}};
+deltaT          1;
+writeControl    timeStep;
+writeInterval   {{ITERATIONS}};
+purgeWrite      0;
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+timeFormat      general;
+timePrecision   6;
+runTimeModifiable false;
+
+functions
+{
+    suctionPressure
+    {
+        type            surfaceFieldValue;
+        libs            ("libfieldFunctionObjects.so");
+        writeControl    timeStep;
+        writeInterval   1;
+        log             no;
+        writeFields     no;
+        select          patch;
+        patch           suction;
+        operation       areaAverage;
+        fields          (p);
+    }
+    suctionFlow
+    {
+        type            surfaceFieldValue;
+        libs            ("libfieldFunctionObjects.so");
+        writeControl    timeStep;
+        writeInterval   1;
+        log             no;
+        writeFields     no;
+        select          patch;
+        patch           suction;
+        operation       sum;
+        fields          (phi);
+    }
+    hoodPressure
+    {
+        type            surfaceFieldValue;
+        libs            ("libfieldFunctionObjects.so");
+        writeControl    timeStep;
+        writeInterval   1;
+        log             no;
+        writeFields     no;
+        select          patch;
+        patch           body;
+        operation       areaAverage;
+        fields          (p);
+    }
+}
+
+// ************************************************************************* //

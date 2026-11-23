@@ -1,0 +1,16 @@
+{
+ "debug": true,
+ "design_fingerprint": null,
+ "file": "four_races.json",
+ "git": "3428cd7c3402",
+ "inputs": [],
+ "kind": "notebook",
+ "needs": {},
+ "producer": "50_four_races",
+ "schema": null,
+ "sha256": "23b13aa7b5fa881dc9ffd36b144fa2a7a227f32f57960c3faead1620a29610f8",
+ "size": 30557,
+ "written_at": "2026-10-19T19:12:44Z",
+ "written_ts": 1792437164.060622,
+ "yanus": 1
+}

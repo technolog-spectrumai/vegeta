@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="twins">
+    <link name="base"><inertial><mass>1.0</mass><inertia><ixx>0.01</ixx><iyy>0.01</iyy><izz>0.01</izz></inertia></inertial>
+      <collision name="body"><geometry><box><size>0.2 0.2 0.05</size></box></geometry></collision>
+      <visual name="body"><geometry><box><size>0.2 0.2 0.05</size></box></geometry></visual>
+      <sensor name="cam" type="camera"><pose>0.1 0 0 0 0.3 0</pose><camera><horizontal_fov>1.2</horizontal_fov></camera><topic>camera/image_raw</topic></sensor>
+    </link>
+    <link name="rotor_0"><pose>0.1 0.1 0.03 0 0 0</pose><inertial><mass>0.05</mass><inertia><ixx>1e-5</ixx><iyy>1e-5</iyy><izz>2e-5</izz></inertia></inertial>
+      <collision name="disk"><geometry><cylinder><radius>0.05</radius><length>0.005</length></cylinder></geometry></collision>
+      <visual name="disk"><geometry><cylinder><radius>0.05</radius><length>0.005</length></cylinder></geometry></visual>
+    </link>
+    <link name="rotor_1"><pose>-0.1 -0.1 0.03 0 0 0</pose><inertial><mass>0.05</mass><inertia><ixx>1e-5</ixx><iyy>1e-5</iyy><izz>2e-5</izz></inertia></inertial>
+      <collision name="disk"><geometry><cylinder><radius>0.05</radius><length>0.005</length></cylinder></geometry></collision>
+    </link>
+    <joint name="r0" type="revolute"><parent>base</parent><child>rotor_0</child><axis><xyz>0 0 1</xyz><limit><lower>-1e16</lower><upper>1e16</upper></limit></axis></joint>
+    <joint name="r1" type="revolute"><parent>base</parent><child>rotor_1</child><axis><xyz>0 0 1</xyz></axis></joint>
+    <plugin filename="gz-sim-multicopter-motor-model-system" name="gz::sim::systems::MulticopterMotorModel">
+      <jointName>r0</jointName><motorConstant>8.54858e-06</motorConstant>
+    </plugin>
+  </model>
+</sdf>

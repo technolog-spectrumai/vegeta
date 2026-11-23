@@ -1,0 +1,41 @@
+{
+ "debug": true,
+ "design_fingerprint": null,
+ "file": "peregrine_design.json",
+ "git": "3428cd7c3402",
+ "inputs": [
+  {
+   "key": "25_air_propeller:designs/data/propeller_maps.json",
+   "kind": "file",
+   "path": "designs/data/propeller_maps.json",
+   "sha256": "b73cb32c4e48a01474e50d5ea69594ab840d1a847fae49e6c8c58348c0f3f877"
+  },
+  {
+   "key": "25b_ducted_fan:designs/data/edf_maps.json",
+   "kind": "file",
+   "path": "designs/data/edf_maps.json",
+   "sha256": "9ac138905036aabc1dcea3b67386b19046435387973d7dc54e24ffa1f767e7db"
+  },
+  {
+   "key": "25c_exotic_propellers:designs/data/exotic_propeller_maps.json",
+   "kind": "file",
+   "path": "designs/data/exotic_propeller_maps.json",
+   "sha256": "0e469b0d93d9cb1076dcbcdda482b1f9fad8d71a9a556b51c26af29698847df3"
+  }
+ ],
+ "kind": "notebook",
+ "needs": {
+  "vegeta.aeromant": "found",
+  "vegeta.core": "found",
+  "vegeta.dedalus": "found",
+  "vegeta.mellonia": "found",
+  "vegeta.talos": "found"
+ },
+ "producer": "28_peregrine",
+ "schema": null,
+ "sha256": "788a27ff9db9bf075535d4edbf57a2078b61cc6e5e408e5847f8da2981fd5ed5",
+ "size": 21766,
+ "written_at": "2026-10-19T19:22:38Z",
+ "written_ts": 1792437758.6450202,
+ "yanus": 1
+}

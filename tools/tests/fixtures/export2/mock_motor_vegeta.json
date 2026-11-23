@@ -1,0 +1,17 @@
+{
+  "_what": "vendor/yax/docs/engineering.md: the mock gearmotor as Vegeta exports it — the joint's servo model (Chiron, rad/s) and the catalogue unit it came from (Ogma, rpm). Field sets are the oracle; the test checks the numbers.",
+  "joint:elbow/data:motor": {
+    "kind": "servo model", "stall_torque_nm": 2.5, "rated_torque_nm": 0.8, "no_load_speed_rad_s": 628.3185307179587,
+    "stall_current_a": 12.0, "voltage_v": 24.0, "kt_nm_per_a": 0.20833333333333334, "resistance_ohm": 2.0,
+    "control": {"kp": 30.0, "kd": 2.0, "law": "PD clipped to the torque–speed line", "four_quadrant": false},
+    "transmission": {"reflected_inertia_kgm2": 0.048, "source": "the servo model's armature (rotor inertia × gear ratio²)"},
+    "derived_from": "mock gearmotor 20:1",
+    "source": "mock gearmotor 20:1: mock datasheet (the brief's example): a 20:1 planetary, efficiency 0.85; kt and resistance are the servo model's estimates from the stall point (kt = τ_stall / I_stall, R = V / I_stall)"
+  },
+  "data:motors/mock gearmotor 20:1": {
+    "name": "mock gearmotor 20:1", "kind": "gearmotor", "mass_kg": 0.12, "stall_torque_nm": 2.5, "rated_torque_nm": 0.8,
+    "stall_current_a": 12.0, "voltage_v": 24.0, "no_load_speed_rpm": 6000.0,
+    "transmission": {"gear_ratio": 20.0, "efficiency": 0.85, "source": "ogma.actuators: as the catalogue entry states it"},
+    "source": "mock datasheet (the brief's example): a 20:1 planetary, efficiency 0.85"
+  }
+}

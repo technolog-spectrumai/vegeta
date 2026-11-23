@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vegeta-labkit"
+version = "0.1.0"
+description = "What every Vegeta lab uses: the notebook bootstrap, the machine registry, shared controllers, kinematics, parts"
+readme = "README.md"
+license = { text = "Proprietary - internal use only" }
+classifiers = ["Private :: Do Not Upload"]
+requires-python = ">=3.10"
+dependencies = ["vegeta-cli", "numpy"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+packages = ["vegeta.labkit"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib"

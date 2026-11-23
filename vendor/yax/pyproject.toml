@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yax"
+version = "2.0.0.dev0"
+description = "Design interchange: converts machine descriptions between standard formats (USD hub; URDF, SDF, MJCF, JSBSim, STEP, STL)"
+readme = "README.md"
+license = { text = "Proprietary - internal use only" }
+classifiers = ["Private :: Do Not Upload"]
+requires-python = ">=3.10"
+dependencies = ["numpy", "usd-core"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+mjcf = ["mujoco>=3.1"]
+step = ["cadquery>=2.4"]
+jsbsim = ["jsbsim>=1.2"]
+all = ["mujoco>=3.1", "cadquery>=2.4", "jsbsim>=1.2"]
+
+[project.scripts]
+yax = "yax.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+packages = ["yax", "yax.formats"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib"

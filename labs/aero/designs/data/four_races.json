@@ -1,0 +1,1513 @@
+{
+ "schema": 1,
+ "notebook": "50_four_races",
+ "mode": {
+  "hangar": "mock",
+  "industrial": "mock",
+  "farm": "mock",
+  "quarry": "mock"
+ },
+ "manoeuvre": {
+  "Hangar \u2014 three floors (mock)": {
+   "peak acceleration along the path [g]": 1.458587136111298,
+   "peak deceleration along the path [g]": 1.279095329301598,
+   "peak lateral acceleration [g]": 2.2872494655693334,
+   "peak load factor (thrust / weight carried)": 2.855085269478369,
+   "mean load factor": 1.3371644487913932,
+   "least turn radius above 3 m/s [m]": 0.8419040715997285,
+   "peak turn rate [deg/s]": 261.15691044301343,
+   "time to 20 m/s (or 90 % of the peak) [s]": 1.740000000000001,
+   "peak roll / pitch rate (thrust-vector slew) [deg/s]": 547.3203636376722,
+   "peak yaw rate (heading) [deg/s]": 837.7658079221043,
+   "peak roll / pitch angular acceleration (thrust-vector slew) [rad/s\u00b2]": 59.861870242409545,
+   "rates from": "the thrust vector's slew and the heading (no attitude recorded: the mock)",
+   "peak tilt [deg]": 113.97427505318389,
+   "mean tilt above 3 m/s [deg]": 33.908587201572274,
+   "share of the lap at \u2265 90 % thrust": 0.0,
+   "share of the lap at \u2265 50 % thrust": 0.0,
+   "tracking error to the racing line, RMS [m]": 0.2291723787389269,
+   "tracking error, peak [m]": 0.8988440882157835
+  },
+  "Industrial zone (mock)": {
+   "peak acceleration along the path [g]": 1.1708162838660756,
+   "peak deceleration along the path [g]": 1.4700070429583785,
+   "peak lateral acceleration [g]": 2.7446689903089743,
+   "peak load factor (thrust / weight carried)": 3.106535839849934,
+   "mean load factor": 1.373275703006048,
+   "least turn radius above 3 m/s [m]": 3.5960376995917502,
+   "peak turn rate [deg/s]": 147.59743278472564,
+   "time to 20 m/s (or 90 % of the peak) [s]": 2.560000000000002,
+   "peak roll / pitch rate (thrust-vector slew) [deg/s]": 869.6820648924307,
+   "peak yaw rate (heading) [deg/s]": 143.91549130434763,
+   "peak roll / pitch angular acceleration (thrust-vector slew) [rad/s\u00b2]": 88.73491004459508,
+   "rates from": "the thrust vector's slew and the heading (no attitude recorded: the mock)",
+   "peak tilt [deg]": 88.88743205757073,
+   "mean tilt above 3 m/s [deg]": 27.577031314008327,
+   "share of the lap at \u2265 90 % thrust": 0.0,
+   "share of the lap at \u2265 50 % thrust": 0.0,
+   "tracking error to the racing line, RMS [m]": 0.31836732203783036,
+   "tracking error, peak [m]": 1.06042363173253
+  },
+  "Farm (mock)": {
+   "peak acceleration along the path [g]": 1.4299404561335647,
+   "peak deceleration along the path [g]": 1.606116624574166,
+   "peak lateral acceleration [g]": 2.7365907302174914,
+   "peak load factor (thrust / weight carried)": 3.074131381957748,
+   "mean load factor": 1.4525101798644264,
+   "least turn radius above 3 m/s [m]": 1.5333015073239844,
+   "peak turn rate [deg/s]": 216.85261483945354,
+   "time to 20 m/s (or 90 % of the peak) [s]": 15.979999999999748,
+   "peak roll / pitch rate (thrust-vector slew) [deg/s]": 513.9261946212376,
+   "peak yaw rate (heading) [deg/s]": 204.13438238734034,
+   "peak roll / pitch angular acceleration (thrust-vector slew) [rad/s\u00b2]": 66.09597347763511,
+   "rates from": "the thrust vector's slew and the heading (no attitude recorded: the mock)",
+   "peak tilt [deg]": 96.67290434021805,
+   "mean tilt above 3 m/s [deg]": 32.523131848406436,
+   "share of the lap at \u2265 90 % thrust": 0.0,
+   "share of the lap at \u2265 50 % thrust": 0.0,
+   "tracking error to the racing line, RMS [m]": 0.4055546774771177,
+   "tracking error, peak [m]": 1.650599719943521
+  },
+  "Quarry (mock)": {
+   "peak acceleration along the path [g]": 1.1217826055700613,
+   "peak deceleration along the path [g]": 1.43695378835173,
+   "peak lateral acceleration [g]": 2.7439087655629626,
+   "peak load factor (thrust / weight carried)": 3.1517547172283904,
+   "mean load factor": 1.3923669180571343,
+   "least turn radius above 3 m/s [m]": 2.7239673135770746,
+   "peak turn rate [deg/s]": 141.55696078816595,
+   "time to 20 m/s (or 90 % of the peak) [s]": 12.799999999999816,
+   "peak roll / pitch rate (thrust-vector slew) [deg/s]": 509.7597264135111,
+   "peak yaw rate (heading) [deg/s]": 138.88176759359757,
+   "peak roll / pitch angular acceleration (thrust-vector slew) [rad/s\u00b2]": 63.458584301456774,
+   "rates from": "the thrust vector's slew and the heading (no attitude recorded: the mock)",
+   "peak tilt [deg]": 84.8972408726057,
+   "mean tilt above 3 m/s [deg]": 26.087986470230938,
+   "share of the lap at \u2265 90 % thrust": 0.0,
+   "share of the lap at \u2265 50 % thrust": 0.0,
+   "tracking error to the racing line, RMS [m]": 0.3373963758651098,
+   "tracking error, peak [m]": 1.1309147086401983
+  },
+  "aircraft envelope": {
+   "peak acceleration along the path [g]": 2.7474774194546216,
+   "peak deceleration along the path [g]": NaN,
+   "peak lateral acceleration [g]": 2.7474774194546216,
+   "peak load factor (thrust / weight carried)": 13.158430912331623,
+   "mean load factor": NaN,
+   "least turn radius above 3 m/s [m]": 3.7101960679531336,
+   "peak turn rate [deg/s]": NaN,
+   "time to 20 m/s (or 90 % of the peak) [s]": NaN,
+   "peak roll / pitch rate (thrust-vector slew) [deg/s]": NaN,
+   "peak yaw rate (heading) [deg/s]": NaN,
+   "peak roll / pitch angular acceleration (thrust-vector slew) [rad/s\u00b2]": NaN,
+   "rates from": NaN,
+   "peak tilt [deg]": NaN,
+   "mean tilt above 3 m/s [deg]": NaN,
+   "share of the lap at \u2265 90 % thrust": NaN,
+   "share of the lap at \u2265 50 % thrust": NaN,
+   "tracking error to the racing line, RMS [m]": NaN,
+   "tracking error, peak [m]": NaN
+  }
+ },
+ "envelope": {
+  "static thrust / weight": 13.158430912331623,
+  "peak linear acceleration, any direction, from the hover [g]": 12.158430912331623,
+  "horizontal acceleration at 70\u00b0 tilt, height held [g]": 2.7474774194546216,
+  "lateral acceleration at 70\u00b0 tilt [g]": 2.7474774194546216,
+  "least turn radius at 20 m/s, 70\u00b0 tilt [m]": 14.840784271812534,
+  "least turn radius at 10 m/s [m]": 3.7101960679531336,
+  "roll / pitch angular acceleration (two motors up, two at idle) [rad/s\u00b2]": 867.6163304510751,
+  "yaw angular acceleration (torque, \u00b1 hover thrust) [rad/s\u00b2]": 5.515090475116987,
+  "time for a 90\u00b0 roll, bang-bang at half authority [s]": 0.12034860846972116,
+  "sustainable power [W]": 865.8,
+  "braking from 20 m/s at 70\u00b0 back-tilt, with the frame's drag [m]": 5.914027367836501,
+  "inertia estimate roll / pitch [kg\u00b7m\u00b2]": 0.0030528300000000003,
+  "note": "a frame inertia estimate; the body rates themselves are limited by the controller's rate setting, not by the motors"
+ },
+ "literature": [
+  {
+   "source": "Foehn, Romero & Scaramuzza, Science Robotics 2021 (time-optimal waypoint flight)",
+   "quantity": "modelled acceleration range",
+   "value": "1\u201320 m/s\u00b2 (\u2248 2 g)"
+  },
+  {
+   "source": "Foehn et al. 2021",
+   "quantity": "maximal body rate used by the planner",
+   "value": "10 rad/s (573 \u00b0/s)"
+  },
+  {
+   "source": "Foehn et al. 2021",
+   "quantity": "thrust-to-weight of the racing platform",
+   "value": "3.3 planned, \u2248 4 measured"
+  },
+  {
+   "source": "UZH / Kaufmann et al., Nature 2023 (Swift vs. champions)",
+   "quantity": "speeds on the race track",
+   "value": "over 100 km/h (\u2248 28 m/s)"
+  },
+  {
+   "source": "typical FPV racer settings (Betaflight rates; not a measurement)",
+   "quantity": "commanded roll / pitch rate at full stick",
+   "value": "800\u20131200 \u00b0/s; yaw 500\u2013900 \u00b0/s"
+  },
+  {
+   "source": "this model (refquad, Boreas table)",
+   "quantity": "static thrust-to-weight",
+   "value": "13.2"
+  }
+ ],
+ "aircraft": {
+  "all-up mass [kg]": 0.571,
+  "motor": "2207 1750 KV",
+  "voltage": "6S (22.2 V nominal)",
+  "propeller": "5x4.3 three-blade",
+  "pack": "6S 1300 mAh",
+  "static thrust per motor [N]": 18.426770584933678,
+  "hover thrust / weight": 13.158430912331623,
+  "hover power [W]": 101.51446667948024,
+  "usable energy [Wh]": 23.088000000000005,
+  "sustainable power [W]": 865.8,
+  "forward drag area [m\u00b2]": 0.016,
+  "propulsion source": "Boreas table mini_raptor_drive_6S_5x4p3.json"
+ },
+ "budget_g": {
+  "motors 2207 1750 KV (4)": 144.0,
+  "propellers 5x4.3x3 (4)": 18.0,
+  "4-in-1 ESC 45 A": 15.0,
+  "flight controller": 8.0,
+  "FPV camera": 9.0,
+  "video transmitter": 10.0,
+  "antenna": 5.0,
+  "receiver": 2.0,
+  "carbon X-frame 5 inch (220 mm)": 105.0,
+  "hardware, wiring, straps, capacitor": 25.0,
+  "battery 6S 1300 mAh": 230.0
+ },
+ "rules": {
+  "collision": "reset",
+  "reset_penalty_s": 5.0,
+  "max_collisions": 5,
+  "timeout_s": 300.0,
+  "reset_hover_s": 1.0
+ },
+ "courses": {
+  "hangar": {
+   "name": "Hangar \u2014 three floors",
+   "kind": "technical",
+   "length_m": 168.39992580790346,
+   "zones": [
+    {
+     "name": "start",
+     "kind": "start",
+     "center": [
+      -30.0,
+      0.0,
+      1.5
+     ],
+     "half": [
+      2.0,
+      2.0,
+      0.75
+     ]
+    },
+    {
+     "name": "door",
+     "kind": "gate",
+     "center": [
+      -20.0,
+      0.0,
+      1.6
+     ],
+     "half": [
+      0.6,
+      1.6,
+      1.2
+     ]
+    },
+    {
+     "name": "ground floor",
+     "kind": "gate",
+     "center": [
+      -12.0,
+      1.0,
+      2.0
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "under the gantry",
+     "kind": "checkpoint",
+     "center": [
+      6.0,
+      0.0,
+      1.8
+     ],
+     "half": [
+      1.0,
+      2.0,
+      1.0
+     ]
+    },
+    {
+     "name": "back west",
+     "kind": "gate",
+     "center": [
+      -8.0,
+      -6.5,
+      2.0
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "under the stair opening",
+     "kind": "gate",
+     "center": [
+      -17.0,
+      -5.5,
+      2.0
+     ],
+     "half": [
+      1.0,
+      1.0,
+      0.9
+     ]
+    },
+    {
+     "name": "stair opening up",
+     "kind": "gate",
+     "center": [
+      -17.0,
+      -5.5,
+      5.6
+     ],
+     "half": [
+      1.0,
+      1.0,
+      0.9
+     ]
+    },
+    {
+     "name": "first floor",
+     "kind": "checkpoint",
+     "center": [
+      0.0,
+      2.0,
+      5.8
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.0
+     ]
+    },
+    {
+     "name": "under the east hole",
+     "kind": "gate",
+     "center": [
+      16.0,
+      -2.5,
+      5.8
+     ],
+     "half": [
+      1.2,
+      1.2,
+      0.9
+     ]
+    },
+    {
+     "name": "east hole up",
+     "kind": "gate",
+     "center": [
+      16.0,
+      -2.5,
+      9.6
+     ],
+     "half": [
+      1.2,
+      1.2,
+      0.9
+     ]
+    },
+    {
+     "name": "under the beams",
+     "kind": "gate",
+     "center": [
+      4.0,
+      2.0,
+      10.2
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.0
+     ]
+    },
+    {
+     "name": "second floor west",
+     "kind": "checkpoint",
+     "center": [
+      -10.0,
+      3.0,
+      10.0
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.0
+     ]
+    },
+    {
+     "name": "over the stair opening",
+     "kind": "gate",
+     "center": [
+      -17.0,
+      -5.5,
+      9.6
+     ],
+     "half": [
+      1.0,
+      1.0,
+      0.9
+     ]
+    },
+    {
+     "name": "stair opening down",
+     "kind": "gate",
+     "center": [
+      -17.0,
+      -5.5,
+      5.6
+     ],
+     "half": [
+      1.0,
+      1.0,
+      0.9
+     ]
+    },
+    {
+     "name": "ground again",
+     "kind": "gate",
+     "center": [
+      -17.0,
+      -5.5,
+      1.8
+     ],
+     "half": [
+      1.0,
+      1.0,
+      0.9
+     ]
+    },
+    {
+     "name": "to the window",
+     "kind": "gate",
+     "center": [
+      -10.0,
+      -5.5,
+      2.4
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.0
+     ]
+    },
+    {
+     "name": "window",
+     "kind": "gate",
+     "center": [
+      -12.8,
+      -9.0,
+      2.4
+     ],
+     "half": [
+      0.7,
+      0.6,
+      0.7
+     ]
+    },
+    {
+     "name": "finish",
+     "kind": "finish",
+     "center": [
+      -12.8,
+      -17.0,
+      2.0
+     ],
+     "half": [
+      2.0,
+      2.0,
+      1.5
+     ]
+    }
+   ],
+   "params": {
+    "length": 40.0,
+    "width": 18.0,
+    "height": 12.0,
+    "floor_gap": 4.0,
+    "gate_half": 0.9
+   },
+   "description": "a 40 \u00d7 18 \u00d7 12 m hangar with two mezzanine floors 4 m apart: in by the west door, under the gantry, up the stair opening, across the first floor, up through the east hole, under the roof beams, down both stair openings, out by a south window; 18 zones, about 190 m",
+   "recovery": "every floor is reached by the staircase; the windows open at 1.6 m; a downed aircraft on a floor or on a beam is reachable from the mezzanine with a pole"
+  },
+  "industrial": {
+   "name": "Industrial zone",
+   "kind": "technical",
+   "length_m": 484.82629880323947,
+   "zones": [
+    {
+     "name": "start",
+     "kind": "start",
+     "center": [
+      -30.0,
+      0.0,
+      1.5
+     ],
+     "half": [
+      2.5,
+      2.5,
+      0.75
+     ]
+    },
+    {
+     "name": "gap 1",
+     "kind": "gate",
+     "center": [
+      -5.0,
+      -3.0,
+      6
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "under passage 1",
+     "kind": "gate",
+     "center": [
+      30.0,
+      -3.0,
+      2.6
+     ],
+     "half": [
+      1.0,
+      2.5,
+      0.9
+     ]
+    },
+    {
+     "name": "between",
+     "kind": "checkpoint",
+     "center": [
+      45.0,
+      -10.0,
+      6
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "gap 2",
+     "kind": "gate",
+     "center": [
+      60.0,
+      -6.0,
+      6
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "under passage 2",
+     "kind": "gate",
+     "center": [
+      75.0,
+      -2.5,
+      2.6
+     ],
+     "half": [
+      1.0,
+      2.5,
+      0.9
+     ]
+    },
+    {
+     "name": "gap 3",
+     "kind": "checkpoint",
+     "center": [
+      95.0,
+      0.0,
+      6
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "east of the plant",
+     "kind": "gate",
+     "center": [
+      117.0,
+      2.0,
+      6
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "the turn",
+     "kind": "gate",
+     "center": [
+      121.0,
+      22.0,
+      6
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "water tower",
+     "kind": "gate",
+     "center": [
+      144.0,
+      32.0,
+      8
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "round the last building",
+     "kind": "checkpoint",
+     "center": [
+      170.0,
+      8.0,
+      8
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "back",
+     "kind": "gate",
+     "center": [
+      160.0,
+      -30.0,
+      8
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "south of the last building",
+     "kind": "gate",
+     "center": [
+      125.0,
+      -30.0,
+      8
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "over the red stack",
+     "kind": "gate",
+     "center": [
+      120.0,
+      -6.0,
+      15
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "gap 2 again",
+     "kind": "checkpoint",
+     "center": [
+      70.0,
+      -2.0,
+      8
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "gap 1 again",
+     "kind": "gate",
+     "center": [
+      30.0,
+      8.0,
+      8
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "home straight",
+     "kind": "gate",
+     "center": [
+      -10.0,
+      2.0,
+      4
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "finish",
+     "kind": "finish",
+     "center": [
+      -30.0,
+      0.0,
+      4.5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    }
+   ],
+   "params": {
+    "scale": 1.0,
+    "gate_half": 1.5
+   },
+   "description": "seven buildings with 10\u201315 m gaps and two covered passages to fly under, a 470 m lap at 6\u20138 m round the far end and back",
+   "recovery": "all on the ground outside; the passages' decks are 4.2 m up (a ladder); roofs are not part of the route"
+  },
+  "farm": {
+   "name": "Farm",
+   "kind": "open",
+   "length_m": 358.9620492095217,
+   "zones": [
+    {
+     "name": "start",
+     "kind": "start",
+     "center": [
+      -20,
+      0,
+      1.5
+     ],
+     "half": [
+      2.5,
+      2.5,
+      0.75
+     ]
+    },
+    {
+     "name": "round the cottage",
+     "kind": "gate",
+     "center": [
+      -11,
+      15,
+      3
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "behind it",
+     "kind": "gate",
+     "center": [
+      0,
+      25,
+      3
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "and back",
+     "kind": "checkpoint",
+     "center": [
+      11,
+      15,
+      3
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "to the barn",
+     "kind": "gate",
+     "center": [
+      20,
+      2.5,
+      3
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "barn door",
+     "kind": "gate",
+     "center": [
+      29,
+      2.5,
+      3
+     ],
+     "half": [
+      1.0,
+      1.8,
+      1.2
+     ]
+    },
+    {
+     "name": "barn far door",
+     "kind": "checkpoint",
+     "center": [
+      51,
+      2.5,
+      3
+     ],
+     "half": [
+      1.0,
+      1.8,
+      1.2
+     ]
+    },
+    {
+     "name": "round the silo",
+     "kind": "gate",
+     "center": [
+      62,
+      12,
+      5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "the long field",
+     "kind": "gate",
+     "center": [
+      110,
+      20,
+      8
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "over the hedge",
+     "kind": "checkpoint",
+     "center": [
+      120,
+      -10,
+      4
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "back over the field",
+     "kind": "gate",
+     "center": [
+      95,
+      -25,
+      8
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "down to the trees",
+     "kind": "gate",
+     "center": [
+      74,
+      -22,
+      3.0
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "tree 1",
+     "kind": "gate",
+     "center": [
+      62,
+      -16,
+      3.0
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "tree 2",
+     "kind": "gate",
+     "center": [
+      54,
+      -24,
+      3.0
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "tree 3",
+     "kind": "gate",
+     "center": [
+      46,
+      -16,
+      3.0
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "tree 4",
+     "kind": "checkpoint",
+     "center": [
+      38,
+      -24,
+      3.0
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "tree 5",
+     "kind": "gate",
+     "center": [
+      30,
+      -16,
+      3.0
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "tree 6",
+     "kind": "gate",
+     "center": [
+      22,
+      -24,
+      3.0
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "the yard",
+     "kind": "gate",
+     "center": [
+      0,
+      -8,
+      4
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    },
+    {
+     "name": "finish",
+     "kind": "finish",
+     "center": [
+      -20,
+      0,
+      4.0
+     ],
+     "half": [
+      2.5,
+      2.5,
+      1.0
+     ]
+    }
+   ],
+   "params": {
+    "gate_half": 1.5
+   },
+   "description": "round the cottage, through the barn beside its posts, round the silo, a 60 m straight over the long field, over the hedge, back over the field, a slalom down the tree line, home over the yard: about 520 m",
+   "recovery": "open fields; the barn floor and the tree line are on foot; the roofs are not on the route"
+  },
+  "quarry": {
+   "name": "Quarry",
+   "kind": "open",
+   "length_m": 520.1905938644708,
+   "zones": [
+    {
+     "name": "start",
+     "kind": "start",
+     "center": [
+      -35,
+      -20,
+      1.5
+     ],
+     "half": [
+      2.5,
+      2.5,
+      0.75
+     ]
+    },
+    {
+     "name": "corridor in",
+     "kind": "gate",
+     "center": [
+      -32,
+      5,
+      2.5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "corridor 1a",
+     "kind": "gate",
+     "center": [
+      -20,
+      7.5,
+      2.5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "corridor 1b",
+     "kind": "gate",
+     "center": [
+      -10,
+      2.5,
+      2.5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "corridor 1c",
+     "kind": "gate",
+     "center": [
+      0,
+      7.5,
+      2.5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "corridor out",
+     "kind": "checkpoint",
+     "center": [
+      12,
+      3,
+      2.5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "floor east",
+     "kind": "gate",
+     "center": [
+      38,
+      0,
+      4
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "name": "up to bench 1",
+     "kind": "gate",
+     "center": [
+      46.04493841850951,
+      16.75898702295777,
+      9.0
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "name": "bench 1 north",
+     "kind": "checkpoint",
+     "center": [
+      8.50876070567959,
+      48.255579897598196,
+      9.0
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "name": "bench 2 north-west",
+     "kind": "gate",
+     "center": [
+      -36.638893752132745,
+      43.66453325778175,
+      15.0
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "name": "rim west",
+     "kind": "gate",
+     "center": [
+      -64.75265537596346,
+      5.6651232785977825,
+      21.0
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "name": "down the ramp",
+     "kind": "checkpoint",
+     "center": [
+      -30.110877286148614,
+      -33.441517146482745,
+      8.0
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "name": "floor south",
+     "kind": "gate",
+     "center": [
+      0,
+      -30,
+      4
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "name": "past the crusher",
+     "kind": "gate",
+     "center": [
+      8,
+      22,
+      3
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "name": "under the conveyor",
+     "kind": "gate",
+     "center": [
+      20,
+      28,
+      2.4
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "name": "floor east again",
+     "kind": "gate",
+     "center": [
+      36,
+      10,
+      4
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "name": "corridor 2 in",
+     "kind": "gate",
+     "center": [
+      25,
+      -8,
+      2.5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "corridor 2a",
+     "kind": "gate",
+     "center": [
+      12,
+      -10,
+      2.5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "corridor 2b",
+     "kind": "checkpoint",
+     "center": [
+      -2,
+      -6,
+      2.5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "corridor 2c",
+     "kind": "gate",
+     "center": [
+      -17,
+      -10,
+      2.5
+     ],
+     "half": [
+      1.5,
+      1.5,
+      1.2
+     ]
+    },
+    {
+     "name": "finish",
+     "kind": "finish",
+     "center": [
+      -35,
+      -20,
+      4.5
+     ],
+     "half": [
+      2.0,
+      2.0,
+      2.0
+     ]
+    }
+   ],
+   "params": {
+    "floor_r": 45.0,
+    "bench_h": 6.0,
+    "bench_w": 8.0,
+    "n_benches": 3,
+    "gate_half": 2.0
+   },
+   "description": "a pit with a 90 m floor and 3 benches 6 m tall: two winding corridors between the spoil heaps, the floor, up the benches to the rim, down the haul ramp, past the crusher and under the conveyor: about 600 m",
+   "recovery": "the benches are reached by the haul ramp; the heaps are walkable; nothing on the route is above a bench's top"
+  }
+ },
+ "races": {
+  "hangar": {
+   "stats": {
+    "status": "finished",
+    "reason": "",
+    "lap time [s]": 19.45999999999966,
+    "penalty [s]": 0.0,
+    "zones passed": "18 of 18",
+    "collisions": 0,
+    "resets": 0,
+    "missed gates": 0,
+    "gates flown out of order (then recovered)": 3,
+    "course": "Hangar \u2014 three floors",
+    "aircraft": "reference 5-inch quad",
+    "mode": "mock",
+    "energy [Wh]": 0.8914111032781453,
+    "Wh per km": 5.293417434726145,
+    "max speed [m/s]": 14.696003414248908,
+    "mean speed [m/s]": 8.653644697220267,
+    "peak power [W]": 518.2814587053113,
+    "mean power [W]": 159.97407636098316,
+    "course length [m]": 168.39992580790346,
+    "schedule time [s]": 27.109655307116522,
+    "racing time [s]": 20.05999999999966
+   },
+   "gate times": {
+    "door": 0.9400000000000007,
+    "ground floor": 1.4600000000000013,
+    "under the gantry": 3.759999999999995,
+    "back west": 5.619999999999955,
+    "under the stair opening": 6.719999999999931,
+    "stair opening up": 7.339999999999918,
+    "first floor": 9.159999999999881,
+    "under the east hole": 11.039999999999841,
+    "east hole up": 11.739999999999826,
+    "under the beams": 12.9399999999998,
+    "second floor west": 14.059999999999777,
+    "over the stair opening": 15.359999999999749,
+    "stair opening down": 15.919999999999737,
+    "ground again": 16.479999999999723,
+    "to the window": 17.6199999999997,
+    "window": 18.399999999999682,
+    "finish": 19.45999999999966
+   }
+  },
+  "industrial": {
+   "stats": {
+    "status": "finished",
+    "reason": "",
+    "lap time [s]": 31.03999999999941,
+    "penalty [s]": 0.0,
+    "zones passed": "18 of 18",
+    "collisions": 0,
+    "resets": 0,
+    "missed gates": 0,
+    "gates flown out of order (then recovered)": 0,
+    "course": "Industrial zone",
+    "aircraft": "reference 5-inch quad",
+    "mode": "mock",
+    "energy [Wh]": 1.7477264123609373,
+    "Wh per km": 3.6048506788412267,
+    "max speed [m/s]": 21.723111968577825,
+    "mean speed [m/s]": 15.61940395629023,
+    "peak power [W]": 479.8790963210739,
+    "mean power [W]": 197.9803362019944,
+    "course length [m]": 484.82629880323947,
+    "schedule time [s]": 42.14984825437014,
+    "racing time [s]": 31.77999999999941
+   },
+   "gate times": {
+    "gap 1": 1.9000000000000017,
+    "under passage 1": 4.059999999999985,
+    "between": 5.079999999999964,
+    "gap 2": 5.859999999999947,
+    "under passage 2": 6.779999999999927,
+    "gap 3": 7.939999999999904,
+    "east of the plant": 9.379999999999873,
+    "the turn": 10.859999999999841,
+    "water tower": 12.539999999999806,
+    "round the last building": 14.879999999999756,
+    "back": 17.579999999999696,
+    "south of the last building": 20.17999999999964,
+    "over the red stack": 22.239999999999597,
+    "gap 2 again": 25.39999999999953,
+    "gap 1 again": 27.479999999999485,
+    "home straight": 29.439999999999444,
+    "finish": 31.03999999999941
+   }
+  },
+  "farm": {
+   "stats": {
+    "status": "finished",
+    "reason": "",
+    "lap time [s]": 27.79999999999948,
+    "penalty [s]": 0.0,
+    "zones passed": "20 of 20",
+    "collisions": 0,
+    "resets": 0,
+    "missed gates": 0,
+    "gates flown out of order (then recovered)": 0,
+    "course": "Farm",
+    "aircraft": "reference 5-inch quad",
+    "mode": "mock",
+    "energy [Wh]": 1.5283783886662654,
+    "Wh per km": 4.257771516604447,
+    "max speed [m/s]": 21.857746848325018,
+    "mean speed [m/s]": 12.912303928400304,
+    "peak power [W]": 501.17272993901975,
+    "mean power [W]": 192.38329367827103,
+    "course length [m]": 358.9620492095217,
+    "schedule time [s]": 39.404214632259745,
+    "racing time [s]": 28.59999999999948
+   },
+   "gate times": {
+    "round the cottage": 1.3200000000000012,
+    "behind it": 2.440000000000002,
+    "and back": 3.5799999999999943,
+    "to the barn": 4.639999999999971,
+    "barn door": 5.319999999999957,
+    "barn far door": 7.139999999999918,
+    "round the silo": 8.079999999999899,
+    "the long field": 11.379999999999828,
+    "over the hedge": 13.879999999999775,
+    "back over the field": 15.619999999999738,
+    "down to the trees": 16.679999999999715,
+    "tree 1": 17.619999999999695,
+    "tree 2": 18.79999999999967,
+    "tree 3": 20.099999999999643,
+    "tree 4": 21.439999999999614,
+    "tree 5": 22.759999999999586,
+    "tree 6": 24.059999999999558,
+    "the yard": 26.099999999999515,
+    "finish": 27.79999999999948
+   }
+  },
+  "quarry": {
+   "stats": {
+    "status": "finished",
+    "reason": "",
+    "lap time [s]": 36.84000000000029,
+    "penalty [s]": 0.0,
+    "zones passed": "21 of 21",
+    "collisions": 0,
+    "resets": 0,
+    "missed gates": 0,
+    "gates flown out of order (then recovered)": 0,
+    "course": "Quarry",
+    "aircraft": "reference 5-inch quad",
+    "mode": "mock",
+    "energy [Wh]": 1.9818304469811014,
+    "Wh per km": 3.809815998897979,
+    "max speed [m/s]": 20.978030026605317,
+    "mean speed [m/s]": 14.120265848655448,
+    "peak power [W]": 526.8578097156084,
+    "mean power [W]": 189.5480767569603,
+    "course length [m]": 520.1905938644708,
+    "schedule time [s]": 53.2101779113026,
+    "racing time [s]": 37.640000000000285
+   },
+   "gate times": {
+    "corridor in": 3.220000000000002,
+    "corridor 1a": 4.199999999999981,
+    "corridor 1b": 5.079999999999962,
+    "corridor 1c": 5.999999999999942,
+    "corridor out": 6.959999999999922,
+    "floor east": 8.699999999999886,
+    "up to bench 1": 9.999999999999858,
+    "bench 1 north": 12.819999999999798,
+    "bench 2 north-west": 15.05999999999975,
+    "rim west": 17.87999999999969,
+    "down the ramp": 21.399999999999615,
+    "floor south": 23.419999999999572,
+    "past the crusher": 26.959999999999496,
+    "under the conveyor": 28.019999999999474,
+    "floor east again": 29.939999999999433,
+    "corridor 2 in": 31.63999999999947,
+    "corridor 2a": 32.63999999999963,
+    "corridor 2b": 33.65999999999979,
+    "corridor 2c": 34.73999999999996,
+    "finish": 36.84000000000029
+   }
+  }
+ }
+}

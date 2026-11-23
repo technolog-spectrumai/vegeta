@@ -4,7 +4,7 @@
 #   - system tools: CalculiX (ccx), PrusaSlicer, Gmsh/CadQuery runtime libraries, xvfb
 #   - OpenFOAM v2412 from conda-forge (the Ubuntu 'openfoam' package cannot run forceCoeffs)
 #   - into the virtual environment: vegeta-cli (editable: vegeta.dedalus/talos/aeromant/mellonia),
-#     vegeta-core (vegeta.core: workspaces, revisions)
+#     vegeta-core (vegeta.core: workspaces, revisions), vegeta-ai (AI provider connection), vegeta-fidia (AI modelling: prompt-to-3D, copilot, campaigns)
 #     plus JupyterLab and test tools, registered as the Jupyter kernel "Python (vegeta)"
 # Then it checks every component (./test.sh --quick); ./test.sh runs a full working check.
 #
@@ -31,7 +31,7 @@ while [ $# -gt 0 ]; do
     --no-openfoam) WITH_OPENFOAM=0; shift ;;
     --skip-system) WITH_SYSTEM=0; shift ;;
     --openfoam-prefix) FOAM_PREFIX="$2"; shift 2 ;;
-    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -51,6 +51,9 @@ if [ -z "$PYTHON_EXE" ]; then
   if [ -x /usr/bin/python3 ]; then PYTHON_EXE=/usr/bin/python3; else PYTHON_EXE="$(command -v python3)"; fi
 fi
 [ -n "${CONDA_PREFIX:-}" ] && echo "note: conda environment '$CONDA_PREFIX' is active; the venv is built from $PYTHON_EXE instead"
+
+# The FEniCSx environment (the laser books fenix and svarog) moved with the laser work to Alabastron:
+# https://github.com/technolog-spectrumai/alabastron (its install_local.sh builds it).
 
 step "Virtual environment"
 if [ "$USE_VENV" -eq 1 ]; then
@@ -95,18 +98,37 @@ if [ "$WITH_SYSTEM" -eq 1 ]; then
       $SUDO env MAMBA_ROOT_PREFIX="$MAMBA_DIR/root" "$MAMBA_DIR/bin/micromamba" create -y -p "$FOAM_PREFIX" \
         -c conda-forge openfoam=2412
     fi
+    # conda-forge's openfoam 2412 links its MPI Pstream through the rpath lib/sys-mpich but ships it as lib/mpich-*:
+    # without the link every parallel run stops with "The dummy Pstream library cannot be used in parallel mode"
+    if [ ! -e "$FOAM_PREFIX/lib/sys-mpich" ]; then
+      mpich_lib=$(ls -d "$FOAM_PREFIX"/lib/mpich-* 2>/dev/null | head -1)
+      [ -n "$mpich_lib" ] && $SUDO ln -s "$(basename "$mpich_lib")" "$FOAM_PREFIX/lib/sys-mpich"
+    fi
   fi
 else
   step "Skipping system packages and OpenFOAM (--skip-system)"
 fi
 
-step "Python packages (vegeta-cli, vegeta-core, JupyterLab)"
-"$PY" -m pip install --upgrade pip
+"$PY" -m pip install --upgrade pip setuptools wheel
+
+# Ozaru (Porunga, Mimezia, Yanus — shared with Piccolo and Alabastron) and Yax (the design-format converter — shared
+# with Piccolo) from the committed vendor/ozaru and vendor/yax, and Ogma (the parts library) from libs/ogma/: no index, no fetch
+step "Ozaru from vendor/ozaru ($(sed -n 's/^revision: //p' "$ROOT/vendor/OZARU_REVISION" | cut -c1-12))"
+"$PY" -m pip install --no-deps --no-build-isolation --no-index \
+  -e "$ROOT/vendor/ozaru/porunga" -e "$ROOT/vendor/ozaru/mimezia" -e "$ROOT/vendor/ozaru/yanus" \
+  -e "$ROOT/vendor/yax" -e "$ROOT/libs/ogma"
+
+step "Python packages (vegeta-cli with MuJoCo for Chiron and the races (cma: their autopilot tuner) and NeuralFoil for Zephyr, vegeta-core, vegeta-ai, vegeta-fidia, JupyterLab)"
 "$PY" -m pip install \
-  -e "$ROOT/vegeta-cli[pandas,test]" \
-  -e "$ROOT/vegeta-core[test]" \
-  jupyterlab ipywidgets nbconvert nbformat ipykernel
+  -e "$ROOT/libs/vegeta-cli[pandas,viz,test,sim,sections]" \
+  mujoco cma usd-core jsbsim \
+  -e "$ROOT/libs/vegeta-core[test]" \
+  -e "$ROOT/libs/vegeta-ai[test]" \
+  -e "$ROOT/libs/vegeta-fidia[viz,test]" \
+  -e "$ROOT/libs/labkit[test]" \
+  jupyterlab ipywidgets nbconvert nbformat ipykernel networkx pyyaml pillow
 "$PY" -m ipykernel install --user --name vegeta --display-name "Python (vegeta)"
+
 
 step "Checks"
 status=0
@@ -114,12 +136,14 @@ status=0
 
 if [ $status -eq 0 ]; then
   printf '\nAll dependencies installed. Next:\n'
-  echo "  ./jupyter.sh             # JupyterLab from the venv; open notebooks/00_smoke_test.ipynb"
+  echo "  ./jupyter.sh             # JupyterLab from the venv; open labs/studio/notebooks/00_smoke_test.ipynb (the first-install smoke test)"
   [ "$USE_VENV" -eq 1 ] && echo "  source $VENV/bin/activate   # for the vegeta command and scripts"
   echo "  ./test.sh                 # installation check with a short working run"
+  echo "  ./test_openfoam.sh        # test the CFD tool against the OpenFOAM installation(s) on this machine"
   echo "  scripts/test_all.sh      # full test suite"
   echo "  scripts/demo_cli.sh      # CAD -> FEA -> print -> CFD with the CLIs"
 else
   printf '\nSome checks failed (see MISSING above).\n' >&2
 fi
+
 exit $status

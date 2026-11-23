@@ -1,0 +1,87 @@
+{
+ "meta": {
+  "source": "39_kestrel_tests",
+  "date": "2026-10-16",
+  "mass_kg": 1.6862063482324605
+ },
+ "summary": {
+  "solved": 0,
+  "FAILED": 0,
+  "NOT RUN": 9,
+  "n": 9
+ },
+ "rows": {
+  "frame_x_A": {
+   "part": "frame",
+   "bracing": "x",
+   "kind": "static",
+   "status": "NOT RUN",
+   "description": "4 g pull-up, the lift elliptic on both wings, the motors' and wings' inertia against it (ultimate \u00d71.5)",
+   "note": "NOT RUN: frame_x_A in _runs/kestrel_tests/fea/frame_x_A (run=False)"
+  },
+  "frame_x_B": {
+   "part": "frame",
+   "bracing": "x",
+   "kind": "static",
+   "status": "NOT RUN",
+   "description": "4 g with the upper wing carrying 75 % (one wing stalling first) (ultimate \u00d71.5)",
+   "note": "NOT RUN: frame_x_B in _runs/kestrel_tests/fea/frame_x_B (run=False)"
+  },
+  "frame_x_C": {
+   "part": "frame",
+   "bracing": "x",
+   "kind": "static",
+   "status": "NOT RUN",
+   "description": "the heading manoeuvre in the hover: M1 and M4 at 12.0 N, M2 and M3 at 0.25 N (the diagonal pairs split), 1 g",
+   "note": "NOT RUN: frame_x_C in _runs/kestrel_tests/fea/frame_x_C (run=False)"
+  },
+  "frame_x_modes": {
+   "part": "frame",
+   "bracing": "x",
+   "kind": "modes",
+   "status": "NOT RUN",
+   "description": "the first modes with the motor units as point masses at the stations",
+   "note": ""
+  },
+  "frame_posts_A": {
+   "part": "frame",
+   "bracing": "posts",
+   "kind": "static",
+   "status": "NOT RUN",
+   "description": "4 g pull-up, the lift elliptic on both wings, the motors' and wings' inertia against it (ultimate \u00d71.5)",
+   "note": "NOT RUN: frame_posts_A in _runs/kestrel_tests/fea/frame_posts_A (run=False)"
+  },
+  "frame_posts_B": {
+   "part": "frame",
+   "bracing": "posts",
+   "kind": "static",
+   "status": "NOT RUN",
+   "description": "4 g with the upper wing carrying 75 % (one wing stalling first) (ultimate \u00d71.5)",
+   "note": "NOT RUN: frame_posts_B in _runs/kestrel_tests/fea/frame_posts_B (run=False)"
+  },
+  "frame_posts_C": {
+   "part": "frame",
+   "bracing": "posts",
+   "kind": "static",
+   "status": "NOT RUN",
+   "description": "the heading manoeuvre in the hover: M1 and M4 at 12.0 N, M2 and M3 at 0.25 N (the diagonal pairs split), 1 g",
+   "note": "NOT RUN: frame_posts_C in _runs/kestrel_tests/fea/frame_posts_C (run=False)"
+  },
+  "frame_posts_modes": {
+   "part": "frame",
+   "bracing": "posts",
+   "kind": "modes",
+   "status": "NOT RUN",
+   "description": "the first modes with the motor units as point masses at the stations",
+   "note": ""
+  },
+  "joint_post": {
+   "part": "joint",
+   "bracing": "",
+   "kind": "static",
+   "status": "NOT RUN",
+   "description": "the post's 5.5 N (ultimate) into the printed socket, the spar bore held; build axis z",
+   "note": "NOT RUN: joint_post in _runs/kestrel_tests/fea/joint_post (run=False)"
+  }
+ }
+}

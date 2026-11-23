@@ -1,0 +1,16 @@
+{
+  "_what": "docs/engineering.md: the brief's mock gearmotor on joint 'elbow', as the file must hold it (units in field names, nothing converted, nothing added)",
+  "joint:elbow/data:motor": {
+    "name": "mock-gearmotor-20", "kind": "gearmotor",
+    "stall_torque_nm": 2.5, "no_load_speed_rpm": 6000, "rated_torque_nm": 0.8, "rated_speed_rpm": 5200,
+    "voltage_v": 24.0, "stall_current_a": 12.0, "no_load_current_a": 0.3, "resistance_ohm": 2.0, "kt_nm_per_a": 0.2083,
+    "rotor_inertia_kgm2": 0.00012, "mechanical_time_constant_s": 0.015,
+    "torque_speed": {"speed_rpm": [0, 1500, 3000, 4500, 6000], "torque_nm": [2.5, 1.9, 1.25, 0.6, 0.0], "current_a": [12.0, 9.1, 6.0, 3.1, 0.3],
+                     "voltage_v": 24.0, "source": "mock datasheet curve (linear line read at five points)"},
+    "limits": {"max_torque_nm": 2.5, "continuous_torque_nm": 0.8, "max_speed_rpm": 6000, "max_current_a": 12.0, "max_temperature_c": 85},
+    "transmission": {"type": "planetary", "gear_ratio": 20, "efficiency": 0.85, "backlash_rad": 0.004, "max_torque_nm": 50.0,
+                     "stages": [{"ratio": 4}, {"ratio": 5}], "source": "mock gearbox datasheet"},
+    "source": "mock datasheet (the brief's example)", "validity": {"voltage_v": [20.0, 25.2], "note": "room temperature"}
+  },
+  "tags": {"joint:elbow/data:motor": ["00motor", "drive"]}
+}

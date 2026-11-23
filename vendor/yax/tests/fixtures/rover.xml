@@ -1,0 +1,38 @@
+<mujoco model="rover">
+  <compiler angle="degree"/>
+  <option timestep="0.002"/>
+  <default>
+    <geom rgba="0.6 0.6 0.7 1"/>
+  </default>
+  <asset>
+    <mesh name="wedge" vertex="0 0 0  0.08 0 0  0 0.06 0  0 0 0.04"/>
+  </asset>
+  <worldbody>
+    <geom name="floor" type="plane" size="5 5 0.1"/>
+    <body name="base" pos="0 0 0.3" euler="0 0 15">
+      <freejoint name="root"/>
+      <geom name="hull" type="box" size="0.2 0.1 0.05" mass="2.0"/>
+      <geom name="dome" type="ellipsoid" size="0.05 0.04 0.03" pos="0.1 0 0.06" mass="0.2"/>
+      <geom name="mark" type="mesh" mesh="wedge" pos="-0.15 0 0.05" mass="0.05" contype="0" conaffinity="0"/>
+      <body name="wheel" pos="0.12 -0.13 -0.03" euler="90 0 0">
+        <joint name="wheel_spin" type="hinge" axis="0 0 1"/>
+        <geom name="tyre" type="cylinder" size="0.06 0.02" mass="0.3"/>
+      </body>
+      <body name="arm" pos="-0.05 0 0.06">
+        <joint name="shoulder" type="hinge" axis="0 1 0" range="-90 45" damping="0.1"/>
+        <geom name="upper" type="capsule" fromto="0 0 0 0.25 0 0" size="0.015" mass="0.25"/>
+        <body name="slider" pos="0.25 0 0">
+          <joint name="extend" type="slide" axis="1 0 0" range="0 0.1"/>
+          <geom name="rod" type="box" size="0.05 0.01 0.01" pos="0.05 0 0" mass="0.1"/>
+          <body name="wrist" pos="0.1 0 0">
+            <joint name="wrist" type="ball"/>
+            <geom name="tool" type="sphere" size="0.02" mass="0.05"/>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+  <actuator>
+    <position name="shoulder_servo" joint="shoulder" kp="20" kv="0.5" forcelimited="true" forcerange="-3 3"/>
+  </actuator>
+</mujoco>

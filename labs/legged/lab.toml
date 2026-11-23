@@ -1,0 +1,3 @@
+name = "legged"
+title = "Legged lab — what walks"
+machines = ["robot_dog", "myropod", "cleopatra", "persephone", "apheloria"]

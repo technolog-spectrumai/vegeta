@@ -1,0 +1,36 @@
+{
+  "_what": "docs/engineering.md: a central body, a detachable arm bolted to it, a motor screwed to the arm, a propeller pressed on the motor — as the file must hold the assembly",
+  "data:assembly": {
+    "name": "mock quad arm", "root": "body",
+    "components": {
+      "body": {"link": "body", "parent": null, "kind": "body", "material": "petg-cf", "source": "mock"},
+      "arm": {"link": "arm", "parent": "body", "kind": "arm", "detachable": true, "connection": "body-arm-bolts", "material": "petg-cf",
+              "attachment": {"frame": "parent", "pos": [0.09, 0.09, 0.0], "quat": [0.9238795, 0, 0, 0.3826834], "axis": [0, 0, 1], "source": "mock CAD"},
+              "separation": {"limits": {"tension_n": 900.0, "shear_n": 600.0, "moment_nm": 12.0, "basis": "analysis"},
+                             "criterion": {"kind": "fastener shear", "parameters": {"shear_n": 600.0}}, "calibrated": false, "basis": "analysis",
+                             "source": "mock sizing"}, "source": "mock"},
+      "motor": {"link": "motor", "parent": "arm", "kind": "motor", "detachable": true, "connection": "arm-motor-screws",
+                "attachment": {"frame": "parent", "pos": [0.11, 0.0, 0.005], "quat": [1, 0, 0, 0], "axis": [0, 0, 1]},
+                "separation": {"limits": {"tension_n": 400.0, "shear_n": 300.0, "basis": "datasheet"}, "basis": "datasheet", "source": "mock screw table"},
+                "source": "mock"},
+      "prop": {"link": "prop", "parent": "motor", "kind": "propeller", "detachable": true, "connection": "motor-prop-press",
+               "attachment": {"frame": "parent", "pos": [0.0, 0.0, 0.016], "axis": [0, 0, 1]},
+               "separation": {"limits": {"tension_n": 60.0, "basis": "test"}, "calibrated": true, "basis": "test", "source": "mock pull test, 5 samples"},
+               "source": "mock"}
+    },
+    "source": "mock assembly"
+  },
+  "data:connections": {
+    "body-arm-bolts": {"name": "body-arm-bolts", "type": "bolt", "links": ["body", "arm"], "frame": "link:body", "pos": [0.09, 0.09, 0.0],
+                       "fasteners": {"count": 2, "size": "M3", "grade": "8.8", "preload_n": 1200.0}, "limits": {"tension_n": 900.0, "shear_n": 600.0, "basis": "analysis"},
+                       "detachable": true, "source": "mock"},
+    "arm-motor-screws": {"name": "arm-motor-screws", "type": "screw", "links": ["arm", "motor"], "frame": "link:arm", "pos": [0.11, 0.0, 0.005],
+                         "fasteners": {"count": 4, "size": "M2", "torque_nm": 0.25}, "limits": {"tension_n": 400.0, "shear_n": 300.0, "basis": "datasheet"},
+                         "detachable": true, "source": "mock"},
+    "motor-prop-press": {"name": "motor-prop-press", "type": "press", "links": ["motor", "prop"], "frame": "link:motor", "pos": [0.0, 0.0, 0.016],
+                         "geometry": {"diameter_m": 0.005, "length_m": 0.008}, "limits": {"tension_n": 60.0, "basis": "test"}, "detachable": true, "source": "mock"}
+  },
+  "data:materials": {"petg-cf": {"name": "petg-cf", "class": "polymer", "density_kg_m3": 1250.0, "source": "mock"}},
+  "links": {"body": {"mass": 0.6, "inertia_diag": [0.002, 0.002, 0.003]}, "arm": {"mass": 0.03, "inertia_diag": [1e-6, 2e-5, 2e-5]},
+            "motor": {"mass": 0.03, "inertia_diag": [3e-6, 3e-6, 4e-6]}, "prop": {"mass": 0.005, "inertia_diag": [1e-6, 1e-6, 2e-6]}}
+}

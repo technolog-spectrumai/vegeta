@@ -1,0 +1,16 @@
+{
+ "debug": true,
+ "design_fingerprint": null,
+ "file": "race_design_factors.json",
+ "git": "3428cd7c3402",
+ "inputs": [],
+ "kind": "notebook",
+ "needs": {},
+ "producer": "51_race_ingest",
+ "schema": null,
+ "sha256": "10eecbdd496b6a7f56dd1f5c7bc5de997707cc7070d4d404f9afb3ce9b10a71a",
+ "size": 30143,
+ "written_at": "2026-10-19T19:12:15Z",
+ "written_ts": 1792437135.1848137,
+ "yanus": 1
+}
