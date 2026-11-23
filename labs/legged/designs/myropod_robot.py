@@ -51,7 +51,7 @@ import numpy as np
 from ogma import actuators as act
 from vegeta import chiron as ch
 
-__all__ = ["CLEO_MM", "CLEO2_MM", "CLEO2_EXTRA", "cleopatra2", "cleopatra2_params", "cleopatra2_cad", "CleopatraParams", "BodyAxis", "BodyConnection", "TREATMENTS", "LEGACY_TREATMENTS",
+__all__ = ["CLEO_MM", "CLEO2_MM", "CLEO2_EXTRA", "ARM_V2", "ARM_TUCK", "ARM_RANGES", "arm_joints", "cleopatra2", "cleopatra2_params", "cleopatra2_cad", "CleopatraParams", "BodyAxis", "BodyConnection", "TREATMENTS", "LEGACY_TREATMENTS",
            "RETIRED_TREATMENTS", "AXIS_ORDER", "BODY_DEFAULTS", "DESIGN_KEYS", "LIMIT_PITCH", "LIMIT_YAW",
            "LIMIT_ROLL", "LEG_KEYS", "LEG_SIDES", "SEGMENTS", "LEG_RANGES", "KP", "KD", "cleopatra",
            "cleopatra_servo", "canonical_treatment", "make_connection", "connection_params", "design_connection",
@@ -872,14 +872,68 @@ def cleopatra_cad(**overrides):
 #: (``CLEO_MM``, ``CleopatraParams``) stays the stability protocol's frozen robot (docs/myropod_stability.md §1).
 CLEO2_MM = dict(CLEO_MM, femur_length=60.0, tibia_length=75.0, foot_hooks=6, hook_length=5.0, turret=True, arms=True,
                 arm_upper=115.0, arm_fore=110.0, arm_diameter=9.0, jaw_length=22.0)
-#: v2's added masses [kg] (class estimates): the turret (camera 60 g, lidar 25 g, housing 15 g) and each arm (two
-#: micro servos 2 × 9 g, links and jaw 17 g, the jaw's micro gearmotor 10 g); the shorter legs scale v1's CAD leg mass.
-CLEO2_EXTRA = (("sensor turret (camera + lidar)", 0.100), ("gripper arm", 0.045), ("cutter arm", 0.045))
+#: v2's added mass on the head [kg] (class estimate): the sensor turret (camera 60 g, lidar 25 g, housing 15 g). The
+#: arms are jointed links with their own masses (``ARM_V2``).
+CLEO2_EXTRA = (("sensor turret (camera + lidar)", 0.100),)
+#: Cleopatra v2's arms [m, kg] (``myropod.Myropod`` ``arms``, ``CLEO2_MM``): each a shoulder (yaw, then pitch) under the
+#: head's front, an upper arm, an elbow, a forearm and two jaws on their own hinges — the gripper (flat padded jaws, on
+#: a self-locking worm servo: it holds without power) on the left, the cutter (scissor blades) on the right. q = 0:
+#: the arm straight out ahead, level, jaws closed; + shoulder pitch / elbow lower it (about +y), + yaw swings it left,
+#: + jaw opens it. Servos from ``actuators.py``: shoulders 'micro-metal 20 g' (0.55 N·m), elbow 'micro 13 g'
+#: (0.32 N·m), jaws 'micro-metal 22 g worm' (gripper) and 'micro-metal 20 g' (cutter).
+ARM_V2 = {"base": (0.055, 0.033, -0.042), "upper": 0.115, "fore": 0.110, "jaw": 0.022, "upper_mass": 0.008,
+          "fore_mass": 0.007, "jaw_mass": 0.003, "shoulder_servo": "micro-metal 20 g", "elbow_servo": "micro 13 g",
+          "jaw_servo": {"gripper": "micro-metal 22 g worm", "cutter": "micro-metal 20 g"}}
+#: The folded pose the arms travel in (the CAD's ``_arms_tucked``): the upper arm back along the belly, the forearm
+#: forward beneath it, the jaws closed [rad].
+ARM_TUCK = {"shoulder_yaw": 0.0, "shoulder_pitch": math.radians(175.0), "elbow": math.radians(-171.0), "jaw": 0.0}
+ARM_RANGES = {"shoulder_yaw": (math.radians(-60.0), math.radians(60.0)),
+              "shoulder_pitch": (math.radians(-45.0), math.radians(180.0)),
+              "elbow": (math.radians(-175.0), math.radians(60.0)), "jaw": (0.0, math.radians(40.0))}
+
+
+def arm_joints(arm: str) -> list:
+    """An arm's actuated joints (``arm`` 'gripper' or 'cutter'), shoulder to jaws."""
+    return [f"{arm} shoulder_yaw", f"{arm} shoulder_pitch", f"{arm} elbow", f"{arm} jaw 1", f"{arm} jaw 2"]
+
+
+def _arm(arm: str, kp=2.0, kd=0.05) -> ch.Link:
+    """One jointed arm on the head: upper arm (shoulder yaw + pitch), forearm (elbow), two jaws (a hinge each)."""
+    sy = 1.0 if arm == "gripper" else -1.0
+    A = ARM_V2
+    sv = lambda key: ch.Servo.from_actuator(act.get(key), kp=kp, kd=kd)
+    m = lambda key: act.get(key).mass_g / 1000.0
+    rgba = (0.17, 0.18, 0.19, 1.0)
+    jaws = []
+    for k, side in ((1, 1.0), (2, -1.0)):                 # jaw 1 on the arm's left, opening left; jaw 2 mirrored
+        jaws.append(ch.Link(f"{arm} jaw {k}", pos=(A["fore"], side * 0.003, 0.0),
+                            joints=[ch.Joint(f"{arm} jaw {k}", axis=(0.0, 0.0, side), range=ARM_RANGES["jaw"],
+                                             tag="jaw", servo=sv(A["jaw_servo"][arm]))],
+                            geoms=[ch.Geom(f"{arm} jaw {k}", "box", (A["jaw"] / 2, 0.0015, 0.0045),
+                                           pos=(A["jaw"] / 2, 0.0, 0.0), mass=A["jaw_mass"], role="visual",
+                                           rgba=(0.8, 0.82, 0.86, 1.0) if arm == "cutter" else rgba)]))
+    fore = ch.Link(f"{arm} forearm", pos=(A["upper"], 0.0, 0.0),
+                   joints=[ch.Joint(f"{arm} elbow", axis=(0.0, 1.0, 0.0), range=ARM_RANGES["elbow"], tag="elbow",
+                                    servo=sv(A["elbow_servo"]))],
+                   geoms=[ch.Geom(f"{arm} forearm", "capsule", (0.0038,), fromto=(0, 0, 0, A["fore"], 0, 0),
+                                  mass=A["fore_mass"], role="visual", rgba=rgba)],
+                   masses=[ch.PointMass(f"{arm} jaw servo", m(A["jaw_servo"][arm]), (A["fore"] - 0.012, 0.0, 0.0))],
+                   children=jaws)
+    return ch.Link(f"{arm} upper arm", pos=(A["base"][0], sy * A["base"][1], A["base"][2]),
+                   joints=[ch.Joint(f"{arm} shoulder_yaw", axis=(0.0, 0.0, 1.0), range=ARM_RANGES["shoulder_yaw"],
+                                    tag="shoulder_yaw", servo=sv(A["shoulder_servo"])),
+                           ch.Joint(f"{arm} shoulder_pitch", axis=(0.0, 1.0, 0.0), range=ARM_RANGES["shoulder_pitch"],
+                                    tag="shoulder_pitch", servo=sv(A["shoulder_servo"]))],
+                   geoms=[ch.Geom(f"{arm} upper arm", "capsule", (0.0045,), fromto=(0, 0, 0, A["upper"], 0, 0),
+                                  mass=A["upper_mass"], role="visual", rgba=rgba)],
+                   masses=[ch.PointMass(f"{arm} shoulder servos", 2 * m(A["shoulder_servo"]), (0.0, 0.0, 0.0)),
+                           ch.PointMass(f"{arm} elbow servo", m(A["elbow_servo"]), (A["upper"], 0.0, 0.0))],
+                   children=[fore])
 
 
 def cleopatra2_params() -> CleopatraParams:
     """Cleopatra v2's physical inputs: v1's, with the shorter legs (their CAD mass scaled by length) and the turret
-    and arms carried in the head's payload."""
+    carried in the head's payload (the arms are links of their own: ``cleopatra2``)."""
     v1 = CleopatraParams()
     scale = (0.060 + 0.075) / (v1.femur + v1.tibia)
     return CleopatraParams(femur=0.060, tibia=0.075, leg_cad_mass=v1.leg_cad_mass * scale,
@@ -887,8 +941,18 @@ def cleopatra2_params() -> CleopatraParams:
 
 
 def cleopatra2(body_connection: str = BODY_DEFAULTS["body_connection"], **kw) -> ch.Robot:
-    """Cleopatra v2 (``CLEO2_MM``) as a Chiron robot: ``cleopatra`` with ``cleopatra2_params()``."""
-    return cleopatra(body_connection, params=cleopatra2_params(), **kw)
+    """Cleopatra v2 (``CLEO2_MM``) as a Chiron robot: ``cleopatra`` with ``cleopatra2_params()``, plus the two jointed
+    arms on the head (``_arm``; 10 more actuated joints: ``arm_joints('gripper')``, ``arm_joints('cutter')``), standing
+    with them folded (``ARM_TUCK``)."""
+    robot = cleopatra(body_connection, params=cleopatra2_params(), **kw)
+    for arm in ("gripper", "cutter"):
+        robot.root.children.append(_arm(arm))
+        for j in arm_joints(arm):
+            key = j.split(" ", 1)[1].split(" ")[0]
+            robot.nominal_qpos[j] = ARM_TUCK[key]
+    robot.name = robot.name.replace("cleopatra", "cleopatra v2", 1)
+    robot.validate()
+    return robot
 
 
 def cleopatra2_cad(**overrides):

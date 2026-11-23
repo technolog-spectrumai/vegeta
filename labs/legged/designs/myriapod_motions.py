@@ -73,10 +73,56 @@ def motions_cleopatra2(robot=None):
     robot = robot or mr.cleopatra2()
     kin = mk.Kin(robot)
     src = "myriapod_motions: myropod_controller's fixed gait (protocol §3), sized to Cleopatra v2's legs"
-    return kin, [_walk(kin, robot, "walk", speed=0.15, stride=0.08, lift=0.035, source=src),
-                 _walk(kin, robot, "turn", speed=0.15, stride=0.08, lift=0.035, stride_scale={1: 1.3, -1: 0.7},
-                       source=src + " with the heading clip (±30 % stride)"),
-                 _walk(kin, robot, "crawl", speed=0.08, stride=0.06, lift=0.025, source=src + ": the low crawl")]
+    legs = [_walk(kin, robot, "walk", speed=0.15, stride=0.08, lift=0.035, source=src),
+            _walk(kin, robot, "turn", speed=0.15, stride=0.08, lift=0.035, stride_scale={1: 1.3, -1: 0.7},
+                  source=src + " with the heading clip (±30 % stride)"),
+            _walk(kin, robot, "crawl", speed=0.08, stride=0.06, lift=0.025, source=src + ": the low crawl")]
+    return kin, legs + _arm_motions(kin, mr)
+
+
+#: The arms' working pose: out ahead of the head, the forearm reaching a little down [rad].
+ARM_REACH = {"shoulder_yaw": 0.0, "shoulder_pitch": np.radians(15.0), "elbow": np.radians(25.0)}
+
+
+def _arm_motions(kin, mr):
+    """Cleopatra v2's arms (``myropod_robot.ARM_TUCK`` → ``ARM_REACH``): unfold, fold, grip (the gripper reaches, its
+    flat jaws open and close gently, it draws back) and snip (the cutter reaches and snips twice)."""
+    src = "myriapod_motions: Cleopatra v2's arms (myropod_robot.ARM_V2, ARM_TUCK)"
+
+    def pose(arm, w, jaw=0.0):
+        """The arm a fraction w of the way from folded to reaching (elbow last out, first in), jaws open by jaw."""
+        we = mk.smooth(min(1.0, max(0.0, (w - 0.25) / 0.75)))
+        ws = mk.smooth(min(1.0, w / 0.75))
+        out = {f"{arm} shoulder_yaw": 0.0,
+               f"{arm} shoulder_pitch": (1 - ws) * mr.ARM_TUCK["shoulder_pitch"] + ws * ARM_REACH["shoulder_pitch"],
+               f"{arm} elbow": (1 - we) * mr.ARM_TUCK["elbow"] + we * ARM_REACH["elbow"]}
+        out[f"{arm} jaw 1"] = out[f"{arm} jaw 2"] = jaw
+        return out
+
+    def both(w):
+        return {**pose("gripper", w), **pose("cutter", w)}
+
+    def grip(t, T=3.0):
+        u = t / T
+        w = mk.smooth(min(1.0, u / 0.3)) if u < 0.7 else 1.0 - mk.smooth((u - 0.7) / 0.3)
+        jaw = np.radians(30.0) * mk.smooth(min(1.0, max(0.0, (u - 0.3) / 0.1))) * (1 - mk.smooth(
+            min(1.0, max(0.0, (u - 0.5) / 0.12))))
+        return pose("gripper", w, jaw)
+
+    def snip(t, T=2.4):
+        u = t / T
+        w = mk.smooth(min(1.0, u / 0.25)) if u < 0.8 else 1.0 - mk.smooth((u - 0.8) / 0.2)
+        jaw = np.radians(35.0) * max(0.0, np.sin(np.pi * min(1.0, max(0.0, (u - 0.25) / 0.55)) * 2) ** 2)
+        return pose("cutter", w, jaw)
+
+    return [mk.joint_cycle(kin, "unfold", lambda t: both(t / 1.6), period=1.6, frames=24, loop=False,
+                           kind="transition", source=src),
+            mk.joint_cycle(kin, "fold", lambda t: both(1.0 - t / 1.6), period=1.6, frames=24, loop=False,
+                           kind="transition", source=src),
+            mk.joint_cycle(kin, "grip", grip, period=3.0, frames=36, loop=False, kind="transition",
+                           source=src + ": the gripper's flat jaws (gentle hold)"),
+            mk.joint_cycle(kin, "snip", snip, period=2.4, frames=36, loop=False, kind="transition",
+                           source=src + ": the cutter's scissor blades, two snips")]
 
 
 def _curl(kin, ar, *, uncurl=False, duration=4.0, frames=40):
