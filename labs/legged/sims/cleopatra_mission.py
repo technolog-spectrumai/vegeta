@@ -1,9 +1,11 @@
 """Cleopatra, "Operation Pipe Entry" (``./cleopatra.sh mission``): a night-time MuJoCo short. Cleopatra — the
-three-segment, twelve-legged Myropod (``designs/myropod_robot.py``, notebook 18), 6.2 kg — crosses a yard to the
-intake of the bandit's air-conditioning duct (a 260 mm pipe), crawls in, along the ground run, up the riser on the
-house wall and through the wall, pushes the indoor vent open over the desk and steps down onto it. It walks up to the
-laptop, crouches and plugs the pendrive it carries under its head into the laptop's back port; the copy runs; it
-unplugs and backs out the way it came (time-lapsed). The bandit sleeps in his armchair throughout.
+three-segment, twelve-legged Myropod (``designs/myropod_robot.py``, notebook 18), 6.2 kg, here with two small pincer
+arms under its head (a gripper, which carries the pendrive, and a cutter, as TARANTULA has) and a camera-and-lidar
+turret on its head — crosses the street outside the house of Operation Silent Drop to the intake of the bandit's
+air-conditioning duct (a 260 mm pipe), crawls in, along the ground run, up the riser on the house wall and through
+the wall. At the vent over the desk it cuts a hole in the grille with the cutter (the disc drops onto the desk),
+climbs out, walks to the laptop, crouches, and the gripper plugs the pendrive into the laptop's back port; after the
+copy it unplugs it and Cleopatra backs out the way it came (time-lapsed). The bandit sleeps in his armchair.
 
 How it moves (scripted kinematics, rendered by MuJoCo; no dynamics): the head follows a path — the yard, the duct's
 centre line, the desk — and the segments trail it, each turned to the path's tangent at its own place, the passive
@@ -55,7 +57,7 @@ R_ELBOW = 0.30                                                            # the 
 X_MOUTH, X_RISER, Z_IN, X_END = 1.70, 0.45, 0.90, -0.42                   # intake, riser, indoor height, vent
 WALL = (-0.25, 0.0)                                                       # the house wall (x from, to)
 DESK = (-1.10, -0.25, -0.75, 0.75, 0.75)                                  # x0, x1, y0, y1, top
-STAND_H = 0.08                                                            # the laptop stand
+STAND_H = 0.0                                                             # the laptop sits on the desk
 LAPTOP = (-0.85, 0.0)                                                     # its centre (x, y); screen faces -x
 HIP_H = 0.163                                                             # standing body height over the ground
 SPEEDUP = 5.0                                                             # the retreat, time-lapsed
@@ -168,8 +170,8 @@ def robot_path():
     lead = [a0 + (C[0] - a0) * u for u in np.linspace(0, 1, 20)[1:]]      # down into the duct's axis
     desk_z = DESK[4] + HIP_H
     port = port_point()
-    head_x_end = port[0] + USB_TIP_X - 0.010                              # the plug 10 mm into the port
-    crouch_z = port[2] - USB_Z
+    head_x_end = port[0] + PLUG_REACH_X                                   # the gripper reaches the rest of the way
+    crouch_z = DESK[4] + 0.13
     d0 = np.array([X_END - 0.06, 0.0, desk_z])
     d1 = np.array([head_x_end + 0.08, 0.0, desk_z])
     d2 = np.array([head_x_end, 0.0, crouch_z])
@@ -180,15 +182,21 @@ def robot_path():
     return P, s, T, U, s_start
 
 
-# ---- the pendrive, held under the head's front (head frame) and the laptop's port
-USB_HELD = np.array([0.0935, 0.0, -0.030])                                # its body centre in the head frame
-USB_TIP_X = USB_HELD[0] + 0.0225 + 0.012                                  # the plug's tip, head frame x
-USB_Z = USB_HELD[2]
+# ---- Cleopatra's pincer arms (like TARANTULA's pedipalps), head frame [m]: a shoulder (yaw + pitch) under the
+# head's front, an upper arm, an elbow, a forearm and a pincer — the gripper on the left (it carries the pendrive),
+# the cutter on the right
+ARM = {"base_x": 0.055, "base_y": 0.035, "base_z": -0.028, "upper": 0.115, "fore": 0.110, "finger": 0.022}
+HOLE_R = 0.12                                                             # the hole the cutter cuts in the grille
+ARM_TUCK = {"g": np.array([0.11, 0.035, -0.06]), "c": np.array([0.105, -0.035, -0.058])}
+USB_HALF = 0.0225                                                         # the pendrive body's half length
+USB_PLUG = USB_HALF + 0.012                                               # its centre to the plug's tip
+GRIP_IN = 0.010                                                           # the gripper's tip to its grip point
+PLUG_REACH_X = 0.19                                                       # the head stops this far behind the port
 
 
 def port_point():
-    """The laptop's back USB port (the back face's centre line, 8 mm above its base)."""
-    return np.array([LAPTOP[0] + 0.115, LAPTOP[1], DESK[4] + STAND_H + 0.008])
+    """The laptop's back USB port (the back face's centre line, 10 mm above the desk)."""
+    return np.array([LAPTOP[0] + 0.115, LAPTOP[1], DESK[4] + STAND_H + 0.010])
 
 
 # --------------------------------------------------------------------------------------------- the scene
@@ -230,7 +238,16 @@ def build(width, height, cache: Path):
     A("material", name="glow", rgba="1 0.8 0.5 1", emission="1")
     A("material", name="headlamp", rgba="1 0.97 0.85 1", emission="1")
     A("material", name="usb_led", rgba="0.2 0.6 1 1", emission="0")
-    A("material", name="window", rgba="0.15 0.2 0.35 1", emission="0.25")
+    A("material", name="window", rgba="0.95 0.72 0.4 1", emission="0.45")
+    A("material", name="lens", rgba="0.1 0.2 0.35 1", specular="1", shininess="1")
+    A("material", name="lidar", rgba="0.9 0.2 0.15 1", emission="0.6")
+    A("texture", name="paving", type="2d", builtin="checker", rgb1="0.27 0.26 0.25", rgb2="0.23 0.22 0.21",
+      width="512", height="512")
+    A("material", name="paving", texture="paving", texrepeat="4 4", texuniform="true", specular="0.08")
+    A("material", name="stone", rgba="0.62 0.6 0.56 1", specular="0.05")
+    A("material", name="wood", rgba="0.3 0.19 0.11 1", specular="0.2")
+    A("material", name="spark", rgba="1 0.85 0.45 1", emission="1")
+    A("material", name="blade", rgba="0.85 0.87 0.9 1", specular="0.8", shininess="0.8")
     for k, (r, g, b) in COLORS.items():
         A("material", name=f"cleo:{k}", rgba=f"{r} {g} {b} 1", specular="0.45", shininess="0.45")
     for name, path in meshes.items():
@@ -239,7 +256,7 @@ def build(width, height, cache: Path):
     for gm in world.findall("geom"):                                      # the Chiron ground: the yard and the floor
         if gm.get("type") == "plane":
             gm.set("size", "15 15 0.1")
-            gm.set("material", "grass")
+            gm.set("material", "paving")
             gm.attrib.pop("rgba", None)
     G = lambda parent, **kw: ET.SubElement(parent, "geom", {"contype": "0", "conaffinity": "0", "group": "1",
                                                             **{k: str(v) for k, v in kw.items()}})
@@ -257,7 +274,17 @@ def build(width, height, cache: Path):
             n = mr.leg_name(i, key)
             G(bodies[f"{n} femur"], type="mesh", mesh=f"m:femur_{side}", material="cleo:leg", mass="0")
             G(bodies[f"{n} tibia"], type="mesh", mesh=f"m:tibia_{side}", material="cleo:pad", mass="0")
-    G(bodies["head"], type="box", size="0.012 0.008 0.007", pos="0.072 0 -0.026", material="dark", mass="0")
+    for sy in (-1, 1):                                                    # the arms' mounts
+        G(bodies["head"], type="box", size="0.008 0.007 0.006",
+          pos=f"{ARM['base_x'] - 0.004} {sy * ARM['base_y']} {ARM['base_z'] + 0.004}", material="dark", mass="0")
+    # the sensor turret, as on TARANTULA: a camera with its lens, a lidar puck on top
+    G(bodies["head"], type="box", size="0.026 0.021 0.014", pos="-0.005 0 0.05", material="dark", mass="0")
+    G(bodies["head"], type="cylinder", size="0.0095 0.006", pos="0.024 0 0.051", zaxis="1 0 0", material="metal",
+      mass="0")
+    G(bodies["head"], type="cylinder", size="0.0065 0.0015", pos="0.031 0 0.051", zaxis="1 0 0", material="lens",
+      mass="0")
+    G(bodies["head"], type="cylinder", size="0.013 0.006", pos="-0.008 0 0.071", material="metal", mass="0")
+    G(bodies["head"], type="cylinder", size="0.0135 0.002", pos="-0.008 0 0.069", material="lidar", mass="0")
     for sy in (-1, 1):
         G(bodies["head"], type="cylinder", size="0.0045 0.002", pos=f"0.066 {sy * 0.031} 0", zaxis="1 0 0",
           material="headlamp", mass="0")
@@ -266,16 +293,38 @@ def build(width, height, cache: Path):
                                             "exponent": "6", "attenuation": "1 0 2", "castshadow": "false"})
     # ---- the house: the wall (brick outside, plaster in), the room, the roof
     x0, x1 = WALL
-    G(world, name="wall_out", type="box", size="0.004 3 1.3", pos=f"{x1 - 0.004} 0 1.3", material="brick")
-    G(world, name="wall", type="box", size=f"{(x1 - x0) / 2 - 0.004} 3 1.3", pos=f"{(x0 + x1) / 2 - 0.002} 0 1.3",
+    G(world, name="wall_out", type="box", size="0.004 3 1.2", pos=f"{x1 - 0.004} 0 1.2", material="brick")
+    G(world, name="wall", type="box", size=f"{(x1 - x0) / 2 - 0.004} 3 1.2", pos=f"{(x0 + x1) / 2 - 0.002} 0 1.2",
       material="plaster")
-    G(world, type="box", size="0.05 3 1.3", pos="-4.05 0 1.3", material="plaster")
+    G(world, type="box", size="0.05 3 1.2", pos="-4.05 0 1.2", material="plaster")
     for sy in (-1, 1):
-        G(world, type="box", size="1.92 0.05 1.3", pos=f"-2.08 {sy * 3.0} 1.3", material="plaster")
-    G(world, type="box", size="2.2 3.2 0.06", pos="-2.0 0 2.66", material="dark")
+        G(world, type="box", size="1.92 0.05 1.2", pos=f"-2.08 {sy * 3.0} 1.2", material="plaster")
+    G(world, type="box", size="2.1 3.05 0.045", pos="-2.0 0 2.355", material="dark")
+    G(world, type="box", size="0.27 3.05 0.07", pos=f"{x1 - 0.03} 0 2.43", material="stone")   # the coping
+    G(world, type="box", size="0.012 3.05 0.008", pos=f"{x1 + 0.228} 0 2.352", material="stone")
     G(world, type="box", size="1.9 2.95 0.006", pos="-2.13 0 0.006", material="floor")
-    G(world, type="box", size="0.006 0.45 0.4", pos=f"{x1 + 0.003} -1.6 1.25", material="window")
-    G(world, type="box", size="0.006 0.45 0.4", pos=f"{x0 - 0.003} -1.6 1.25", material="window")
+    for k, y in enumerate((-1.4, 1.25)):                                  # two windows, one lit (as before)
+        G(world, type="box", size="0.004 0.26 0.36", pos=f"{x1 + 0.003} {y} 1.35",
+          material="window" if k else "dark")
+        G(world, type="box", size="0.04 0.3 0.02", pos=f"{x1 + 0.04} {y} 0.91", material="stone")
+        G(world, type="box", size="0.004 0.26 0.36", pos=f"{x0 - 0.003} {y} 1.35",
+          material="window" if k else "dark")
+    lant = np.array([x1 + 0.07, -0.55, 1.68])                             # the lantern
+    G(world, type="box", size="0.035 0.01 0.01", pos=_s(lant + [-0.035, 0, 0.09]), material="dark")
+    G(world, type="box", size="0.05 0.05 0.075", pos=_s(lant), rgba="0.1 0.1 0.1 0.35")
+    G(world, type="sphere", size="0.028", pos=_s(lant), material="glow")
+    G(world, type="box", size="0.055 0.055 0.01", pos=_s(lant + [0, 0, 0.083]), material="dark")
+    ET.SubElement(world, "light", {"name": "lantern", "pos": _s(lant + [0.06, 0.05, -0.05]), "dir": "0.45 0.35 -1",
+                                   "diffuse": "1.0 0.66 0.32", "specular": "0.2 0.15 0.1", "cutoff": "75",
+                                   "exponent": "2", "attenuation": "1 0 0.25", "castshadow": "true"})
+    tt = np.array([x1 + 0.42, 1.55, 0.75])                                # the terrace table, bottle and mug
+    G(world, type="box", size="0.36 0.42 0.018", pos=_s(tt - [0, 0, 0.018]), material="wood")
+    for sx in (-0.32, 0.32):
+        for sy in (-0.38, 0.38):
+            G(world, type="box", size="0.02 0.02 0.357", pos=_s(tt + [sx, sy, -0.393]), material="wood")
+    G(world, type="cylinder", size="0.035 0.11", pos=_s(tt + [0.24, -0.27, 0.11]), rgba="0.1 0.35 0.15 0.85")
+    G(world, type="cylinder", size="0.013 0.04", pos=_s(tt + [0.24, -0.27, 0.25]), rgba="0.1 0.35 0.15 0.85")
+    G(world, type="cylinder", size="0.04 0.045", pos=_s(tt + [0.16, 0.26, 0.045]), rgba="0.85 0.85 0.8 1")
     # ---- the duct (translucent, ribbed), its intake and vent
     C, _ = duct_centreline()
     step = 12
@@ -288,17 +337,28 @@ def build(width, height, cache: Path):
     for k in range(-5, 6):
         G(world, type="box", size="0.0045 0.15 0.003", pos=f"{X_MOUTH + 0.25} {0.45 + 0.025 * k:.3f} 0.026",
           euler="0 1.45 0.4", material="dark")
-    vent = ET.SubElement(world, "body", {"name": "vent", "mocap": "true", "pos": f"{X_END - 0.006} 0.16 {Z_IN}"})
-    G(vent, type="box", size="0.005 0.16 0.16", pos="0 -0.16 0", material="metal", rgba="0.75 0.76 0.78 1")
-    for k in range(-6, 7):                                                # side-hinged: it opens like a door
-        G(vent, type="box", size="0.006 0.14 0.004", pos=f"-0.001 -0.16 {0.022 * k:.3f}", material="dark")
+    gx = X_END - 0.006                                                    # the vent's grille: a frame and slats
+    for sy in (-1, 1):
+        G(world, type="box", size="0.005 0.012 0.16", pos=f"{gx} {sy * 0.148} {Z_IN}", rgba="0.75 0.76 0.78 1")
+        G(world, type="box", size="0.005 0.16 0.012", pos=f"{gx} 0 {Z_IN + sy * 0.148}", rgba="0.75 0.76 0.78 1")
+    disc = ET.SubElement(world, "body", {"name": "disc", "mocap": "true", "pos": f"{gx} 0 {Z_IN}"})
+    for k in range(-6, 7):
+        z = 0.022 * k
+        w = math.sqrt(max(HOLE_R ** 2 - z * z, 0.0))                      # the slat's part inside the hole
+        for sy in (-1, 1):
+            a, b = (w, 0.136) if w > 0 else (0.0, 0.136)
+            G(world, type="box", size=f"0.004 {(b - a) / 2:.4f} 0.0045", pos=f"{gx} {sy * (a + b) / 2:.4f} {Z_IN + z:.4f}",
+              rgba="0.7 0.71 0.74 1")
+        if w > 0.004:
+            G(disc, type="box", size=f"0.004 {w:.4f} 0.0045", pos=f"0 0 {z:.4f}", rgba="0.7 0.71 0.74 1")
+    spark = ET.SubElement(world, "body", {"name": "spark", "mocap": "true", "pos": "0 0 -5"})
+    G(spark, name="spark", type="sphere", size="0.004", material="spark")
+    ET.SubElement(spark, "light", {"name": "spark", "pos": "0.02 0 0", "dir": "1 0 0", "diffuse": "0 0 0",
+                                   "specular": "0 0 0", "cutoff": "90", "attenuation": "1 0 6",
+                                   "castshadow": "false"})
     # ---- the yard: the AC unit by the riser, bushes
     G(world, type="box", size="0.3 0.25 0.38", pos=f"{X_RISER + 0.1} -0.7 0.38", material="metal")
     G(world, type="cylinder", size="0.18 0.005", pos=f"{X_RISER + 0.41} -0.7 0.42", zaxis="1 0 0", material="dark")
-    rng = np.random.default_rng(5)
-    for k in range(9):
-        G(world, type="sphere", size=f"{0.25 + 0.15 * rng.random():.3f}",
-          pos=f"{0.6 + 0.45 * k:.2f} {-2.2 - 0.3 * rng.random():.2f} 0.2", rgba="0.09 0.18 0.08 1")
     # ---- the room: the desk, the laptop on its stand, the lamp, the armchair and the sleeping bandit
     dx0, dx1, dy0, dy1, dz = DESK
     G(world, name="desk", type="box", size=f"{(dx1 - dx0) / 2} {(dy1 - dy0) / 2} 0.02",
@@ -308,8 +368,6 @@ def build(width, height, cache: Path):
             G(world, type="box", size=f"0.025 0.025 {(dz - 0.04) / 2}", pos=f"{sx} {sy} {(dz - 0.04) / 2}",
               material="desk")
     lx, ly = LAPTOP
-    G(world, type="box", size="0.1 0.12 0.004", pos=f"{lx} {ly} {dz + 0.004}", material="dark")
-    G(world, type="box", size="0.012 0.11 0.035", pos=f"{lx + 0.07} {ly} {dz + 0.04}", material="metal")
     G(world, type="box", size="0.115 0.165 0.01", pos=f"{lx} {ly} {dz + STAND_H + 0.01}", material="metal",
       rgba="0.55 0.56 0.6 1")
     port = port_point()
@@ -332,12 +390,6 @@ def build(width, height, cache: Path):
     ET.SubElement(world, "light", {"name": "screenglow", "pos": f"{lx - 0.15} {ly} {dz + STAND_H + 0.15}",
                                    "dir": "-1 0 -0.3", "diffuse": "0.12 0.2 0.4", "specular": "0 0 0",
                                    "cutoff": "70", "castshadow": "false"})
-    porch = np.array([0.05, 0.75, 1.75])
-    G(world, type="box", size="0.03 0.05 0.07", pos=_s(porch), material="dark")
-    G(world, type="sphere", size="0.03", pos=_s(porch + [0.04, 0, -0.03]), material="glow")
-    ET.SubElement(world, "light", {"name": "porch", "pos": _s(porch + [0.08, 0, -0.06]), "dir": "0.7 -0.25 -1",
-                                   "diffuse": "0.75 0.55 0.32", "specular": "0.1 0.08 0.05", "cutoff": "70",
-                                   "exponent": "2", "attenuation": "1 0 0.15", "castshadow": "true"})
     ET.SubElement(world, "light", {"name": "moon", "directional": "true", "pos": "5 -3 6", "dir": "-0.5 0.35 -0.8",
                                    "diffuse": "0.28 0.32 0.45", "specular": "0.05 0.05 0.08", "castshadow": "true"})
     ET.SubElement(world, "light", {"name": "room", "pos": "-2 0 2.4", "dir": "0 0 -1", "diffuse": "0.12 0.11 0.1",
@@ -364,6 +416,27 @@ def build(width, height, cache: Path):
         G(sleeper, type="sphere", size="0.05", pos=f"0.16 {sy * 0.25} 0.5", rgba=skin)
     G(sleeper, type="ellipsoid", size="0.12 0.14 0.16", pos="0.08 -0.45 0.12", rgba="0.6 0.5 0.32 1")
     G(sleeper, name="snore", type="sphere", size="0.012", pos="-0.06 0.05 0.97", rgba=white)
+    # ---- the pincer arms (mocap bodies posed from the head by their IK): upper arm, forearm, two fingers each
+    for arm in ("g", "c"):
+        up = ET.SubElement(world, "body", {"name": f"arm_{arm}_up", "mocap": "true", "pos": "0 0 -5"})
+        G(up, type="sphere", size="0.0075", material="metal")
+        G(up, type="capsule", size="0.0048", fromto=f"0 0 0 {ARM['upper']} 0 0", material="cleo:leg")
+        fo = ET.SubElement(world, "body", {"name": f"arm_{arm}_fore", "mocap": "true", "pos": "0 0 -5"})
+        G(fo, type="sphere", size="0.0065", material="metal")
+        G(fo, type="capsule", size="0.004", fromto=f"0 0 0 {ARM['fore']} 0 0", material="cleo:leg")
+        G(fo, type="box", size="0.006 0.007 0.006", pos=f"{ARM['fore']} 0 0", material="dark")
+        for k in (1, 2):
+            fi = ET.SubElement(world, "body", {"name": f"arm_{arm}_f{k}", "mocap": "true", "pos": "0 0 -5"})
+            if arm == "g":                                                # the gripper: toothed fingers
+                G(fi, type="box", size=f"{ARM['finger'] / 2} 0.0022 0.0042", pos=f"{ARM['finger'] / 2} 0 0",
+                  material="dark")
+                for j in range(3):
+                    G(fi, type="box", size="0.0018 0.0012 0.0035",
+                      pos=f"{0.006 + 0.0065 * j} {(1 if k == 1 else -1) * -0.0025} 0", material="metal")
+            else:                                                         # the cutter: blades
+                G(fi, type="box", size=f"{ARM['finger'] / 2} 0.0012 0.0045", pos=f"{ARM['finger'] / 2} 0 0",
+                  material="blade")
+                G(fi, type="box", size="0.004 0.0016 0.005", pos="0.002 0 0", material="dark")
     # ---- the pendrive (a mocap body: held, plugged in, held again)
     usb = ET.SubElement(world, "body", {"name": "usb", "mocap": "true", "pos": "0 0 -5"})
     G(usb, type="box", size="0.0225 0.008 0.0042", rgba="0.1 0.3 0.85 1")
@@ -394,12 +467,15 @@ def simulate(model, info, render=None):
     seg_id = {i: model.body(f"segment {i}").id for i in (1, 2, 3)}
     head = model.body("head").id
     usb = model.body("usb").mocapid[0]
-    vent = model.body("vent").mocapid[0]
+    disc = model.body("disc").mocapid[0]
+    spark = model.body("spark").mocapid[0]
+    spark_light = model.light("spark").id
+    arm_ids = {(a_, k): model.body(f"arm_{a_}_{k}").mocapid[0] for a_ in ("g", "c") for k in ("up", "fore", "f1", "f2")}
     sleeper = model.body("sleeper").mocapid[0]
     bar = model.geom("bar").id
     snore = model.geom("snore").id
     led = model.material("usb_led").id
-    vent_p0 = data.mocap_pos[vent].copy()
+    disc_p0 = data.mocap_pos[disc].copy()
     sleeper_p0 = data.mocap_pos[sleeper].copy()
     hip = {key: np.array(mr.hip_position(p, key)) for key in mr.LEG_KEYS}
     nominal = {key: hip[key] + np.array([0.0, mr.LEG_SIDES[key][1] * p.foot_out, -p.foot_drop]) for key in mr.LEG_KEYS}
@@ -489,25 +565,76 @@ def simulate(model, info, render=None):
         for a, (lo, hi) in zip(jadr[lg], (mr.LEG_RANGES["hip_yaw"], mr.LEG_RANGES["hip_pitch"], mr.LEG_RANGES["knee"])):
             data.qpos[a] = float(np.clip(data.qpos[a], lo, hi))
 
-    st = {"t": 0.0, "sc": s_start, "usb": "held", "copy": 0.0, "vent": 0.0}
+    st = {"t": 0.0, "sc": s_start, "usb": "held", "copy": 0.0, "disc": 0.0, "cutting": False, "cut_tip": None,
+          "arm": {"g": (ARM_TUCK["g"].copy(), 0.0), "c": (ARM_TUCK["c"].copy(), 0.3)}, "grip": None}
     F, N = {}, {}
     place_body(st["sc"])
     for lg in legs:
         F[lg], N[lg] = foothold(lg, seg_pose(lg[0]))
 
+    def arm_pose(arm, tip_h):
+        """The arm's world points with the head where it is: (base, elbow, tip, forearm direction, lateral) from its
+        pincer tip target in the head frame (2-link IK in the vertical plane through the target, the elbow up)."""
+        hp, hR = data.xpos[head].copy(), data.xmat[head].reshape(3, 3)
+        sy = 1.0 if arm == "g" else -1.0
+        b = np.array([ARM["base_x"], sy * ARM["base_y"], ARM["base_z"]])
+        v = np.asarray(tip_h) - b
+        yaw = math.atan2(v[1], v[0])
+        r, h = math.hypot(v[0], v[1]), v[2]
+        L1, L2 = ARM["upper"], ARM["fore"]
+        d = min(max(math.hypot(r, h), abs(L1 - L2) + 1e-3), L1 + L2 - 1e-4)
+        e = math.acos(max(-1.0, min(1.0, (d * d - L1 ** 2 - L2 ** 2) / (2 * L1 * L2))))
+        th = math.atan2(h, r) + math.atan2(L2 * math.sin(e), L1 + L2 * math.cos(e))
+        el = b + L1 * np.array([math.cos(th) * math.cos(yaw), math.cos(th) * math.sin(yaw), math.sin(th)])
+        dvec = b + d * np.array([math.cos(math.atan2(h, r)) * math.cos(yaw), math.cos(math.atan2(h, r)) * math.sin(yaw),
+                                 math.sin(math.atan2(h, r))]) - el
+        dvec /= np.linalg.norm(dvec)
+        tip = el + L2 * dvec
+        W = lambda x: hp + hR @ x
+        lat = hR @ np.array([-math.sin(yaw), math.cos(yaw), 0.0])
+        return W(b), W(el), W(tip), hR @ dvec, lat
+
+    def frame_x(d, lat):
+        d = d / np.linalg.norm(d)
+        lat = lat - (lat @ d) * d
+        lat /= np.linalg.norm(lat)
+        return np.column_stack([d, lat, np.cross(d, lat)])
+
     def props():
         t = st["t"]
-        hp, hR = data.xpos[head].copy(), data.xmat[head].reshape(3, 3)
-        if st["usb"] == "held":
-            data.mocap_pos[usb] = hp + hR @ USB_HELD
+        hR = data.xmat[head].reshape(3, 3)
+        # the arms and their pincers
+        for arm in ("g", "c"):
+            tip_h, opening = st["arm"][arm]
+            b, el, tip, d, lat = arm_pose(arm, tip_h)
+            data.mocap_pos[arm_ids[(arm, "up")]] = b
+            data.mocap_quat[arm_ids[(arm, "up")]] = mat2quat(frame_x(el - b, lat))
+            data.mocap_pos[arm_ids[(arm, "fore")]] = el
+            Rf = frame_x(d, lat)
+            data.mocap_quat[arm_ids[(arm, "fore")]] = mat2quat(Rf)
+            ang = 0.08 + 0.5 * opening
+            for k, sg in (("f1", 1.0), ("f2", -1.0)):
+                data.mocap_pos[arm_ids[(arm, k)]] = tip + Rf[:, 1] * sg * 0.004
+                data.mocap_quat[arm_ids[(arm, k)]] = mat2quat(Rf @ rot_z(sg * ang))
+            if arm == "g":
+                st["grip"] = (tip + d * GRIP_IN, d)
+        if st["usb"] == "held":                                           # in the gripper, pointing ahead
+            g, _ = st["grip"]
+            data.mocap_pos[usb] = g + hR[:, 0] * (USB_HALF - 0.006)
             data.mocap_quat[usb] = data.xquat[head]
-        # the vent: pushed open by the head, falls back once the robot is past
-        hx = hp[0]
-        want = 1.0 if X_END - 0.35 < hx < X_END + 0.12 or any(
-            X_END - 0.2 < data.xpos[seg_id[i]][0] < X_END + 0.05 for i in (1, 2, 3)) else 0.0
-        st["vent"] += float(np.clip(want - st["vent"], -0.03, 0.06))
-        data.mocap_pos[vent] = vent_p0
-        data.mocap_quat[vent] = mat2quat(rot_z(-1.75 * sm(st["vent"])))
+        # the cut: the sparks at the cutter's tip; the disc drops out onto the desk
+        if st["cutting"]:
+            data.mocap_pos[spark] = st["cut_tip"]
+            fl = 0.6 + 0.4 * math.sin(t * 97.0) * math.sin(t * 31.0)
+            model.light_diffuse[spark_light] = [1.6 * fl, 1.1 * fl, 0.5 * fl]
+        else:
+            data.mocap_pos[spark] = [0, 0, -5]
+            model.light_diffuse[spark_light] = [0, 0, 0]
+        if st["disc"] > 0.0:
+            u = min(st["disc"], 1.0)
+            fall = sm(u)
+            data.mocap_pos[disc] = disc_p0 + np.array([-0.05 * u, 0.0, -(Z_IN - DESK[4] - 0.006) * fall])
+            data.mocap_quat[disc] = mat2quat(rot_y(-1.5708 * fall))
         # the sleeper breathes; the copy's progress bar; the pendrive's LED
         data.mocap_pos[sleeper] = sleeper_p0 + np.array([0, 0, 0.006 * math.sin(t * 2 * math.pi / 4.2)])
         model.geom_size[snore][0] = 0.006 + 0.01 * max(0.0, math.sin(t * 2 * math.pi / 4.2))
@@ -595,18 +722,60 @@ def simulate(model, info, render=None):
             tick(phase, caption, speed)
 
     s_mouth = float(S[np.argmin(np.linalg.norm(P - C[0], axis=1))])
-    s_vent = float(S[np.argmin(np.linalg.norm(P - C[-1], axis=1))])
     s_end = float(S[-1])
     hold("yard", "", 1.5)
     freegait("yard", "ACROSS THE YARD TO THE AIR-CONDITIONING INTAKE", s_mouth - 0.05, v=0.16)
     freegait("duct", "INTO THE DUCT — TWELVE FEET ON THE PIPE WALL", s_mouth + 1.15, v=0.13)
-    freegait("riser", "UP THE RISER AND THROUGH THE WALL", s_vent - 0.02, v=0.11)
-    freegait("vent", "THROUGH THE VENT, DOWN ONTO THE DESK", s_end - 0.12, v=0.09)
-    freegait("plug", "THE PENDRIVE INTO THE LAPTOP'S BACK PORT", s_end, v=0.05)
-    st["usb"] = "port"                                                    # it stays where the head put it
-    hold("copy", "COPYING", 7.0, fn=lambda u: st.update(copy=min(1.0, u * 1.15)))
+    s_cut = float(S[np.argmin(np.abs(P[:, 0] - (X_END + 0.07)) + 10 * (P[:, 2] < Z_IN - 0.05))])
+    freegait("riser", "UP THE RISER AND THROUGH THE WALL", s_cut, v=0.11)
+
+    def head_frame(w):
+        hp, hR = data.xpos[head].copy(), data.xmat[head].reshape(3, 3)
+        return hR.T @ (np.asarray(w) - hp)
+
+    def move_arm(arm, phase, caption, dur, target_h, opening=None, lift=0.03):
+        a0, o0 = st["arm"][arm]
+        a0 = a0.copy()
+        o1 = o0 if opening is None else opening
+
+        def fn(u):
+            w = sm(u)
+            st["arm"][arm] = (a0 + w * (np.asarray(target_h) - a0) + np.array([0, 0, lift * math.sin(math.pi * u)]),
+                              o0 + w * (o1 - o0))
+        hold(phase, caption, dur, fn)
+        st["arm"][arm] = (np.asarray(target_h, float), o1)
+
+    # ---- the cut: the cutter traces a circle round the grille, the disc drops out
+    gxc = X_END - 0.004
+    circle = lambda th: np.array([gxc, HOLE_R * math.cos(th), Z_IN + HOLE_R * math.sin(th)])
+    move_arm("c", "cut", "THE CUTTER: A HOLE IN THE VENT'S GRILLE", 1.0, head_frame(circle(0.0)), opening=0.6)
+    st["cutting"] = True
+
+    def cut(u):
+        th = 2 * math.pi * 1.02 * u
+        st["arm"]["c"] = (head_frame(circle(th)), 0.35 + 0.3 * abs(math.sin(u * 60)))
+        st["cut_tip"] = circle(th)
+    hold("cut", "THE CUTTER: A HOLE IN THE VENT'S GRILLE", 5.0, cut)
+    st["cutting"] = False
+    hold("cut", "THE DISC DROPS ONTO THE DESK", 0.9, lambda u: st.update(disc=u))
+    st["disc"] = 1.0
+    move_arm("c", "cut", "THE DISC DROPS ONTO THE DESK", 0.8, ARM_TUCK["c"], opening=0.3)
+    freegait("vent", "THROUGH THE HOLE, DOWN ONTO THE DESK", s_end - 0.12, v=0.09)
+    freegait("plug", "TO THE LAPTOP", s_end, v=0.05)
+    # ---- the plug: the gripper reaches down to the back port, lets go, comes back for it after the copy
+    hR = data.xmat[head].reshape(3, 3)
+    hx = hR[:, 0]
+    usb_c = port_point() - hx * (USB_PLUG - 0.010)                        # the plug 10 mm in
+    tip_w = usb_c - hx * (USB_HALF - 0.006) - hx * GRIP_IN
+    move_arm("g", "plug", "THE GRIPPER PLUGS THE PENDRIVE IN", 1.8, head_frame(tip_w), lift=0.04)
+    st["usb"] = "port"
+    move_arm("g", "plug", "THE GRIPPER PLUGS THE PENDRIVE IN", 0.4, st["arm"]["g"][0], opening=1.0, lift=0.0)
+    move_arm("g", "copy", "COPYING", 1.0, ARM_TUCK["g"], lift=0.0)
+    hold("copy", "COPYING", 6.5, fn=lambda u: st.update(copy=min(1.0, u * 1.1)))
+    move_arm("g", "plug", "COPY DONE — UNPLUG", 1.0, head_frame(tip_w), lift=0.0)
+    move_arm("g", "plug", "COPY DONE — UNPLUG", 0.4, head_frame(tip_w), opening=0.0, lift=0.0)
     st["usb"] = "held"
-    hold("copy", "COPY DONE — UNPLUG", 0.8)
+    move_arm("g", "plug", "COPY DONE — UNPLUG", 1.2, ARM_TUCK["g"], lift=0.02)
     freegait("retreat", "BACK OUT THE WAY IT CAME", s_mouth - 0.4, v=0.13, speed=SPEEDUP)
     hold("out", "", 2.0)
     return st
@@ -651,10 +820,12 @@ def run(out, width=1280, height=720, fps=30, cache=None, frames_dir=None, text=F
             cam.set(mid + [0.0, 0, 0.02], 1.15, 250, -18, 0.08)
         elif phase == "riser":
             cam.set(mid + [0.0, 0, 0.05], 1.25, 235, -6, 0.08)
+        elif phase == "cut":
+            cam.set(np.array([X_END - 0.02, 0.0, Z_IN]), 0.85, -40, -18, 0.1)
         elif phase == "vent":
             cam.set(h + [-0.05, 0, 0.0], 0.95, 20, -16, 0.08)
         elif phase == "plug":
-            cam.set(port_point() + [0.14, 0, 0.02], 0.55, 60, -14, 0.08)
+            cam.set(port_point() + [0.1, 0, 0.05], 0.6, 60, -16, 0.08)
         elif phase == "copy":
             cam.set(np.array([-1.3, 0.5, 0.75]), 1.5, 126, -18, 0.05)
         elif phase == "retreat":
