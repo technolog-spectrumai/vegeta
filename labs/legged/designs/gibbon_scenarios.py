@@ -1164,7 +1164,7 @@ gs.SCENARIOS["brachiate"] = scenario_brachiate
 FIRE = {**HEIST_JUMP, "fire": 1, "spray_range": 1.1}                       #: how far short of the fire it stops [m]
 HAT_ON_THORAX = (0.0, 0.0, 0.24)                                         #: the helmet's frame on the thorax (the head's top at ~0.3)
 NOZZLE = {"length": 0.2, "r": 0.018, "grip": 0.06}                         #: the nozzle: along its z, the grip this far up from its root
-HOLSTER_ON_THORAX = (np.array([-0.1, -0.13, 0.02]), 0.0)                 #: the nozzle's root in the holster (the pack's right side), upright
+HOLSTER_ON_THORAX = (np.array([-0.06, -0.14, -0.14]), 0.0)               #: the nozzle's root in the holster (low on the pack's right side), upright
 
 
 def hat_prop(p):
@@ -1229,7 +1229,7 @@ def scenario_fire(kin, q_stand, p):
         return (c, gs.hand_frame_on(gs.bar(c, axis=dd, n=(0.0, 0.0, 1.0), r=0.015, wrist_dir=gs._unit(-dd + np.array([0.0, 0.3, -0.5]))), "L"))
     kin.set(q_stand)
     hand0 = {sd: gs._hand_pose(kin, q_stand, base, pt, sd) for sd in ("L", "R")}
-    up_over = p_th + R_th @ np.array([0.05, -0.15, 0.32])                  # over the right shoulder
+    up_over = p_th + R_th @ np.array([0.12, -0.2, 0.05])                   # out to the side, clear of the hip
     T = lambda tg: [(bd, l, Rb.T @ (np.asarray(wp) - base)) for bd, l, wp in tg]
     fixed = lambda u: (base[0], base[1], base[2], pt)
 
@@ -1277,6 +1277,15 @@ def scenario_fire(kin, q_stand, p):
         return q_
     spray = gt.contact_motion(kin, "spray_the_fire", 5.5, t_spray, fixed, q_init=q1, extra=x_spray, reg=gs.IK_REG, iters=gs.IK_ITERS,
                               q_ref=q_stand, source="gibbon_scenarios.fire: both hands on the hose, the jet swept across the flames")
+    q_a, _ = kin.ik(T(t_spray(0.15)), q_init=q1, q_ref=q_stand, joints=limbs, reg=gs.IK_REG, iters=gs.IK_ITERS)   # the aim: the nozzle along the jet
+    Rha, pha = gs._hand_pose(kin, q_a, base, pt, "R")
+    dd0, (ga0, _) = aim(0.0)
+    zc = gs._unit(dd0)
+    xc = gs._unit(np.cross([0.0, 0.0, 1.0], zc)) if abs(zc[2]) < 0.95 else np.array([1.0, 0.0, 0.0])
+    R_na = np.stack([xc, np.cross(zc, xc), zc], axis=1)
+    root_a = ga0 - zc * NOZZLE["grip"]
+    draw.params["nozzle_T_aim"] = ((Rha.T @ R_na).tolist(), (Rha.T @ (root_a - pha)).tolist())
+    draw.params["aim_t"] = 0.0
     spray.params = {**(spray.params or {}), "spray_u": (0.15, 0.95), "out_u": 0.8, "fire": fire_c.tolist()}
     q2 = gt._last(kin, spray, q1)
 

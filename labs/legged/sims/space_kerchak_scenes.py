@@ -114,7 +114,7 @@ class ScenePlayer:
             pick, smash, drop = by_name["pick_up_the_hammer"], by_name["smash_the_glass"], by_name["drop_the_hammer"]
             R_h2m, p_h2m = (np.array(v) for v in pick[1].params["hammer_T"])
             rest_p, rest_R = (np.array(v) for v in pick[1].params.get("hammer_rest", ([0.0, 0.0, 0.0], np.eye(3).tolist())))
-            self._hammer = {"adr": m.jnt_qposadr[free[0]], "R_h2m": R_h2m, "p_h2m": p_h2m, "rest": (rest_p, rest_R),
+            self._hammer = {"adr": m.jnt_qposadr[free[0]], "R_h2m": R_h2m, "p_h2m": p_h2m, "R_aim": R_aim, "p_aim": p_aim, "t_aim": sp[0] + u0 * sp[1].period, "rest": (rest_p, rest_R),
                             "t_grasp": pick[0] + pick[1].period, "t_release": drop[0] + drop[1].params["release_u"] * drop[1].period,
                             "released": None, "hand": m.body(pick[1].params.get("hand", "R_hand")).id}
             if "hammer_carry" in pick[1].params:                           # carried in the pack on a body until the grasp
@@ -129,10 +129,11 @@ class ScenePlayer:
             by_name = {seg[1].name: (s0, seg[1]) for s0, seg in zip(self.starts, self.segments) if seg[0] == "motion"}
             dr, sp = by_name["draw_the_hose"], by_name["spray_the_fire"]
             R_h2m, p_h2m = (np.array(v) for v in dr[1].params["nozzle_T"])
+            R_aim, p_aim = (np.array(v) for v in dr[1].params["nozzle_T_aim"])
             bn, Rc, pc = dr[1].params["nozzle_carry"]
             u0, u1 = sp[1].params["spray_u"]
             self._fire = {"hat": fj("fire_hat"), "nozzle": fj("nozzle"), "thorax": m.body("thorax").id, "hand": m.body(dr[1].params["hand"]).id,
-                          "R_h2m": R_h2m, "p_h2m": p_h2m, "carry": (m.body(bn).id, np.array(Rc), np.array(pc)),
+                          "R_h2m": R_h2m, "p_h2m": p_h2m, "R_aim": R_aim, "p_aim": p_aim, "t_aim": sp[0] + u0 * sp[1].period, "carry": (m.body(bn).id, np.array(Rc), np.array(pc)),
                           "t_grasp": dr[0] + dr[1].params["grasp_u"] * dr[1].period, "t_on": sp[0] + u0 * sp[1].period,
                           "t_off": sp[0] + u1 * sp[1].period, "t_out": sp[0] + sp[1].params["out_u"] * sp[1].period,
                           "fire": np.array(sp[1].params["fire"]), "rng": np.random.default_rng(3)}
@@ -274,7 +275,10 @@ class ScenePlayer:
             put(F["nozzle"], d.xpos[bid] + Rb @ pc, Rb @ Rc)
         else:
             Rh, ph = d.xmat[F["hand"]].reshape(3, 3), d.xpos[F["hand"]]
-            put(F["nozzle"], ph + Rh @ F["p_h2m"], Rh @ F["R_h2m"])
+            import kerchak_scenarios as gs
+            f = mk.smooth(min(1.0, max(0.0, (t - F["t_grasp"]) / max(F["t_aim"] - F["t_grasp"], 0.1))))   # settled in the hand along the way
+            Rr, pr = gs._slerp(F["R_h2m"], F["R_aim"], f), (1 - f) * F["p_h2m"] + f * F["p_aim"]
+            put(F["nozzle"], ph + Rh @ pr, Rh @ Rr)
 
     def extras(self, t):
         """Everything the renderer adds this frame: the pane's shards, the hose, the water jet, the flames."""
@@ -338,8 +342,8 @@ class ScenePlayer:
         if F["t_on"] <= t:
             tip = pn + Rn[:, 2] * gb.NOZZLE["length"]
             v0 = 7.0
-            for k in range(70):
-                age = k * 0.012
+            for k in range(150):
+                age = k * 0.006
                 if t - age < F["t_on"] or t - age > F["t_off"]:
                     continue
                 q = tip + Rn[:, 2] * v0 * age + np.array([0.0, 0.0, -0.5 * 9.81 * age * age])
@@ -352,12 +356,15 @@ class ScenePlayer:
                 tris.append([q + [-sz, 0, 0], q + [sz, 0, 0], q + [0, 0, sz * 1.5]]); cols.append((0.55, 0.75, 0.95))
                 tris.append([q + [0, -sz, 0], q + [0, sz, 0], q + [0, 0, -sz * 1.2]]); cols.append((0.75, 0.88, 1.0))
             if t > F["t_out"] - 0.5 and t < F["t_off"] + 1.5:              # steam off the doused fire
-                for k in range(14):
+                for k in range(24):                                        # puffs: soft octagons rising and growing
                     g_ = np.random.default_rng(k)
-                    rise = ((t * 0.5 + k / 14.0) % 1.0)
-                    c = fc + np.array([g_.normal(0, 0.12), g_.normal(0, 0.15), 0.1 + 0.6 * rise])
-                    sz = 0.04 + 0.08 * rise
-                    tris.append([c + [-sz, 0, -sz], c + [sz, 0, -sz], c + [0, 0, sz]]); cols.append((0.85, 0.85, 0.85))
+                    rise = ((t * 0.5 + k / 24.0) % 1.0)
+                    c = fc + np.array([g_.normal(0, 0.1), g_.normal(0, 0.12), 0.08 + 0.7 * rise])
+                    sz = 0.03 + 0.07 * rise
+                    for i in range(8):
+                        a0, a1 = 2 * math.pi * i / 8, 2 * math.pi * (i + 1) / 8
+                        tris.append([c, c + sz * np.array([math.cos(a0) * 0.7, math.cos(a0) * 0.7, math.sin(a0)]), c + sz * np.array([math.cos(a1) * 0.7, math.cos(a1) * 0.7, math.sin(a1)])])
+                        cols.append((0.9, 0.9, 0.92))
         return np.array(tris, dtype=float), np.array(cols, dtype=float)
 
     def _hammer_pose(self, t):
