@@ -1,9 +1,9 @@
 status: 'a drawing and a first mass: no lattice, balance, stability or catch sortie yet'
 wing:
-  glove_m2: 0.131
-  outer_panels_m2: 0.133
-  total_m2: 0.265
-  span_spread_m: 1.37
+  glove_m2: 0.111
+  outer_panels_m2: 0.15
+  total_m2: 0.261
+  span_spread_m: 1.36
   span_dash_m: 1.07
 propellers:
   diameter_mm: 279.4
@@ -36,8 +36,8 @@ mass:
     g: 110
     source: HAND (+-40)
   - item: glove in place of ASTOR-T's wing carriage and inner panels
-    g: 119
-    source: geometry 0.131 m2 x 1.9 kg/m2 less the carriage (HAND)
+    g: 80
+    source: geometry 0.111 m2 x 1.9 kg/m2 less the carriage (HAND)
   - item: 'wing fixed at 12 deg: the two sweep servos and linkages off'
     g: -60
     source: astor_v.budget's item
@@ -45,11 +45,11 @@ mass:
     g: 30
     source: HAND (+-15)
   - item: growth margin 10 % of the additions
-    g: 157
+    g: 153
     source: HAND
-  total_kg: 5.32
+  total_kg: 5.28
 stall_spread_m_s:
-  value: 19.2
+  value: 19.3
   note: CL max 0.87 carried over from ASTOR-V's CFD (HAND for this wing)
-wing_loading_kg_m2: 20.1
+wing_loading_kg_m2: 20.3
 current_A_at_8_kW: 190

@@ -31,13 +31,22 @@ import astor_t as T
 import astor_v as V
 from vegeta.dedalus import Parameter
 
+# ONE PLAIN TAPERED WING (2026-11-23): the inner wing and the outer panels were two shapes (300 -> 225 mm at 25 deg of
+# sweep, then 180 -> 110 mm at 12 deg: a step in chord and a kink in both edges). They are now two pieces of ONE
+# trapezoid: WING root chord at the centre plane, tip chord at the half span, a straight leading edge at 12 deg, the
+# same section and plane throughout. The area (0.2605 m2) and the span (1.382 m) are the old wing's. The joint at
+# ``pivot_y`` is only where the outer piece plugs in.
+WING = dict(root_chord=260.0, tip_chord=117.0, half_span=691.0, le_x=255.0, joint_y=235.0)
+_chord = lambda y: WING["root_chord"] + (WING["tip_chord"] - WING["root_chord"]) * y / WING["half_span"]
+_tan = math.tan(math.radians(V.SPREAD_DEG))
+_PLAN = {"pivot_y": WING["joint_y"], "panel_root_chord": _chord(WING["joint_y"]), "panel_tip_chord": WING["tip_chord"], "panel_span": WING["half_span"] - WING["joint_y"],
+         "panel_pivot_chord": 0.5, "pivot_x": WING["le_x"] + WING["joint_y"] * _tan + 0.5 * _chord(WING["joint_y"]), "panel_stack": 0.0, "wing_plane_z": 20.0}
 _DEFAULTS = {**T._DEFAULTS, "propulsion": "pusher",                    # no motor on the nose (the tail motor is not drawn: _motors is this file's)
-             "pivot_y": 235.0, "pivot_x": 365.0, "pivot_slides": False, "panel_span": 460.0, "panel_root_chord": 180.0, "panel_tip_chord": 110.0,
-             "panel_stack": 4.0, "wing_plane_z": 8.0, "prop_diameter": 279.4, "talon_hinge_x": 380.0, "parachute_x": 265.0}
+             "pivot_slides": False, **_PLAN, "prop_diameter": 279.4, "talon_hinge_x": 380.0, "parachute_x": 265.0}
 _NEW = [
-    Parameter("glove_span", 500.0, "mm", min=200.0, description="the fixed inner wing, tip to tip"),
-    Parameter("glove_root_chord", 300.0, "mm", min=120.0), Parameter("glove_taper", 0.75, "", min=0.3, max=1.0),
-    Parameter("glove_sweep_deg", 25.0, "deg", min=0.0, max=50.0), Parameter("glove_le_x", 240.0, "mm", min=100.0, description="its leading edge at the centre plane"),
+    Parameter("glove_span", 2 * WING["joint_y"], "mm", min=200.0, description="the fixed inner wing, tip to tip"),
+    Parameter("glove_root_chord", WING["root_chord"], "mm", min=120.0), Parameter("glove_taper", _chord(WING["joint_y"]) / WING["root_chord"], "", min=0.3, max=1.0),
+    Parameter("glove_sweep_deg", V.SPREAD_DEG, "deg", min=0.0, max=50.0), Parameter("glove_le_x", WING["le_x"], "mm", min=100.0, description="its leading edge at the centre plane"),
     Parameter("glove_z", 20.0, "mm", description="its plane above the fuselage axis"),
     Parameter("motor_y", 190.0, "mm", min=80.0, description="each wing motor from the centre plane"),
     Parameter("nacelle_d", 54.0, "mm", min=30.0), Parameter("nacelle_len", 130.0, "mm", min=60.0),
@@ -57,10 +66,13 @@ VESSEL = dict(skin_mm=1.5, gap_mm=1.5, wall_mm=1.5, aft_of_the_tail_end_mm=25.0,
 class AstorTwin(T.AstorT):
     """ASTOR-TWIN: a fixed inner wing with two motors, swinging outer panels, ASTOR-T's body, tail and legs."""
 
-    parameters = [dataclasses.replace(q, default=_DEFAULTS.get(q.name, q.default)) for q in T.AstorT.parameters] + _NEW
+    parameters = [dataclasses.replace(q, default=_DEFAULTS.get(q.name, q.default), min=0.0 if q.name == "panel_stack" else q.min)
+                  for q in T.AstorT.parameters] + _NEW
 
     def _glove(self, p):
-        return self._surface(p["glove_le_x"], p["glove_root_chord"], p["glove_taper"], p["glove_span"], p["glove_sweep_deg"], 0.10, "y", z0=p["glove_z"])
+        """The inner piece of the wing: the outer pieces' section and plane, so the two meet without a step."""
+        half = V._panel(p["glove_root_chord"], p["glove_root_chord"] * p["glove_taper"], p["glove_span"] / 2, p["glove_sweep_deg"], p["panel_thickness"], p["panel_camber"])
+        return half.union(half.mirror("XZ")).translate((p["glove_le_x"], 0, p["glove_z"]))
 
     def _wing_part(self, p, part):
         out = super()._wing_part(p, part)
@@ -70,11 +82,11 @@ class AstorTwin(T.AstorT):
         return super()._wing(p).union(self._glove(p))
 
     def _shoulder(self, p):
-        """The two pivot pins at the glove's tips (no carriage: the pivots are fixed)."""
+        """The two joiner tubes the outer wing pieces plug onto (inside the wing: nothing shows outside)."""
         out = None
         for s in (1, -1):
-            pin = cq.Workplane("XY").circle(9.0).extrude(26.0).translate((p["pivot_x"], s * p["pivot_y"], p["wing_plane_z"] - 8.0))
-            out = pin if out is None else out.union(pin)
+            tube = cq.Workplane("XZ").circle(5.0).extrude(160.0).translate((p["pivot_x"], s * p["pivot_y"] + 80.0, p["wing_plane_z"]))
+            out = tube if out is None else out.union(tube)
         return out
 
     def _nacelle_x(self, p):

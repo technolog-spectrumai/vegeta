@@ -7,14 +7,14 @@
   taken_off:
     legs_and_line_g: 242
     dropped_nets_and_tube_g: 286
-  mass_kg: 5.78
-  stall_spread_m_s: 20.0
-  wing_loading_kg_m2: 21.8
-  thrust_over_weight_at_32_m_s: 1.99
+  mass_kg: 5.74
+  stall_spread_m_s: 20.1
+  wing_loading_kg_m2: 22.0
+  thrust_over_weight_at_32_m_s: 2.01
   geometry:
     muzzle_x_mm: 70
     muzzle_below_axis_mm: 169
-    muzzle_ahead_of_the_propellers_mm: 175
+    muzzle_ahead_of_the_propellers_mm: 142
     breech_x_mm: 447.0
     tilt_travel_deg:
     - 0.0
@@ -23,9 +23,9 @@
     legs: 'left off: the breech''s jet is where they fold'
     depression_deg: 15.0
   pass:
-    speed_m_s: 26.0
+    speed_m_s: 26.2
     bandit_m_s: 9.0
-    closing_m_s: 17.0
+    closing_m_s: 17.2
     fire_between_m:
     - 4.0
     - 10.0
@@ -61,10 +61,10 @@
     balance:
       vessel_g_with_margin: 312
       centre_moves_aft_mm: 274
-      aircraft_cg_moves_aft_mm: 12.5
+      aircraft_cg_moves_aft_mm: 12.6
       pack_moves_forward_to_hold_it_mm: 56
       air_used_per_shot_g: 19.1
-      cg_shift_per_shot_mm: -0.56
+      cg_shift_per_shot_mm: -0.57
     drag:
       removed_cm2: 8.0
       source: gavilan_flight.NET_CDA's 0.0008 m2 for the vessel under the belly (HAND)
@@ -90,14 +90,14 @@
   taken_off:
     legs_and_line_g: 242
     dropped_nets_and_tube_g: 286
-  mass_kg: 6.72
-  stall_spread_m_s: 21.6
-  wing_loading_kg_m2: 25.4
-  thrust_over_weight_at_32_m_s: 1.71
+  mass_kg: 6.68
+  stall_spread_m_s: 21.7
+  wing_loading_kg_m2: 25.6
+  thrust_over_weight_at_32_m_s: 1.72
   geometry:
     muzzle_x_mm: 70
     muzzle_below_axis_mm: 169
-    muzzle_ahead_of_the_propellers_mm: 175
+    muzzle_ahead_of_the_propellers_mm: 142
     breech_x_mm: 447.0
     tilt_travel_deg:
     - 0.0
@@ -106,9 +106,9 @@
     legs: 'left off: the breech''s jet is where they fold'
     depression_deg: 15.0
   pass:
-    speed_m_s: 28.1
+    speed_m_s: 28.2
     bandit_m_s: 9.0
-    closing_m_s: 19.1
+    closing_m_s: 19.2
     fire_between_m:
     - 4.0
     - 10.0
@@ -124,7 +124,7 @@
     tested_at_m_s: 40.0
   recoil_if_the_rear_jet_were_blocked:
     impulse_Ns: 6.0
-    speed_change_m_s: 0.89
+    speed_change_m_s: 0.9
     note: 'small on this mass: a plain closed breech would do'
   air_vessel:
     where: inside the fuselage, shaped to the tail cone (the dropped nets' tube was there); its front end above the breech
@@ -144,10 +144,10 @@
     balance:
       vessel_g_with_margin: 312
       centre_moves_aft_mm: 274
-      aircraft_cg_moves_aft_mm: 12.5
+      aircraft_cg_moves_aft_mm: 12.6
       pack_moves_forward_to_hold_it_mm: 56
       air_used_per_shot_g: 19.1
-      cg_shift_per_shot_mm: -0.56
+      cg_shift_per_shot_mm: -0.57
     drag:
       removed_cm2: 8.0
       source: gavilan_flight.NET_CDA's 0.0008 m2 for the vessel under the belly (HAND)
