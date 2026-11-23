@@ -548,6 +548,7 @@ def main(argv=None):
     ap.add_argument("--machine", choices=("kerchak", "humanoid", "gibbon", "spider"), default="kerchak", help="the frame: Kerchak on four, the upright humanoid, the gibbon or the spider monkey")
     ap.add_argument("--size", default="1280x720")
     ap.add_argument("--chunk", default="", help="i/n: draw only every n-th frame from i into --frames-dir (parallel renders); no movie is assembled")
+    ap.add_argument("--from-s", type=float, default=0.0, help="draw only the frames from this time on (re-drawing part of a --frames-dir)")
     ap.add_argument("--frames-dir", default="", help="where the frames go (default: a temporary directory)")
     a = ap.parse_args(argv)
     if os.environ.get("VEGETA_DEBUG") == "1" and argv is None and len(sys.argv) == 1:
@@ -586,6 +587,8 @@ def main(argv=None):
                 wx = P["wall_x"] if "wall_x" in P else P["x"] + P["wall_gap"]
                 f = mk.smooth(min(1.0, max(0.0, (c[0] - (wx - 0.2)) / 0.6)))
                 az = azim + 110.0 * f
+                if a.scene == "fire" and f > 0.2:                          # the camera beyond the room: the walls and the roof between it and the monkey drawn away
+                    renderer.hidden |= {"back_wall", "side_left", "side_right", "roof"}
             if a.scene == "course":                                        # inside the house: the walls behind it drawn away, the camera keeps its side
                 P = gs.params_for("course", params)
                 if c[0] > P["window_x"] - 0.1:
@@ -617,7 +620,7 @@ def main(argv=None):
         else:
             g.step_physics(t, dt, a.assist)
         what = g.phase(t)[6]
-        if not a.no_movie and k % cn == ci:
+        if not a.no_movie and k % cn == ci and t >= a.from_s - 1e-9:
             draw(os.path.join(tmp, f"f{k:04d}.png"), t, what)
         for ts in (stills if ci == 0 else []):
             if abs(t - ts) < dt / 2:
