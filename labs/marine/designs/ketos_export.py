@@ -191,12 +191,15 @@ def scampi():
     for sx in (1, -1):
         for sy in (1, -1):
             body = body.union(d._skid(p, sx, sy))
-    arms = d.build(p | {"part": "work_arm"}).union(d.build(p | {"part": "hold_arm"})).union(d._tool_skid(p))
-    arms = arms.union(d._tool_holder(p)).union(d._gripper(p, "hold", 0.0)).union(d._gripper(p, "work", 0.0))
-    parts = [("scampi_body", body, "#f1c40f"), ("scampi_thrusters", th, "#222222"), ("scampi_arms", arms, "#c0392b"),
-             ("scampi_cutter_parked", d._cutter(p), "#8e44ad")]
+    # the drawn vehicle: body, thrusters, the tool skid with the holder. The arms and the tools are not in it: a
+    # viewer animates them (the folded arms are exported apart, ``scampi_arms``, for a static picture)
+    skid = d._tool_skid(p).union(d._tool_holder(p))
+    arms = d.build(p | {"part": "work_arm"}).union(d.build(p | {"part": "hold_arm"}))
+    arms = arms.union(d._gripper(p, "hold", 0.0)).union(d._gripper(p, "work", 0.0))
+    parts = [("scampi_body", body, "#f1c40f"), ("scampi_thrusters", th, "#222222"), ("scampi_skid", skid, "#27ae60")]
     models = [_mesh(sh, n, _hex(c), 5.0) for n, sh, c in parts]
-    dz = _centre_z(models)
+    extra = [_mesh(arms, "scampi_arms", _hex("#c0392b"), 5.0), _mesh(d._cutter(p), "scampi_cutter_parked", _hex("#8e44ad"), 5.0)]
+    dz = _centre_z(models + extra)
     # the end effectors as tools in their own frame (metres; origin the wrist flange, +x out of the wrist, jaws
     # opening along y, z up): the viewer puts them on its arms and moves the jaws and the blade
     tools = [("scampi_gripper_l", d._gripper_local(0.0, jaws=False), "#1b4f72"),
@@ -207,7 +210,7 @@ def scampi():
     tool_models = [_mesh(sh, n, _hex(c), 1.0) for n, sh, c in tools]
     ef = Scampi.effectors(p)
     g, c = EFFECTORS["gripper"], EFFECTORS["cutter"]
-    hold_at, _ = d.holder_pose(p)
+    slots = {s: d.holder_pose(p, s)[0] for s in d.HOLDER_SLOTS}
     grip = lambda arm, model: {"arm": arm, "model": model, "jaw_model": "scampi_gripper_jaw", "jaw_at_x_m": 0.134,
                                "jaw_offset_m": 0.007, "tip_m": 0.17, "jaw_opening_m": [0.0, g["jaw_opening_mm"][1] / 1000],
                                "grip_force_N": g["grip_force_N"], "close_s": g["close_s"],
@@ -222,7 +225,11 @@ def scampi():
                    "cut_force_kN": c["cut_force_kN"], "cycle_s": c["cycle_s"],
                    "max_cut_mm": {m: round(v, 1) for m, v in ef["max_cut_mm"].items()},
                    "mass_kg": c["mass_kg"], "displacement_L": c["volume_L"], "power_W": c["power_W"], "price_eur": c["price_eur"],
-                   "holder_at_m": [round(hold_at.x / 1000, 3), round(hold_at.y / 1000, 3), round(hold_at.z / 1000 - dz, 3)],
+                   "holder": {"slots": {s: [round(v.x / 1000, 3), round(v.y / 1000, 3), round(v.z / 1000 - dz, 3)] for s, v in slots.items()},
+                              "tool_dir": [-1.0, 0.0, 0.0], "starts_in": "cutter",
+                              "what": "flange forward, the tool aft in the cradle; the arm's coupler latches the flange"},
+                   "shoulder_m": {"work": [round((p["length"] / 2 - 40) / 1000, 3), round(-0.22 * p["width"] / 1000, 3)],
+                                  "hold": [round((p["length"] / 2 - 40) / 1000, 3), round(0.22 * p["width"] / 1000, 3)]},
                    "swap_s": 60.0},
     }
     thrusters = [{"at": [round(x / 1000, 3), round(y / 1000, 3), round(z / 1000 - dz, 3)], "axis": [round(c, 4) for c in a],
@@ -241,7 +248,7 @@ def scampi():
                    "effectors": effectors,
                    # + the effectors (grippers, cutter, holder: EUR 28 k) x the same 1.6 build and margin
                    "tether": None, "resident": True, "price_eur": 190000 + round(1.6 * ef["price_eur"])}
-    return card, models + tool_models
+    return card, models + extra + tool_models
 
 
 def echensis():

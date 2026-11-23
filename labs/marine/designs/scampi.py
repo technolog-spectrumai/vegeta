@@ -398,19 +398,36 @@ class Scampi(Design):
         at, ang = self.gripper_pose(p, which)
         return self._place(self._gripper_local(opening), at, ang)
 
-    def holder_pose(self, p):
-        """The quick-change holder on the tool skid's front, under the work arm: the cutter parked along +x."""
-        return cq.Vector(p["tool_bay_length"] / 2 + 10, -0.22 * p["width"], 60.0 + p["tool_bay_height"] / 2), 0.0
+    HOLDER_SLOTS = {"cutter": 0.0, "spare": 80.0}   # mm across from the work arm's plane (its wrist's yaw reaches +-80)
+
+    def holder_pose(self, p, slot="cutter"):
+        """A slot of the quick-change holder under the nose, in front of the tool skid, in the work arm's plane:
+        the parked tool's flange (where the arm's coupler latches) faces forward, the tool lies aft (-x) in the
+        cradle. ``cutter``: the cutter's slot; ``spare``: where the work arm parks its gripper (or a fitted tool)."""
+        return cq.Vector(p["tool_bay_length"] / 2 + 260, -0.22 * p["width"] + self.HOLDER_SLOTS[slot],
+                         60.0 + p["tool_bay_height"] / 2), 180.0
 
     def _tool_holder(self, p):
+        """The cradle: a base rail on the skid's front (44-60 mm over the soles) with two saddles per slot."""
         at, _ = self.holder_pose(p)
-        cradle = cq.Workplane("XY").box(60, 100, 60).translate((at.x + 20, at.y, at.z - 10))
-        cradle = cradle.cut(cq.Workplane("YZ").circle(39).extrude(80).translate((at.x - 20, at.y, at.z)))
-        return cradle.union(cq.Workplane("XY").box(30, 100, 60).translate((at.x - 5, at.y, at.z - 10)))
+        yc = at.y + 40
+        rail = cq.Workplane("XY").box(270, 200, 16).translate((at.x - 125, yc, 52))
+        for x in (at.x - 60, at.x - 200):
+            rail = rail.union(cq.Workplane("XY").box(24, 200, 14).translate((x, yc, 61)))
+        return rail
+
+    def _parked(self, wp, at):
+        """A tool built along +x from its flange, parked aft (turned about z) with its flange at ``at``."""
+        return wp.rotate((0, 0, 0), (0, 0, 1), 180).translate((at.x, at.y, at.z))
 
     def _cutter(self, p, on_arm=False):
-        at, ang = self.gripper_pose(p, "work") if on_arm else self.holder_pose(p)
-        return self._place(self._cutter_local(), at, ang)
+        if on_arm:
+            at, ang = self.gripper_pose(p, "work")
+            return self._place(self._cutter_local(), at, ang)
+        return self._parked(self._cutter_local(), self.holder_pose(p, "cutter")[0])
+
+    def _gripper_parked(self, p):
+        return self._parked(self._gripper_local(EFFECTORS["gripper"]["jaw_opening_mm"][1]), self.holder_pose(p, "spare")[0])
 
     def _skid(self, p, sx=1, sy=1):
         L, W, h = p["length"], p["width"], p["skid_height"]
@@ -471,6 +488,8 @@ class Scampi(Design):
         body = body.union(self._cutter(p, p["cutter_on_arm"]))
         if not p["cutter_on_arm"]:
             body = body.union(self._gripper(p, "work", p["jaw_opening"]))
+        else:
+            body = body.union(self._gripper_parked(p))
         if p["show_tool_skid"]:
             body = body.union(self._tool_skid(p))
         return body

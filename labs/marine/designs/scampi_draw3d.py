@@ -32,8 +32,7 @@ def parts(p):
            "hold_arm": d._arm(p, p["hold_reach"], 0.22 * p["width"], d.HOLD_LINKS, p["arm_pose"]),
            "tool_skid": d._tool_skid(p), "tool_holder": d._tool_holder(p),
            "gripper_l": d._gripper(p, "hold", p["jaw_opening"]), "cutter": d._cutter(p, p["cutter_on_arm"])}
-    if not p["cutter_on_arm"]:
-        out["gripper_r"] = d._gripper(p, "work", p["jaw_opening"])
+    out["gripper_r"] = d._gripper_parked(p) if p["cutter_on_arm"] else d._gripper(p, "work", p["jaw_opening"])
     th = None
     for at, ax in d.thruster_layout(p):
         t = d._thruster(p, at, ax)

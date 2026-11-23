@@ -21,19 +21,11 @@
    ]
   },
   {
-   "model": "scampi_arms",
+   "model": "scampi_skid",
    "color": [
-    0.753,
-    0.224,
-    0.169
-   ]
-  },
-  {
-   "model": "scampi_cutter_parked",
-   "color": [
-    0.557,
-    0.267,
-    0.678
+    0.153,
+    0.682,
+    0.376
    ]
   }
  ],
@@ -260,11 +252,37 @@
    "displacement_L": 1.0,
    "power_W": 150.0,
    "price_eur": 12000.0,
-   "holder_at_m": [
-    0.31,
-    -0.176,
-    -0.185
-   ],
+   "holder": {
+    "slots": {
+     "cutter": [
+      0.56,
+      -0.176,
+      -0.185
+     ],
+     "spare": [
+      0.56,
+      -0.096,
+      -0.185
+     ]
+    },
+    "tool_dir": [
+     -1.0,
+     0.0,
+     0.0
+    ],
+    "starts_in": "cutter",
+    "what": "flange forward, the tool aft in the cradle; the arm's coupler latches the flange"
+   },
+   "shoulder_m": {
+    "work": [
+     0.71,
+     -0.176
+    ],
+    "hold": [
+     0.71,
+     0.176
+    ]
+   },
    "swap_s": 60.0
   }
  },

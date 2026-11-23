@@ -41,9 +41,9 @@ All the bought-part numbers are class values (`PARTS`, `THRUSTER`), not quotes.
 
 ## End effectors: two grippers and a cutter (`EFFECTORS`, `ARMS`, `Scampi.effectors`)
 
-Layout: **one parallel two-jaw gripper fixed on each arm** (the hold arm's grips the docking bar, a structure or the
+Layout: **one parallel two-jaw gripper on each arm** (the hold arm's grips the docking bar, a structure or the
 line being cut; the work arm's handles lids, handles and ropes), and **one guillotine cutter** in a quick-change holder
-on the tool skid's front, under the work arm. To cut, the work arm parks its gripper in the holder and takes the cutter
+under the nose in front of the tool skid (two slots in the work arm's plane, flange forward, the tool lying aft). To cut, the work arm parks its gripper in the spare slot and latches the cutter from its slot
 (~60 s swap): the hold arm keeps the line taut while the cutter goes in, so a cut always has a gripper holding and the
 cutter cutting, without a third arm. Class values, assumed:
 
