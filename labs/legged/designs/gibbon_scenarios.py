@@ -1308,7 +1308,7 @@ def scenario_fire(kin, q_stand, p):
 # opens its valve with the left hand and sprays the fire out
 
 FIRE = {"wall_x": 6.0, "wall_t": 0.25, "floor": 3.0, "sill_h": 0.85, "win_w": 0.9, "win_h": 1.3, "roof": 6.4, "house_w": 12.0,
-        "room_d": 5.0, "table_x": 2.4, "table_y": 0.25, "quad_x0": -6.0, "quad_x": 2.6, "quad_y": 1.25, "spray_range": 1.1, "climb_s": 3.0,
+        "room_d": 5.0, "table_x": 2.4, "table_y": 0.25, "quad_x0": -6.0, "quad_x": 2.6, "quad_y": 1.25, "spray_range": 1.1, "climb_s": 3.6,
         "lean_deg": 75.0, "carry_v": 0.25}
 RED = (0.72, 0.1, 0.08, 1.0)
 CHUCK = {"seat": (-0.05, 0.0, 0.92), "hook": (0.35, -0.78, 1.0), "reel": (-0.6, 0.0, 1.05), "bars": (0.5, 0.28, 1.05), "pegs": (0.12, 0.44, 0.46),
@@ -2035,7 +2035,8 @@ def scenario_fire(kin, q_stand, p):
     base_c = lambda k: rung(k) + np.array([-0.3 + 0.35 / math.tan(th_f), 0.0, 0.35])
     n_rungs = sum(1 for k in range(40) if rung(k)[2] < sill - 0.15)
     n = n_rungs - 1
-    segs = gs._climb_sequence(kin, q_stand, hold, base_c, n, stop_x=stop_x, trials=gs.VERTICAL_TRIALS, duration=p["climb_s"])
+    tail = tail_for_ladder(kin, rung, n_f, a_f) if tail_tip(kin) is not None else None   # the tail round the rung below the feet: a fifth hold
+    segs = gs._climb_sequence(kin, q_stand, hold, base_c, n, stop_x=stop_x, trials=gs.VERTICAL_TRIALS, duration=p["climb_s"], tail=tail)
     segs = segs[1:]                                                        # no walk up: it is stood there from the haul
     q = q_stand.copy()
     for sg_ in segs:
@@ -2121,6 +2122,67 @@ def scenario_fire(kin, q_stand, p):
     radio = _radio_call(kin, q_stand, q_low, base_f, pt)
     return (out + segs + [("motion", over), ("motion", hop_in), ("gait", walk_in / v, 0.0, F)]
             + [("motion", m_) for m_ in fight] + [("motion", radio)])
+
+
+def tail_wrap_rung(kin, c, n_out, up, wind=1.0, off=0.0):
+    """The tail's last ``TAIL_WRAP`` links' ends wrapped round a rung at ``c``: the first on its front (``n_out``, the
+    climbing side; the tail comes forward between the legs), on over its top (``up``), round behind and under - each a
+    little along the rung (a helix, the tail not lying on itself). ``wind`` 0..1: how far round it is wound (0: the
+    links hanging down its front); ``off``: out from the rung [m]. [(body, local, world)]."""
+    n, seg = _tail_links(kin)
+    r0 = LADDER["rung_r"] + 0.03
+    R = r0 + off
+    step = seg / r0
+    out = []
+    for j in range(TAIL_WRAP + 1):
+        th = j * step * wind
+        drop = 0.07 * j * (1.0 - wind)
+        pt = c + R * (math.cos(th) * n_out + math.sin(th) * up) + np.array([0.0, 0.015 * j * wind, -drop])
+        out.append((kin.body(f"tail_{n - 1 - TAIL_WRAP + j}"), np.array([-seg, 0.0, 0.0]), pt))
+    return out
+
+
+def tail_for_ladder(kin, rung_c, n_out, up):
+    """``tail(q_from, k)`` for ``_climb_sequence`` on the ladder: the prehensile tail passed forward between the legs
+    and wrapped round the rung below the feet's - a fifth hold. In cycle ``k`` it holds rung ``k - 1`` while the hands
+    and feet move up, then unwinds, slides up the ladder's front and wraps round rung ``k`` (the feet have left it);
+    on the first cycle it comes from where it is carried onto rung 0."""
+    def make(q_from, k):
+        if k is None:                                                      # the mount: the tail carried
+            return lambda u, base: []
+        zb = rung_c(k)
+        if k == 0:
+            first = tail_wrap_rung(kin, zb, n_out, up, wind=0.0, off=0.03)
+            kin.set(q_from)
+            rest = [kin.world(b_, l_) for b_, l_, _ in first]
+
+            def fn(u, base):
+                x, y, z, pt = base
+                R, pc = gm.base_rot(pt), np.array([x, y, z])
+                if u < 0.76:
+                    return []
+                if u < 0.88:                                               # the tail's end brought forward to the rung's front
+                    f = mk.smooth((u - 0.76) / 0.12)
+                    return [(b_, l_, (1 - f) * (R @ rs + pc) + f * w) for (b_, l_, w), rs in zip(first, rest)]
+                g = mk.smooth((u - 0.88) / 0.12)
+                return tail_wrap_rung(kin, zb, n_out, up, wind=g, off=0.03 * (1 - g))
+            return fn
+        za = rung_c(k - 1)
+
+        def fn(u, base):
+            if u <= 0.76:                                                  # held until both feet are on their new rung
+                return tail_wrap_rung(kin, za, n_out, up)
+            f = (u - 0.76) / 0.24
+            if f < 0.3:                                                    # unwinds
+                g = mk.smooth(f / 0.3)
+                return tail_wrap_rung(kin, za, n_out, up, wind=1.0 - g, off=0.03 * g)
+            if f < 0.6:                                                    # up the ladder's front, clear of the rungs
+                g = mk.smooth((f - 0.3) / 0.3)
+                return tail_wrap_rung(kin, (1 - g) * za + g * zb, n_out, up, wind=0.0, off=0.03 + 0.04 * math.sin(math.pi * g))
+            g = mk.smooth((f - 0.6) / 0.4)                                 # wraps round the next
+            return tail_wrap_rung(kin, zb, n_out, up, wind=g, off=0.03 * (1 - g))
+        return fn
+    return make
 
 
 def _radio_call(kin, q_stand, q0, base, pt):
