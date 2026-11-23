@@ -53,9 +53,9 @@ sm, rot_z, rot_y, mat2quat, slerp, _s = tm.sm, tm.rot_z, tm.rot_y, tm.mat2quat, 
 
 # ---- the set [m]
 R_DUCT = 0.13                                                             # the duct's inner radius (260 mm)
-R_BEND = 0.30                                                             # its bends' centre-line radius
+R_BEND = 0.45                                                             # its bends' radius (the body joints: ~21°)
 X_MOUTH, X_END, Z_IN = 1.70, -0.42, R_DUCT                                # the intake, the indoor vent, the axis
-AISLE_Y = -0.6                                                            # the datacenter's cold aisle (its centre)
+AISLE_Y = -1.2                                                            # the datacenter's cold aisle (its centre)
 WALL = (-0.25, 0.0)                                                       # the building's wall (x from, to)
 RACK_W, RACK_D, RACK_H = 0.6, 1.0, 2.0                                    # a server rack
 RACK_X0 = -0.9                                                            # the first rack's near edge
@@ -63,8 +63,8 @@ N_RACKS = 4                                                               # rack
 FRONT_L, FRONT_R = AISLE_Y - 0.45, AISLE_Y + 0.45                         # the two rows' front faces
 TARGET_X = RACK_X0 - 2.5 * RACK_W                                         # the target rack's centre (the third)
 PORT_Z = 0.09                                                             # its bottom server's front USB port
-CABLES = ((-0.78, 0.028, (0.1, 0.25, 0.75)), (-1.12, 0.022, (0.9, 0.75, 0.15)), (-1.42, 0.034, (0.08, 0.08, 0.09)),
-          (-1.66, 0.02, (0.85, 0.2, 0.2)))                                # bundles across the aisle: x, radius, colour
+CABLES = ((-0.78, 0.022, (0.1, 0.25, 0.75)), (-1.12, 0.018, (0.9, 0.75, 0.15)), (-1.42, 0.024, (0.08, 0.08, 0.09)),
+          (-1.66, 0.016, (0.85, 0.2, 0.2)))                                # bundles across the aisle: x, radius, colour
 SPEEDUP = 5.0                                                             # the retreat, time-lapsed
 COLORS = {"shell": (0.36, 0.38, 0.41), "head": (0.27, 0.29, 0.32), "leg": (0.14, 0.15, 0.16),
           "pad": (0.06, 0.06, 0.06)}
@@ -158,9 +158,9 @@ def duct_centreline():
     """The duct's centre line, on the ground all the way: from the intake towards the building, a bend to run along
     its wall, a bend back in, and through the wall to the datacenter's floor-level return vent."""
     a = np.linspace(0, math.pi / 2, 24)
-    x1, y0 = 0.75, 0.0
+    x1, y0 = 1.05, 0.0                                                    # a straight run between the two bends
     c1 = np.array([x1, y0 - R_BEND, R_DUCT])
-    c2 = np.array([x1 - 2 * R_BEND, AISLE_Y + R_BEND, R_DUCT])
+    c2 = np.array([x1 - 2 * R_BEND, AISLE_Y + R_BEND, R_DUCT])           # (the run along the wall: c1 → c2)
     pts = [np.array([X_MOUTH, y0, R_DUCT]), np.array([x1, y0, R_DUCT])]
     pts += [c1 + R_BEND * np.array([-math.sin(t), math.cos(t), 0.0]) for t in a[1:]]
     pts += [c2 + R_BEND * np.array([math.cos(t), -math.sin(t), 0.0]) for t in a]
@@ -204,7 +204,7 @@ def robot_path():
 ARM = {"base_x": 0.055, "base_y": 0.033, "base_z": -0.042, "upper": 0.115, "fore": 0.110, "finger": 0.022}
 #: (``myropod_robot.ARM_V2``: the robot's jointed arms; the video poses their joints)
 ARM_TUCK = {"g": np.array([0.11, 0.035, -0.045]), "c": np.array([0.105, -0.035, -0.045])}
-HOLE_R = R_DUCT + 0.004                                                   # the hole the cutter cuts: the full bore
+HOLE_R = R_DUCT - 0.004                                                   # the hole the cutter cuts: just inside the bore
 USB_HALF = 0.0225                                                         # the pendrive body's half length
 USB_PLUG = USB_HALF + 0.012                                               # its centre to the plug's tip
 GRIP_IN = 0.010                                                           # the gripper's tip to its grip point
@@ -326,7 +326,7 @@ def build(width, height, cache: Path):
     G(world, type="box", size="0.27 3.05 0.07", pos=f"{x1 - 0.03} 0 2.43", material="stone")   # the coping
     G(world, type="box", size="0.012 3.05 0.008", pos=f"{x1 + 0.228} 0 2.352", material="stone")
     G(world, type="box", size="1.9 2.95 0.003", pos="-2.13 0 0.0", material="tiles")         # raised-floor tiles
-    for k, y in enumerate((-1.4, 1.25)):                                  # two windows, one lit (as before)
+    for k, y in enumerate((-2.3, 1.25)):                                  # two windows, one lit (as before)
         G(world, type="box", size="0.004 0.26 0.36", pos=f"{x1 + 0.003} {y} 1.35",
           material="window" if k else "dark")
         G(world, type="box", size="0.04 0.3 0.02", pos=f"{x1 + 0.04} {y} 0.91", material="stone")
@@ -411,7 +411,7 @@ def build(width, height, cache: Path):
             G(world, type="capsule", size=f"{r_c * 0.55:.4f}",
               fromto=_s([x_c + 0.012 * (j - 1), FRONT_L - 0.05, r_c * 0.55, x_c + 0.012 * (j - 1) + 0.02 * (j - 1),
                          FRONT_R + 0.05, r_c * 0.55]), rgba=f"{col[0]} {col[1]} {col[2]} 1")
-    for yy in (FRONT_L + 0.06, FRONT_R - 0.06):                           # bundles along the racks' feet
+    for yy in (FRONT_R - 0.06,):                                          # a bundle along the right row's feet
         G(world, type="capsule", size="0.018", fromto=f"{RACK_X0} {yy} 0.018 {RACK_X0 - N_RACKS * RACK_W} {yy} 0.018",
           rgba="0.15 0.2 0.6 1")
     for row, front in ((-1, FRONT_L), (1, FRONT_R)):                      # the overhead trays and strip lights
@@ -608,7 +608,7 @@ def simulate(model, info, render=None):
             for x_c, r_c, _ in CABLES:
                 if abs(x - x_c) <= r_c * 0.55 + 0.02:
                     z = max(z, 2 * r_c * 0.55)
-        if RACK_X0 - N_RACKS * RACK_W <= x <= RACK_X0 and min(abs(y - FRONT_L - 0.06), abs(y - FRONT_R + 0.06)) < 0.02:
+        if RACK_X0 - N_RACKS * RACK_W <= x <= RACK_X0 and abs(y - FRONT_R + 0.06) < 0.02:
             z = max(z, 0.036)
         return z
 
@@ -653,6 +653,34 @@ def simulate(model, info, render=None):
         """The planted foot still reachable by its leg (within the joints' ranges; 2 mm tolerance)."""
         return leg_angles(lg, foot_w)[1] < 0.002
 
+    def in_duct_foot(lg, foot):
+        """The foot's in the duct: its segment is, or the foot itself is inside the pipe's bore."""
+        z = pipe_zone(foot)
+        return duct_hit(seg_pose(lg[0])[0]) is not None or (z is not None and z[2] < R_DUCT)
+
+    def reachable_wall(lg, target):
+        """In the duct: the point on the pipe's wall nearest ``target`` that leg lg reaches within its joints' ranges
+        (``target`` itself if it does) — a foot is never left where its leg can't follow, pushed through the wall."""
+        if leg_angles(lg, target)[1] < 0.002:
+            return target
+        z = pipe_zone(target) or duct_hit(seg_pose(lg[0])[0])
+        if z is None:
+            return target
+        c, t, _ = z
+        u = np.cross(t, [0.0, 0.0, 1.0])
+        u = u / np.linalg.norm(u) if np.linalg.norm(u) > 1e-6 else np.cross(t, [1.0, 0.0, 0.0])
+        u /= np.linalg.norm(u)
+        v = np.cross(t, u)
+        best = None
+        for off in np.linspace(-0.05, 0.05, 11):
+            for a_ in np.radians(np.arange(0.0, 360.0, 6.0)):
+                q_ = c + t * off + (R_DUCT - r_pad) * (math.cos(a_) * u + math.sin(a_) * v)
+                if leg_angles(lg, q_)[1] < 0.002:
+                    dd = float(np.linalg.norm(q_ - target))
+                    if best is None or dd < best[0]:
+                        best = (dd, q_)
+        return target if best is None else best[1]
+
     def leg_ik(lg, foot_w):
         for adr, val in zip(jadr[lg], leg_angles(lg, foot_w)[0]):
             data.qpos[adr] = val
@@ -692,12 +720,28 @@ def simulate(model, info, render=None):
                 return np.array([math.cos(a) * math.cos(y_), math.cos(a) * math.sin(y_), math.sin(a)])
             el = b + L1 * dirn(th_c)
             tip = el + L2 * dirn(ph_c)
-            err = float(np.linalg.norm(tip - np.asarray(tip_h)))
+            in_duct = duct_hit(hp) is not None                            # in the duct: elbow down (no ceiling
+            err = float(np.linalg.norm(tip - np.asarray(tip_h))) + (0.005 if (sgn > 0) == in_duct else 0.0)  # room)
+            zz = pipe_zone(hp + hR @ el)                                  # an elbow out through the pipe's wall: no
+            if zz is not None and zz[2] > R_DUCT - 0.008 and duct_hit(hp) is not None:
+                err += 1.0
             if best is None or err < best[0]:
                 best = (err, q, el, tip, dirn(ph_c))
         _, q, el, tip, dv = best
         W = lambda x: hp + hR @ x
         return q, W(b), W(el), W(tip), hR @ dv
+
+    def arm_fk(arm, q):
+        """The pincer tip and forearm direction (world) of arm joint angles q (shoulder yaw, pitch, elbow)."""
+        hp, hR = data.xpos[head].copy(), data.xmat[head].reshape(3, 3)
+        sy = 1.0 if arm == "g" else -1.0
+        b = np.array([ARM["base_x"], sy * ARM["base_y"], ARM["base_z"]])
+
+        def dirn(a):
+            return np.array([math.cos(a) * math.cos(q[0]), math.cos(a) * math.sin(q[0]), math.sin(a)])
+        el = b + ARM["upper"] * dirn(-q[1])
+        dv = dirn(-q[1] - q[2])
+        return hp + hR @ (el + ARM["fore"] * dv), hR @ dv
 
     def props():
         t = st["t"]
@@ -706,6 +750,11 @@ def simulate(model, info, render=None):
         for arm in ("g", "c"):
             tip_h, opening = st["arm"][arm]
             q, _, _, tip, d = arm_pose(arm, tip_h)
+            w = float(np.clip(np.linalg.norm(np.asarray(tip_h) - ARM_TUCK[arm]) / 0.04, 0.0, 1.0))
+            if w < 1.0:                                                   # near the fold: the robot's folded pose
+                qt = [mr.ARM_TUCK["shoulder_yaw"], mr.ARM_TUCK["shoulder_pitch"], mr.ARM_TUCK["elbow"]]
+                q = [(1 - w) * a_ + w * b_ for a_, b_ in zip(qt, q)]
+                tip, d = arm_fk(arm, q)
             jaw = float(np.clip(0.04 + 0.55 * opening, *mr.ARM_RANGES["jaw"]))
             for adr, val in zip(arm_q[arm], [*q, jaw, jaw]):                # the robot's arm joints
                 data.qpos[adr] = val
@@ -754,7 +803,8 @@ def simulate(model, info, render=None):
 
     def freegait(phase, caption, s_to, v=0.12, t_swing=0.16, reach=0.085, look=0.06, speed=1.0, settle=0.3):
         sgn = 1.0 if s_to >= st["sc"] else -1.0
-        step = (speed / render.fps) if render is not None else 1.0 / 30
+        step = (1.0 / render.fps) if render is not None else 1.0 / 30        # the gait's own step: real time;
+        every, n_tick = max(1, round(speed)), 0                         # a time-lapse renders every n-th
         swing, last, blocked, quiet = {}, None, 0.0, 0.0
         for _ in range(int(400 / step)):
             sc = st["sc"]
@@ -775,7 +825,10 @@ def simulate(model, info, render=None):
                         want_a = {lg: foothold(lg, poses[lg[0]]) for lg in legs}
                     last = k
                     for lg in groups[k]:
-                        swing[lg] = (st["t"], F[lg].copy(), want_a[lg][0].copy(), N[lg].copy(), want_a[lg][1].copy())
+                        b_ = want_a[lg][0].copy()
+                        if in_duct_foot(lg, b_):                                 # a step it can land
+                            b_ = reachable_wall(lg, b_)
+                        swing[lg] = (st["t"], F[lg].copy(), b_, N[lg].copy(), want_a[lg][1].copy())
                     quiet = 0.0
                 elif abs(s_to - sc) < 1e-6:
                     quiet += step
@@ -798,6 +851,9 @@ def simulate(model, info, render=None):
                 else:
                     blocked += step
             place_body(st["sc"])
+            for lg in legs:                                               # a planted foot out of reach: re-planted
+                if lg not in swing and in_duct_foot(lg, F[lg]) and not in_reach(lg, F[lg]):
+                    F[lg] = reachable_wall(lg, F[lg])
             feet = {}
             for lg in legs:
                 if lg in swing:
@@ -816,7 +872,9 @@ def simulate(model, info, render=None):
                 leg_ik(lg, feet[lg])
             st["feet_target"], st["swing"], st["planted"] = feet, swing, F
             st["t"] += step
-            tick(phase, caption, speed)
+            n_tick += 1  # noqa: SIM113
+            if n_tick % every == 0:
+                tick(phase, caption, speed)
         return st
 
     def hold(phase, caption, dur, fn=None, speed=1.0):
@@ -857,7 +915,7 @@ def simulate(model, info, render=None):
 
     # ---- the cut: the cutter snips each slat where the hole's edge crosses it, left end then right end; a slat cut
     # at both ends drops onto the desk. Top to bottom, so a falling slat clears the ones below
-    gxc = X_END + 0.004                                                   # the blades straddle the slat from behind
+    gxc = X_END - 0.001                                                   # at the grille, just past the pipe's end
     cap = "THE CUTTER SNIPS THE GRILLE'S SLATS, ONE BY ONE"
     for n, k in enumerate(sorted(slats, reverse=True)):
         _, w, z0 = slats[k]
