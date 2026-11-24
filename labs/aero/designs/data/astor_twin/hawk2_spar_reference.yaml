@@ -1,0 +1,29 @@
+load_factor: 8.0
+ultimate_factor: 1.5
+mass_kg: 8.04
+half_wing_lift_ultimate_N: 473
+spar:
+  inner_od: 25.0
+  inner_id: 22.0
+  outer_od: 16.0
+  outer_id: 13.0
+  plug_mm: 80.0
+  material: roll-wrapped carbon tube
+  allowable_MPa: 400.0
+  mass_both_wings_g: 262
+  fits:
+    wing_depth_at_the_root_mm: 44
+    at_the_pivot_mm: 34
+    at_the_tip_mm: 20
+root:
+  moment_Nm: 166.0
+  stress_MPa: 270
+  margin: 0.48
+pivot:
+  moment_Nm: 50.6
+  stress_MPa: 223
+  margin: 0.79
+tip_deflection_ultimate_mm: 87
+tip_deflection_share_of_the_half_span: 0.089
+first_bending_with_the_motor_Hz: 89.1
+note: no relief from the wing's own weight (conservative); the lift over the body is put in at the root station

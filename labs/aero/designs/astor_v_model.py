@@ -88,7 +88,7 @@ def lattice(sweep_r, sweep_l=None, tail_fan=1.0, alpha=0.0, tail_inc=0.0, p=None
     ts = 85.0 - 50.0 * tail_fan
     for side in (1, -1):
         P = _outline(p["tail_panel_root"], p["tail_panel_tip"], p["tail_panel_span"], 35.0, 0.25, ts - 35.0, p["tail_pivot_x"], p["tail_pivot_y"], side)
-        q = _strips(P, side, 6.0, n=5)
+        q = _strips(P, side, p.get("tail_z", 6.0), n=5)
         vd = math.radians(p.get("vtail_dihedral_deg", 0.0))
         if vd > 0:                                                    # a V-tail (ASTOR-TWIN): each strip swung up about the root, true geometry
             for qq in q:

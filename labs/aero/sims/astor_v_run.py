@@ -54,16 +54,17 @@ import astor_run as R                                                # noqa: E40
 R.GLOBS_ACTIVE = ["arigo*.py", "astor*.py", "raptors*.py"]
 DATA = DESIGNS / "data" / "astor_v_cfd_screening.yaml"
 STATES = ((12.0, 25.0), (35.0, 40.0), (60.0, 60.0))                  # (sweep deg, test speed m/s)
-STATES_BY_DESIGN = {"twin": ((12.0, 30.0), (12.0, 45.0), (12.0, 60.0))}   # ASTOR-TWIN: the wing fixed at 12 deg, three speeds (it stalls at 23 m/s with its three nets)
+STATES_BY_DESIGN = {"twin": ((12.0, 24.0), (12.0, 45.0), (12.0, 60.0))}   # ASTOR-TWIN: the wing fixed at 12 deg, three speeds (it stalls at 23 m/s with its three nets)
 
 
-CFD_STATES = {"twin": ["twin_agile", "twin_agile_flap"]}             # what "--design twin" means to the CFD phase (astor_v_cfd.DESIGNS)
-FLAP_STATES = {"twin": ((12.0, 24.0),)}                              # stability with every flap down: (sweep, speed)
+CFD_STATES = {"twin": ["twin2", "twin2_flap", "twin2_reflex", "twin2_crow", "twin2_swept"]}       # HAWK 2 (astor_v_cfd.HAWK2_STATES)             # what "--design twin" means to the CFD phase (astor_v_cfd.DESIGNS)
+FLAP_STATES = {"twin": ((12.0, 19.0),)}                              # stability with every flap down: (sweep, speed)
 
 
 def states(design):
     return STATES_BY_DESIGN.get(design, STATES)
-NAMES = {"v": "ASTOR-V", "boost": "ASTOR-BOOST", "t": "ASTOR-T", "twin": "ASTOR-TWIN", "twin_stowed": "TWIN tube 0", "twin_agile": "TWIN 12%/4%", "twin_agile_flap": "TWIN flaps 20", "twin_c2": "TWIN 12%/2%", "twin_c2_flap": "TWIN 2% flaps", "twin_agile_reflex": "TWIN reflex -6"}
+NAMES = {"v": "ASTOR-V", "boost": "ASTOR-BOOST", "t": "ASTOR-T", "twin": "ASTOR-TWIN", "twin_stowed": "TWIN tube 0", "twin_agile": "TWIN 12%/4%", "twin_agile_flap": "TWIN flaps 20", "twin_c2": "TWIN 12%/2%", "twin_c2_flap": "TWIN 2% flaps", "twin_agile_reflex": "TWIN reflex -6", "twin2": "HAWK2 clean", "twin2_flap": "HAWK2 flaps 20", "twin2_reflex": "HAWK2 reflex",
+         "twin2_crow": "HAWK2 crow", "twin2_swept": "HAWK2 swept 60"}
 
 
 def _inputs() -> str:
@@ -83,8 +84,8 @@ def _meta(phase, a):
 def phase_cfd(a) -> int:
     import astor_v_cfd as cf
     quality = "fine" if a.full_cfd else a.quality
-    a.designs = [x for d in a.designs for x in CFD_STATES.get(d, [d])]       # a design's CFD is its states' (ASTOR-TWIN: flaps up, flaps down)
-    todo_all = [(d, s, al) for d in a.designs for s in cf.sweeps(d) for al in cf.alphas(d, s)]
+    designs = [x for d in a.designs for x in CFD_STATES.get(d, [d])]         # a design's CFD is its states' (HAWK 2: five); a.designs is left alone: the later phases fly the design
+    todo_all = [(d, s, al) for d in designs for s in cf.sweeps(d) for al in cf.alphas(d, s)]
     if a.dry_run:
         for d, s, al in todo_all:
             print(f"cfd  {NAMES[d]:12s} sweep {s:4.0f} deg  V {cf.CASES[s][0]:4.0f} m/s  alpha {al:+5.1f}")
@@ -98,14 +99,14 @@ def phase_cfd(a) -> int:
     # Solved rows of this run's configurations are taken back from it, unless --fresh.
     import yaml
     kept = (yaml.safe_load(DATA.read_text()) or {}).get("configurations", {}) if DATA.exists() and not a.fresh and not a.full_cfd else {}
-    for d in a.designs:
+    for d in designs:
         for s in cf.sweeps(d):
             old = [r for r in kept.get(cf.key(d, s), {}).get("rows", []) if r.get("status") == "solved"]
             have = {float(r["alpha_deg"]) for r in doc["configurations"].get(cf.key(d, s), {}).get("rows", []) if r.get("status") == "solved"}
             if old:
                 c = doc["configurations"].setdefault(cf.key(d, s), {**{k: v for k, v in kept[cf.key(d, s)].items() if k != "rows"}, "rows": []})
                 c["rows"] = c["rows"] + [r for r in old if float(r["alpha_deg"]) not in have]
-    for d in a.designs:
+    for d in designs:
         for s in cf.sweeps(d):
             c = doc["configurations"].setdefault(cf.key(d, s), {"design": d, "sweep_deg": s, "speed_m_s": cf.CASES[s][0], "reference": cf.reference(d, s), "rows": []})
             c["rows"] = [r for r in c["rows"] if r.get("status") == "solved"]

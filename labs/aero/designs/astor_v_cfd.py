@@ -34,8 +34,17 @@ THIN = {"panel_thickness": 0.08, "panel_camber": 0.02, "inboard_flap_chord": 0.0
 C2 = {"panel_thickness": 0.12, "panel_camber": 0.02, "inboard_flap_chord": 0.30}
 SECTION_STATES = {"twin_c2": C2, "twin_c2_flap": {**C2, "flaperon_deg": 20.0, "inboard_flap_deg": 20.0},
                   "twin_agile_reflex": {**AGILE, "flaperon_deg": -6.0, "inboard_flap_deg": -6.0}}
-ONLY_ALPHA = {"twin_agile_reflex": (-4.0, -2.0, 0.0, 2.0)}
-DESIGNS = ("v", "boost", "t", "twin", "twin_stowed", "twin_agile", "twin_agile_flap", "twin_c2", "twin_c2_flap", "twin_agile_reflex")      # twin_stowed: ASTOR-TWIN with the launch tube level along the belly (0 deg), for its drag
+ONLY_ALPHA = {"twin_agile_reflex": (-4.0, -2.0, 0.0, 2.0), "twin2_reflex": (-4.0, -2.0, 0.0, 2.0), "twin2_crow": (0.0, 4.0, 8.0), "twin2_swept": (-2.0, 0.0, 2.0)}
+# HAWK 2 (2026-11-24: the wing doubled, astor_twin's default geometry; the tube level). Every older "twin..." name
+# above is HAWK1 (astor_twin.variant1) and stays what it was.
+#   twin2         flaps up, to 60 deg (the high angles are for the nose-high flare)
+#   twin2_flap    every flap down 20 deg, to 60 deg
+#   twin2_reflex  every flap 6 deg up, at the fast-flight angles
+#   twin2_crow    the speed brake: flaperons 20 deg up, inboard flaps 40 deg down
+#   twin2_swept   the outer pieces swung back to 60 deg, flaps reflexed: does sweeping the big wing help the dash?
+HAWK2_STATES = {"twin2": {}, "twin2_flap": {"flaperon_deg": 20.0, "inboard_flap_deg": 20.0}, "twin2_reflex": {"flaperon_deg": -6.0, "inboard_flap_deg": -6.0},
+                "twin2_crow": {"flaperon_deg": -20.0, "inboard_flap_deg": 40.0}, "twin2_swept": {"flaperon_deg": -6.0, "inboard_flap_deg": -6.0, "wing_sweep_deg": 60.0}}
+DESIGNS = ("v", "boost", "t", "twin", "twin_stowed", "twin_agile", "twin_agile_flap", "twin_c2", "twin_c2_flap", "twin_agile_reflex") + tuple(HAWK2_STATES)      # twin_stowed: ASTOR-TWIN with the launch tube level along the belly (0 deg), for its drag
 
 
 def sweeps(design) -> tuple:
@@ -43,7 +52,8 @@ def sweeps(design) -> tuple:
     return (12.0,) if design.startswith("twin") else tuple(CASES)
 
 
-EXTRA_ALPHA = {"twin_agile": (-2.0, 2.0), "twin_agile_flap": (-2.0, 2.0), "twin_c2": (-2.0, 2.0), "twin_c2_flap": (-2.0, 2.0)}   # the cambered wing flies fast at about -2 deg; the flaps' lift peaks near 4
+EXTRA_ALPHA = {"twin_agile": (-2.0, 2.0), "twin_agile_flap": (-2.0, 2.0), "twin_c2": (-2.0, 2.0), "twin_c2_flap": (-2.0, 2.0),
+               "twin2": (-2.0, 2.0, 20.0, 30.0, 45.0, 60.0), "twin2_flap": (-2.0, 2.0, 20.0, 30.0, 45.0, 60.0)}   # the cambered wing flies fast at about -2 deg; the flaps' lift peaks near 4
 
 
 def alphas(design, sweep) -> tuple:
@@ -66,17 +76,20 @@ def _cls(design):
         return T.AstorT, T.variant
     if design == "twin":                                              # the OLD thin wing, the launcher at its rest tilt (15 deg down)
         import astor_twin as W
-        return W.AstorTwin, (lambda **over: W.variant(**{"net_launchers": 1, "talon_deploy": -1.0, "net_count": 0, **THIN, **over}))
+        return W.AstorTwin, (lambda **over: W.variant1(**{"net_launchers": 1, "talon_deploy": -1.0, "net_count": 0, **THIN, **over}))
+    if design in HAWK2_STATES:                                        # the given state last: export_stl passes the case's own sweep (12 deg)
+        import astor_twin as W
+        return W.AstorTwin, (lambda **over: W.variant(**{"net_launchers": 1, "talon_deploy": -1.0, "net_count": 0, "launcher_depression_deg": 0.0, **over, **HAWK2_STATES[design]}))
     if design in SECTION_STATES:
         import astor_twin as W
-        return W.AstorTwin, (lambda **over: W.variant(**{"net_launchers": 1, "talon_deploy": -1.0, "net_count": 0, "launcher_depression_deg": 0.0, **SECTION_STATES[design], **over}))
+        return W.AstorTwin, (lambda **over: W.variant1(**{"net_launchers": 1, "talon_deploy": -1.0, "net_count": 0, "launcher_depression_deg": 0.0, **SECTION_STATES[design], **over}))
     if design in ("twin_agile", "twin_agile_flap"):                   # the thicker, more cambered section; and with every flap down 20 deg
         import astor_twin as W
         extra = AGILE_FLAPS if design.endswith("flap") else AGILE
-        return W.AstorTwin, (lambda **over: W.variant(**{"net_launchers": 1, "talon_deploy": -1.0, "net_count": 0, "launcher_depression_deg": 0.0, **extra, **over}))
+        return W.AstorTwin, (lambda **over: W.variant1(**{"net_launchers": 1, "talon_deploy": -1.0, "net_count": 0, "launcher_depression_deg": 0.0, **extra, **over}))
     if design == "twin_stowed":
         import astor_twin as W
-        return W.AstorTwin, (lambda **over: W.variant(**{"net_launchers": 1, "talon_deploy": -1.0, "net_count": 0, "launcher_depression_deg": 0.0, **THIN, **over}))
+        return W.AstorTwin, (lambda **over: W.variant1(**{"net_launchers": 1, "talon_deploy": -1.0, "net_count": 0, "launcher_depression_deg": 0.0, **THIN, **over}))
     return V.AstorV, V.variant
 
 

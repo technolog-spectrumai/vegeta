@@ -35,7 +35,9 @@ import astor_model as AM
 import astor_v as V
 import astor_v_model as VM
 
-FIXED_WING = ("twin",)                      # designs whose wing does not swing in flight: held at SWEEPS[0] (ASTOR-TWIN since 2026-11-22)
+TWINS = ("twin", "twin1")                   # ASTOR-TWIN: HAWK 2 (the doubled wing, the design) and HAWK1 (the aircraft before it)
+VP_STATIC, VP_BLEND_M_S = 1.62, 60.0        # HAND: HAWK 2's variable-pitch propellers (see coefficients)
+FIXED_WING = TWINS                      # designs whose wing does not swing in flight: held at SWEEPS[0] (ASTOR-TWIN since 2026-11-22)
 SWEEPS = (12.0, 35.0, 60.0)                 # the states the model is built at; between them it is interpolated
 BODY_CDA = 0.0030                           # HAND: fuselage, shoulder carriage, fin, tail fan, camera blister [m2] (+-0.0008)
 WING_CD = 0.010                             # HAND: the wing panels' zero-lift drag on their exposed area
@@ -56,12 +58,11 @@ def design(name: str):
         import astor_t as T
         p = T.resolve()
         return p, T.budget(p)
-    if name == "twin":                                                       # ASTOR-TWIN with one net launcher and three nets (astor_twin)
+    if name in TWINS:                                                        # ASTOR-TWIN with one net launcher and three nets (astor_twin)
         import astor_twin as W
-        p = W.resolve(W.variant(net_launchers=1, talon_deploy=-1.0, net_count=0))
-        o = W.one_launcher(3)
+        p = W.resolve((W.variant1 if name == "twin1" else W.variant)(net_launchers=1, talon_deploy=-1.0, net_count=0))
         g, wh, amps, src = A.PACKS["12S 5000 mAh LiPo"]
-        tot = o["aircraft_kg"] * 1000.0
+        tot = (W.MASS1_KG if name == "twin1" else W.one_launcher(3)["aircraft_kg"]) * 1000.0
         return p, {"total_g": tot, "empty_g": tot - g, "without_nets_g": tot - 3 * 150.0, "pack": {"name": "12S 5000 mAh LiPo", "g": g, "Wh_nominal": wh, "max_A": amps, "source": src},
                    "items": [{"item": "ASTOR-TWIN with one launcher and three nets, less the pack", "g": round(tot - g), "source": "astor_twin.one_launcher(3): HAND"}]}
     p = V.resolve()
@@ -86,14 +87,14 @@ def coefficients(name: str = "twin", sweep: float = 12.0) -> dict:
     b = max(wn["span_mm"], 520.0) / 1000.0
     S = wn["exposed_area_m2"] + 0.07 * 0.21                                  # the exposed panels + the carry-over across the body
     glove = 0.0
-    if name == "twin":                                                       # + the fixed inner wing
+    if name in TWINS:                                                        # + the fixed inner wing
         glove = 0.5 * p["glove_root_chord"] * (1 + p["glove_taper"]) * p["glove_span"] / 1e6
         S = wn["exposed_area_m2"] + glove
     # the equivalent conventional wing for the hand formulas (lateral, damping, inertias)
     lam = p["panel_tip_chord"] / p["panel_root_chord"]
     fin = p                                                                  # ASTOR-T: its two splayed fins as one upright fin of the same side force
     import astor_t as T
-    if name == "t" or (name == "twin" and p.get("fin_splay_deg", 0.0) > 0 and not p.get("single_fin")):
+    if name == "t" or (name in TWINS and p.get("fin_splay_deg", 0.0) > 0 and not p.get("single_fin")):
         fin = T.fin_equivalent(p)
     tail_y = TAIL_Y_M
     if p.get("single_fin"):                                                  # ASTOR-TWIN: one upright fin, two all-moving tail halves
@@ -107,7 +108,7 @@ def coefficients(name: str = "twin", sweep: float = 12.0) -> dict:
                   wing_x=V.pivot_x(p, sweep) - 0.3 * cr, cg_x=V.CG_MM, propulsion="tractor_lowcam",
                   fuselage_length=p["fuselage_length"], tail_cone=p["tail_cone"], tail_end_diameter=p["tail_end_diameter"],
                   htail_span=2 * (p["tail_pivot_y"] + p["tail_panel_span"] * math.cos(math.radians(35.0))), htail_root_chord=p["tail_panel_root"],
-                  htail_taper=p["tail_panel_tip"] / p["tail_panel_root"], htail_sweep_deg=35.0, htail_z=6.0,
+                  htail_taper=p["tail_panel_tip"] / p["tail_panel_root"], htail_sweep_deg=35.0, htail_z=p.get("tail_z", 6.0),
                   fin_height=fin["fin_height"], fin_root_chord=fin["fin_root_chord"], fin_taper=fin.get("fin_taper", p["fin_taper"]), fin_sweep_deg=fin.get("fin_sweep_deg", p["fin_sweep_deg"]),
                   lowcam_drop=p["lowcam_drop"])
     q["tail_le_x"] = p["tail_pivot_x"] - 0.25 * p["tail_panel_root"]
@@ -116,12 +117,20 @@ def coefficients(name: str = "twin", sweep: float = 12.0) -> dict:
     power = A.MOTOR_W
     if name == "t":
         power = T.MOTOR_W
-    if name == "twin":                                                       # two 4 kW motors, an 11-inch propeller each
-        sel = {**AM.propulsor(m / 2, 4000.0, (11.0,)), "units": 2}
+    if name in TWINS:                                                        # two 4 kW motors, an 11-inch propeller each
+        sel = {**AM.propulsor(m / 2 if name == "twin1" else 3.46, 4000.0, (11.0,)), "units": 2}
     else:
         sel = AM.propulsor(m, power, (T.PROP_IN,)) if name == "t" else AM.propulsor(m, power)
     sel = {**sel, "layout": "tractor"}
     thrust = ap.thrust_table(sel, V=[float(v) for v in range(0, 92, 2)])
+    if name == "twin":
+        # HAWK 2's 13-inch VARIABLE-PITCH propellers are not in the propulsion library. HAND: the library's 11x13 (pitched
+        # for the dash) is kept for the fast end, where a propeller of either size turns the same power into thrust; at
+        # rest, fine pitch and the larger disc give momentum theory's thrust at a figure of merit of 0.6 (213 N for the
+        # two against the 11x13's 125 N: x VP_STATIC), falling in a straight line to the library's by VP_BLEND_M_S
+        f = [VP_STATIC + (1.0 - VP_STATIC) * min(1.0, v / VP_BLEND_M_S) for v in thrust["table_V"]]
+        thrust = {**thrust, "table_T": [t * k for t, k in zip(thrust["table_T"], f)], "T0_N": thrust["T0_N"] * VP_STATIC,
+                  "propulsor": {**thrust["propulsor"], "entry": "13 in variable pitch (HAND) on " + str(thrust["propulsor"].get("entry"))}}
     cda = BODY_CDA + WING_CD * wn["exposed_area_m2"] + (POD_CDA if name == "boost" else 0.0)
     C = am.build(q, pe, L, f"astor_{name}", "tractor_lowcam", mass=m, CD0=cda / (L["S_mm2"] / 1e6), thrust=thrust)
     Se, ce = C["S"], C["c"]
@@ -136,7 +145,7 @@ def coefficients(name: str = "twin", sweep: float = 12.0) -> dict:
     x_np = -(r4["Cm"] - r0["Cm"]) / (r4["CL"] - r0["CL"]) * VM.C_REF
     CLde = (re["CL"] - r0["CL"]) * kL
     CL_MAX = CL_MAX_SPREAD * max(math.cos(math.radians(sweep - 12.0)), 0.55) * VM.S_REF / Se * (wn["exposed_area_m2"] / 0.198)
-    C.update({"aircraft": {"boost": "ASTOR-BOOST", "t": "ASTOR-T", "twin": "ASTOR-TWIN"}.get(name, "ASTOR-V"), "design": name, "sweep_deg": sweep, "tail_fan": tf,
+    C.update({"aircraft": {"boost": "ASTOR-BOOST", "t": "ASTOR-T", "twin": "ASTOR-TWIN", "twin1": "ASTOR-TWIN (HAWK1)"}.get(name, "ASTOR-V"), "design": name, "sweep_deg": sweep, "tail_fan": tf,
               "CL0": r0["CL"] * kL, "CLa": CLa, "Cm0": cm(r0) * kM, "Cma": Cma, "CLde": CLde, "Cmde": (cm(re) - cm(r0)) * kM,
               "x_cg_m": V.CG_MM / 1000.0, "x_np_m": x_np, "static_margin": -Cma / CLa * 1.0,
               "CL_MAX": CL_MAX, "alpha_stall": (CL_MAX - r0["CL"] * kL) / CLa,
@@ -160,10 +169,26 @@ def coefficients(name: str = "twin", sweep: float = 12.0) -> dict:
         C["boost"] = {"table_V": [float(v) for v in range(0, 92, 2)], "table_T": [float(max(u.full(float(v))[0], 0.0)) for v in range(0, 92, 2)],
                       "power_W": FAN_W, "z_below_axis_m": 0.080}
     cfg = cfd_config(CFD_KEY.get(name, name), sweep)
+    if cfg and sum(r.get("status") == "solved" for r in cfg.get("rows", [])) < 4:
+        cfg = None
+    C["lattice_lon"] = {k: float(C[k]) for k in ("CL0", "CLa", "Cm0", "Cma")}
+    if name == "twin":
+        cm = p["glove_root_chord"] * (1 + (p["glove_taper"] - 1) * p["motor_y"] / (p["glove_span"] / 2)) / 1000.0
+        s_in = 2 * 0.5 * p["glove_root_chord"] * (1 + p["glove_taper"]) * (p["glove_span"] / 2 - p["fuselage_diameter"] / 2) / 1e6
+        s_out = (p["panel_root_chord"] + p["panel_tip_chord"]) * p["panel_span"] * (p["panel_aileron_to"] - p["panel_aileron_from"]) / 1e6
+        C["powered"] = {"prop_m": p["prop_diameter"] / 1000.0, "disc_m2": math.pi * (p["prop_diameter"] / 2000.0) ** 2, "chord_m": cm, "motor_y_m": p["motor_y"] / 1000.0,
+                        # the crow brake: flaperons 20 deg up and inboard flaps 40 deg down as split flaps, 0.9 (cf/c)^1.38 (Sf/S) sin^2(d) each
+                        "brake_cda_m2": 0.9 * p["panel_aileron_chord"] ** 1.38 * (s_out * math.sin(math.radians(20.0)) ** 2 + s_in * math.sin(math.radians(40.0)) ** 2),
+                        "source": "HAND: momentum theory x 0.8 for the slipstream; a textbook flap drag for the brake"}
+    if not cfg and name == "twin":                                           # HAWK 2 before its own CFD: HAWK1's, by area
+        C1 = coefficients("twin1", sweep)
+        if "cfd" in C1 and str(C1.get("aero_source", "")).startswith("cfd"):
+            carry_hawk1(C, C1)
+            return C
     C_pre = {k: (v.copy() if isinstance(v, (dict, np.ndarray)) else v) for k, v in C.items()}
-    if not cfg and name in ("t", "twin"):
+    if not cfg and name in ("t",) + TWINS:
         from_astor_v(C, p, sweep, glove)
-        if name == "twin":
+        if name in TWINS:
             import gavilan_flight as GF
             C["CD0"] += (2 * 0.0008 + GF.NET_CDA - 0.0008) / C["S"]           # HAND: two nacelles; the net launcher (gavilan_flight) less its vessel, now inside the body
             C["Cnb"] *= 0.9                                                   # HAND: the two propellers' normal force ahead of the CG
@@ -211,8 +236,8 @@ def coefficients(name: str = "twin", sweep: float = 12.0) -> dict:
 
 # ASTOR-TWIN's CFD with the 12 % wing and the tube level gave a static margin of 23 % at the 365 mm CG the CFD turned
 # about: more than it needs, and it costs elevator at high lift. The pack sits 20 mm further aft (CG 385 mm): ~13 %.
-CG_AFT_MM = {"twin": 20.0}
-CFD_REFLEX_KEY = {"twin": "twin_agile_reflex"}
+CG_AFT_MM = {"twin": 20.0, "twin1": 20.0}
+CFD_REFLEX_KEY = {"twin": "twin2_reflex", "twin1": "twin_agile_reflex"}
 REFLEX_DEG, REFLEX_FULL_BELOW_DEG, REFLEX_NONE_ABOVE_DEG = -6.0, 2.0, 4.0
 
 
@@ -236,8 +261,41 @@ def reflex(C, cfg, cfgr) -> None:
     C["reflex"] = {"deg": REFLEX_DEG, "full_below_deg": REFLEX_FULL_BELOW_DEG, "none_above_deg": REFLEX_NONE_ABOVE_DEG, "source": "cfd (screening RANS) at " + ", ".join(f"{a:g}" for a in al) + " deg"}
 
 
-CFD_KEY = {"twin": "twin_agile"}             # the CFD configuration a design's clean state flies (astor_v_cfd.DESIGNS)
-CFD_FLAP_KEY = {"twin": "twin_agile_flap"}   # and its state with every flap down
+# the CFD configurations a design flies (astor_v_cfd.DESIGNS): flaps up, and every flap down. "twin" is HAWK 2 (the
+# doubled wing: twin2...); "twin1" the aircraft before it, whose CFD HAWK 2 is carried over from until its own is run.
+CFD_KEY = {"twin": "twin2", "twin1": "twin_agile"}
+CFD_FLAP_KEY = {"twin": "twin2_flap", "twin1": "twin_agile_flap"}
+BODY_LONGER = 1.06                           # HAND: HAWK 2's body is 150 mm longer (its wetted area + 19 %; a third of the body's drag is friction)
+
+
+def carry_hawk1(C, C1) -> None:
+    """HAWK 2 before its own CFD. The wing is HAWK1's scaled 1.414 x in every length (the same section, flaps, sweep
+    and aspect ratio), so at one angle of attack the wing's forces are HAWK1's times the area, and the coefficients
+    on each aircraft's own area are the same; the body's drag is the same AREA (x BODY_LONGER) and so half the
+    coefficient. The lift slope and the moments are this aircraft's own lattice (its tail, its arm) plus what
+    HAWK1's CFD added to HAWK1's lattice. Marked; ``sims/astor.sh --cfd-only`` replaces it."""
+    S1, S = C1["S"], C["S"]
+    L1, L = C1["lattice_lon"], C["lattice_lon"]
+    r = L["CLa"] / L1["CLa"]
+    cm0 = L["Cm0"] + (C1["Cm0"] - L1["Cm0"])
+    cma = L["Cma"] + (C1["Cma"] - L1["Cma"])
+    A_ = C1["cfd"]["alpha_deg"]
+    ar = np.radians(A_)
+    cd_min = float(np.min(C1["cfd"]["CD"]))
+    body1 = cd_min * S1 - WING_CD * 1.3 * S1                           # the body's drag area: the least drag less the wing's profile drag
+    dcd = -body1 / S1 + body1 * BODY_LONGER / S
+
+    def table(t):
+        return {"alpha_deg": A_, "CL": t["CL"] * r, "CD": t["CD"] + dcd, "Cm": t["Cm"] + (cm0 - C1["Cm0"]) + (cma - C1["Cma"]) * ar}
+    C.update({"cfd": table(C1["cfd"]), "CL0": C1["CL0"] * r, "CLa": C1["CLa"] * r, "Cm0": cm0, "Cma": cma, "static_margin": -cma / (C1["CLa"] * r),
+              "CL_MAX": C1["CL_MAX"] * r, "alpha_stall": C1["alpha_stall"], "CD0": C1["CD0"] + dcd, "k_model": C["k"], "k": C1["k"],
+              "x_cg_m": C1["x_cg_m"], "lift_curve_source": "HAWK1's CFD table, by area",
+              "aero_source": "carried over from HAWK1's CFD by area (HAND): the same section, flaps and aspect ratio at 1.414 x; no CFD of its own yet"})
+    if "flap" in C1:
+        F = C1["flap"]
+        C["flap"] = {**F, "cfd": table(F["cfd"]), "CL_MAX": F["CL_MAX"] * r, "source": "HAWK1's CFD with every flap down, by area (HAND)"}
+    if "reflex" in C1:
+        C["reflex"] = {**C1["reflex"], "source": "HAWK1's CFD, by area (HAND)"}
 FLAP_DEG, FLAP_TRAVEL_S = 20.0, 1.0
 
 
@@ -289,7 +347,7 @@ def lift_table(C, name, sweep, cfg) -> None:
         # twice: ASTOR-TWIN's 4 % wing was flown with ~20 % too much drag at every speed.)
         CDx[m] = np.interp(A[m], a, np.array([r["Cd"] for r in rows]) * kL) - (C["CD0"] + C["k"] * CL[m] ** 2)
         src = "the CFD's points"
-    elif name in ("t", "twin"):
+    elif name in ("t",) + TWINS:
         Cv = coefficients("v", sweep)
         tv = Cv.get("lift_table_bend")
         if tv is not None:
@@ -431,6 +489,43 @@ def augment(sim, C, s, ctl) -> list:
     return ctl
 
 
+# WHAT THE TWO WING PROPELLERS ADD (HAWK 2, 2026-11-24; all HAND until measured, and marked in ``C["powered"]``):
+# - SLIPSTREAM LIFT: the wing behind each propeller sees the slipstream's dynamic pressure, not the flight's. Momentum
+#   theory gives the jet's speed and its contracted width; the wing strip in it makes the table's lift coefficient at
+#   that pressure, x SLIP_EFF (the jet is finite and turns with the wing: 0.8 +-0.15).
+# - DIFFERENTIAL THRUST for yaw: the rudder command also moves the two throttles apart by up to DIFF_THRUST of the
+#   thrust available (the fin's rudder fades with airspeed; this does not).
+# - the CROW BRAKE (``sim.brake`` 0-1: flaperons up, inboard flaps down): a drag area, a textbook split-flap value until
+#   the CFD's twin2_crow state.
+SLIP_EFF, DIFF_THRUST = 0.8, 0.15
+
+
+def powered(sim, C, s, ctl, F, M) -> None:
+    """Add the slipstream's lift, the differential thrust's yawing moment and the crow brake's drag to the body forces
+    F and moments M (x forward, y right, z down), for a design with ``C["powered"]``."""
+    pw = C.get("powered")
+    if not pw:
+        return
+    u, v, w = s["v_air_frd"]
+    V = max(math.sqrt(u * u + v * v + w * w), 1.0)
+    al = math.atan2(w, max(u, 1.0))
+    T = am.max_thrust(C, max(u, 0.0)) * max(min(ctl[3], 1.0), 0.0)
+    if T > 0.0 and "cfd" in C:
+        vj = math.sqrt(V * V + 2 * (T / 2) / (am.RHO * pw["disc_m2"]))
+        width = pw["prop_m"] * math.sqrt((V + vj) / (2 * vj))
+        cl = float(np.interp(math.degrees(al), C["cfd"]["alpha_deg"], C["cfd"]["CL"]))
+        dL = SLIP_EFF * 0.5 * am.RHO * (vj * vj - V * V) * 2 * width * pw["chord_m"] * cl
+        F[2] -= dL * math.cos(al)
+        F[0] += dL * math.sin(al)
+    M[2] += (-1.0 if C["Cndr"] < 0 else 1.0) * (ctl[2] / am.DR_MAX) * 2 * DIFF_THRUST * am.max_thrust(C, max(u, 0.0)) * pw["motor_y_m"]
+    b = float(getattr(sim, "brake", 0.0))
+    if b > 0.0:
+        D = 0.5 * am.RHO * V * V * pw["brake_cda_m2"] * b
+        F[0] -= D * u / V
+        F[1] -= D * v / V
+        F[2] -= D * w / V
+
+
 def limit_elevator(C, v_air_frd, q, de) -> float:
     """The angle-of-attack limiter (in the flight controller, under every elevator command, the pilot's included):
     the elevator may not go further nose-up than what holds the limit angle, less a term for the angle beyond it and
@@ -468,6 +563,7 @@ class Fixed(amj.Sim):
             if self.alpha_limit:
                 ctl[0] = limit_elevator(self.C, s["v_air_frd"], s["omega_frd"][1], ctl[0])
             F, M, info = am.aero(self.C, s["v_air_frd"], s["omega_frd"], *ctl)
+            powered(self, self.C, s, ctl, F, M)
             R = self.R()
             self.d.xfrc_applied[self.bid, :3] = R @ (F * amj.FLIP)
             self.d.xfrc_applied[self.bid, 3:] = R @ (M * amj.FLIP)
@@ -532,6 +628,7 @@ class SimV(amj.Sim):
         self.prop_on, self.boost, self.nets = True, 0.0, int(self.C["equipment"]["nets"])
         self.alpha_limit = True
         self.flap, self.flap_cmd = 0.0, 0.0                              # the flaps' position and command, 0 (up) to 1 (20 deg down)
+        self.brake = 0.0                                                 # the crow brake, 0-1
         self.energy_J = 0.0
 
     def drop_net(self) -> bool:
@@ -559,6 +656,7 @@ class SimV(amj.Sim):
                 ctl[3] = 0.0
                 self.C["CD0"] += FOLDED_PROP_CDA / self.C["S"]
             F, Mo, info = am.aero(self.C, s["v_air_frd"], s["omega_frd"], *ctl)
+            powered(self, self.C, s, ctl, F, Mo)
             P = ctl[3] * self.C["thrust"]["propulsor"]["power_w_per_unit"]
             if self.boost > 0.0 and "boost" in self.C:
                 bt = self.C["boost"]

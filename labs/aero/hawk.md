@@ -1,253 +1,238 @@
-# HAWK — the ASTOR-TWIN interceptor, as it stands
+# HAWK 2 — the ASTOR-TWIN interceptor, as it stands
 
 State of the design on 2026-11-24, branch `dev_astor_hawk`.
 
 HAWK is a compact, autonomous, fixed-wing aircraft that catches small quadcopters by
-firing a net at them. In the code it is called **ASTOR-TWIN** (`labs/aero/designs/astor_twin.py`);
-it is the default design of `labs/aero/sims/astor.sh`.
+firing a net at them. In the code it is **ASTOR-TWIN** (`labs/aero/designs/astor_twin.py`),
+the default design of `labs/aero/sims/astor.sh`.
+
+**HAWK 2** is the aircraft with the wing doubled for margin (2026-11-24). **HAWK1** is the
+aircraft before that (span 1.38 m); it stays in the code as a named variant because all
+the CFD so far was run on it.
 
 How to read the numbers:
 
-- **CFD** — screening-level RANS run on the user's machine. Coarse meshes (about 130,000
-  cells), every mesh failed its quality check, about half the angles converged. Treat as ±15 %.
-- **Model** — the flight model (`astor_v_flight`) or the 6-DOF MuJoCo simulation built on it.
-- **HAND** — an estimate with no model or catalogue behind it. These are the weakest numbers.
+- **CFD** — screening-level RANS on the user's machine. Coarse meshes, all failing the
+  quality check, about half the angles converged. Treat as ±15 %. **Every CFD number
+  here is HAWK1's.**
+- **Carried over** — HAWK 2's aerodynamics are HAWK1's CFD scaled by area. The wing is
+  HAWK1's enlarged 1.414 times in every length, with the same section, flaps and aspect
+  ratio. This holds until HAWK 2's own CFD is run.
+- **Model** — the flight model (`astor_v_flight`) or the MuJoCo simulation built on it.
+- **HAND** — an estimate with no model or catalogue behind it. The weakest numbers.
+
+**Nothing below has been confirmed by a HAWK 2 CFD, FEA, stability run or campaign.**
+Those are prepared for the user to run (section 11).
 
 ---
 
 ## 1. What it is
 
-| | |
-|---|---|
-| Role | Chase a quadcopter of 1–2 kg and net it; three nets per sortie |
-| Layout | Mid-wing monoplane, two tractor propellers on the wing, all-moving tail, one fin |
-| Mass, ready to fly | 6.92 kg with launcher, three nets and pack (HAND budget) |
-| Span / length / height | 1.38 m / 0.88 m / 0.40 m |
-| Wing area | 0.257 m² (wing loading 26.9 kg/m²) |
-| Power | 2 × 4 kW electric motors, 11-inch folding propellers |
-| Pack | 12S 5000 mAh LiPo, 222 Wh, 1.52 kg (HAND: two 12S 2500 mAh in parallel) |
-| Launch | Catapult or rail at about 28 m/s; a hand launch fails (model) |
-| Recovery | Parachute |
-
-## 2. Airframe
-
-**Fuselage.** 790 mm long, 70 mm diameter, nose camera at the tip. No motor on the nose
-or tail.
-
-**Wing.** One plain tapered trapezoid, fixed at 12° of leading-edge sweep.
-
-- Chord 260 mm at the centre plane to 117 mm at the tip; half span 691 mm.
-- Section 12 % thick with 4 % camber. In fast flight every flap is reflexed 6° up to
-  flatten it, see section 8.
-- Built in three pieces: an inner piece through the fuselage carrying both motors, and two
-  outer pieces that plug onto joiner tubes 235 mm from the centre (for transport).
-- **Flaperons** along 5–96 % of each outer piece, 30 % of the chord: roll control, and
-  drooped together as flaps.
-- **Inboard plain flaps** on the inner pieces, 30 % chord, directly behind the propellers.
-
-**Motors.** Two nacelles on the inner wing, 190 mm either side of the centre. The propeller
-discs clear the fuselage side by 15 mm and each other by 101 mm.
-
-**Tail.** Two all-moving flat halves (270 mm each, 135 → 70 mm chord) that move together
-for pitch and against each other for roll, plus one upright fin on the body's back
-(175 mm high) with a rudder.
-
-**What it no longer has.** The wing does not swing or fold, there are no fins under the
-tail, no legs or talons, no tube launch and no dropped nets. Those belonged to the earlier
-ASTOR-V and ASTOR-T, which are still in the code (`--design v | boost | t`).
-
-## 3. Net launcher
-
-GAVILAN's recoilless net launcher (`gavilan_flight.NET`), one tube with three cartridges.
-
-| | |
-|---|---|
-| Net | 2.4 m square, 150 g cartridge, leaves at 40 m/s, 2.95 m across when open |
-| Effective range | 4–10 m (the launcher's own test: 22 captures in 24 at a hovering quadcopter) |
-| Tube | 300 mm, under the forward belly, on a trunnion 447 mm from the nose |
-| Tube travel | Level to 15° down; the mount also pans ±35° (HAND servo mount, 150 °/s) |
-| Air vessel | 1.0 L at 30 bar, **inside the fuselage**, shaped to the tail cone (stations 385–765 mm, 64 mm at its widest) |
-| Refill | 0.2 L, 300 bar bottle for the second and third shots (HAND; no place assigned yet) |
-| Launcher mass | 2.04 kg with three nets, reload feed and gas (HAND) |
-
-In cruise the tube lies level: CFD gives 10 cm² less drag area than with it 15° down.
-
-## 4. Aerodynamics
-
-All from CFD, on the aircraft's own wing area.
-
-| | Flaps up | All flaps down 20° |
+| | HAWK 2 | HAWK1, for comparison |
 |---|---|---|
-| Maximum lift coefficient | 0.92 | 1.14 |
-| Stall speed at 6.92 kg | 21.6 m/s | 19.4 m/s |
-| Angle of maximum lift | 14° | about 4°, then flat to 16° |
+| Mass, ready to fly | 8.04 kg (HAND budget) | 6.92 kg |
+| Span / length / height | 1.95 m / 1.11 m / 0.36 m | 1.38 m / 0.88 m |
+| Stowed span | 1.32 m | — |
+| Wing area | 0.513 m² | 0.257 m² |
+| Wing loading | 15.7 kg/m² | 26.9 kg/m² |
+| Power | 2 × 4 kW, 13-inch variable-pitch propellers (HAND) | 2 × 4 kW, 11-inch fixed |
+| Static thrust / weight | 2.56 (HAND) | 1.84 |
+| Stall, flaps up / down | 16.5 / 14.8 m/s | 21.6 / 19.4 m/s |
+| g limit | 8 | 8 |
+| Nets | 3 | 3 |
 
-- Flaps add 0.65 to the lift at a fixed angle.
-- Static margin 10 % with the centre of gravity at 385 mm from the nose.
-- Level-flight drag at 6.92 kg, flaps scheduled: 8.5 N at 30 m/s, 15 N at 45 m/s,
-  26 N at 60 m/s, 47 N at 80 m/s.
-- Thrust (propulsion library, both propellers): 125 N static, 108 N at 30 m/s, 84 N at
-  60 m/s, 68 N at 80 m/s.
+Pack: 12S 5000 mAh LiPo, 222 Wh, 1.52 kg. Launch by catapult, recovery by parachute.
+
+## 2. Why the wing was doubled
+
+HAWK1 was sized at the minimum. A sizing study (`astor_twin_margin.py`) set seven margin
+targets and HAWK1 missed six. Doubling the wing was the change that met the most.
+
+| | HAWK1 | HAWK 2 |
+|---|---|---|
+| Closing speed on an 8 / 14 m/s quadcopter | 17 / 11 m/s | 11 / 5 m/s |
+| Turn radius at 25 m/s | 52 m | 25 m |
+| Turn radius at 30 m/s | 45 m | 24 m |
+| Load factor at 40 m/s | 4.1 g | 7.0 g |
+| 8 g reached from | 60 m/s | 50 m/s |
+| Top speed | about 90 m/s | about 81 m/s |
+
+The top speed was **not** kept. See section 9.
+
+## 3. Airframe
+
+**Wing.** One tapered trapezoid at 12° of leading-edge sweep: 368 mm chord at the centre
+to 165 mm at the tip, half span 977 mm. Section 12 % thick with 4 % camber.
+
+- **Inner piece** through the fuselage, carrying both motors, with plain flaps (30 % chord)
+  behind the propellers.
+- **Outer pieces** from 420 mm out, each with a flaperon along 5–96 % of its length.
+- **Swing-back pivots** at the joint, near the trailing edge. Swung back 90° the outer
+  pieces lie along the body, outboard of the inner wing: 1.32 m across instead of 1.95 m.
+  This is for the transport box. In flight the wing stays spread.
+
+**Motors.** Two nacelles on the inner wing, 225 mm either side of the centre. Disc
+clearances: 25 mm to the fuselage, 120 mm between the discs, 30 mm inside the pivot.
+
+**Fuselage.** 940 mm long (150 mm longer than HAWK1, added at the tail), 70 mm diameter.
+
+**Tail.** Two all-moving halves (365 mm each, 182 → 95 mm chord), mounted **low** on the
+body's sides, plus one upright fin (236 mm high) with a rudder. The halves move together
+for pitch and against each other for roll. Low, they sit in the propeller wash, below the
+wing's wake at high angles, and under the swung-back wing.
+
+## 4. Net launcher
+
+GAVILAN's recoilless launcher (`gavilan_flight.NET`): one tube, three cartridges.
+
+| | |
+|---|---|
+| Net | 2.4 m square, 150 g, leaves at 40 m/s, 2.95 m across open |
+| Effective range | 4–10 m (its own test: 22 of 24 at a hovering quadcopter) |
+| Tube travel | level to **45° down** (was 15°); the mount also pans ±35° (HAND) |
+| Air vessel | 1.0 L at 30 bar inside the tail cone, stations 535–915 mm |
+| Mass | 2.04 kg with three nets, plus 90 g for the pan-tilt mount (both HAND) |
 
 ## 5. Flight controller
 
-- **Angle-of-attack limiter** under every elevator command; it follows the flap position.
-- **Flap schedule.** Flaps up, every flap is reflexed 6° up below 2° angle of attack and
-  returns to neutral by 4°. Flaps go 20° down on command for slow, tight turning.
-- **Yaw damper** on the rudder, with the steady rate of a turn washed out.
-- **Pitch-rate damper** on the elevator.
-- **g limit: 8 g.** The user's choice. 100 g of structure is budgeted for it (HAND);
-  nothing is structurally sized.
+- Angle-of-attack limiter that follows the flap position.
+- Yaw damper and pitch damper. Without the yaw damper HAWK1's Dutch roll was barely damped.
+- 8 g limit.
+- **Flap schedule:** reflexed 6° up below 2° angle of attack for fast flight, neutral by
+  4°, 20° down on command for slow tight turning.
+- **Crow brake** (flaperons up, inboard flaps down) when ASTOR is faster than commanded
+  in the attack. Its drag is a textbook estimate until CFD.
+- **Differential thrust** for yaw, mixed with the rudder.
 
-## 6. Stability and handling (model, on CFD)
+## 6. What the flight model now includes
 
-From the user's stability run at commit `4576ec5` (5 g limit at that time), dampers on:
+| | Source |
+|---|---|
+| Lift, drag, moment, flaps up and down | HAWK1's CFD, carried over by area |
+| Lift slope and moments | HAWK 2's own lattice plus HAWK1's CFD-to-lattice difference |
+| Static margin | 11 % |
+| Thrust: 202 N static, 142 N at 30 m/s, 84 N at 60 m/s | HAND for the low-speed end |
+| Propeller-wash lift on the inner wing | HAND (momentum theory × 0.8) |
+| Crow brake drag, differential thrust | HAND |
 
-| | 30 m/s | 45 m/s | 60 m/s | 24 m/s, flaps down |
-|---|---|---|---|---|
-| Dutch-roll damping | 0.25 | 0.35 | 0.46 | 0.17 |
-| Short-period damping | 0.71 | 0.62 | 0.62 | 0.77 |
-| Roll rate, first turn | 446 °/s | 690 °/s | 933 °/s | 304 °/s |
-| Spiral | stable | stable | stable | stable |
+Aerodynamics beyond 24° angle of attack are a flat-plate blend, not data.
 
-Without the dampers the Dutch roll is barely damped (0.04–0.06); the yaw damper is
-required, not optional. No test stalled the aircraft under the limiter.
+## 7. Structure
 
-## 7. Performance
+The 8 g limit had nothing sized behind it. The wing spar now has a closed-form sizing
+(`astor_twin_fea.reference`) and an FEA prepared but **not run**.
 
-**Turning** (point-mass on the CFD tables, 8 g limit, flaps used where they help):
+| | Root | Pivot |
+|---|---|---|
+| Tube | 25 × 22 mm carbon | 16 × 13 mm carbon |
+| Bending moment at 8 g × 1.5 | 166 N·m | 51 N·m |
+| Stress against 400 MPa allowable | 270 MPa | 223 MPa |
+| Margin | +0.48 | +0.79 |
 
-| Speed | 25 m/s | 30 m/s | 40 m/s | 50 m/s | 60 m/s | 80 m/s |
-|---|---|---|---|---|---|---|
-| Load factor | 1.6 g | 2.3 g | 4.1 g | 6.4 g | 8.0 g | 8.0 g |
-| Turn radius | 52 m | 45 m | 41 m | 41 m | 46 m | 82 m |
-| What limits it | lift | lift | lift | lift | structure | structure |
+Tip deflection at ultimate load is 87 mm (9 % of the half span). Spars weigh 262 g for
+both wings. Not covered: the pivot's lugs and lock, skin and ribs, the tail spigot, the
+fin, the launcher trunnion, flutter.
 
-**Performance card** (model, user's run at commit `4576ec5`, flaps not used by the card):
+## 8. The attack
+
+`astor_netshot.py`: MuJoCo aircraft, a tracker with 0.1 s latency and 0.3 m noise, the
+net reduced to the launcher's measured numbers.
+
+- **Straight targets:** pursuit onto a point trailing the quadcopter.
+- **Weaving:** the tracker fits a mean line plus the weave; ASTOR flies to where the
+  quadcopter will be.
+- **Jinking:** ASTOR chases directly, flaps down, up to 68° of bank, rolling level for
+  the last 28 m.
+- **Turn back after a miss:** flaps down at the steepest bank the lift allows.
+- **Abort:** the attack ends when 70 % of the pack's usable energy is spent.
+
+Two optional tactics exist, **off by default and never flown**: starting high and diving
+(`pounce_m`), and a quadcopter that only reacts when ASTOR is outside a cone behind it
+(`blind_cone_deg`).
+
+**Results so far**
 
 | | |
 |---|---|
-| Top speed | 80.7 m/s |
-| Best climb | 54 m/s at 45 m/s |
-| Endurance | 29 min at 25.6 m/s; range 45 km |
-| Time at full power | 1.2 min |
-| Catapult launch | safe in 1.6 s from 27.5 m/s |
+| Last campaign (HAWK1, 60 sorties, before the jinking chase) | 46 of 60 = 77 %; straight 18/18, weaving 17/17, jinking 11/25 |
+| HAWK 2, single debug sorties | straight, weaving and jinking: 3 of 3 netted on the first pass |
 
-**That card is out of date at the fast end.** It was flown before the flap reflex, and with
-a drag table that counted part of the cambered wing's drag twice (corrected 2026-11-24).
-On the corrected model the aircraft trims at 88 m/s with 91 % throttle, so the top speed is
-about 90 m/s, and the 0.4 km mission radius on that card is no longer valid. The stability
-phase must be re-run to refresh it.
+Three debug sorties are a smoke test, not a rate. The target is 80 %.
 
-## 8. The wing section: settled by CFD
+## 9. What was traded, and the contradictions settled
 
-The 4 % cambered wing, flown clean, costs about 25 % more drag than the earlier thin wing
-(8 %, 2 % camber) from 45 m/s upward: it flies there at about −2°, off its design lift.
-Two fixes were run in CFD on 2026-11-23:
+- **Top speed was not kept.** Doubling the wing adds drag that thrust at speed cannot
+  cover: about 81 m/s against 90. The variable-pitch propellers protect the fast end of
+  the thrust but cannot add to it. More power would recover it.
+- **Folding is for the box, not for speed.** Earlier work showed sweeping the wing in
+  flight bought nothing (HAWK1's swept states had the same drag and less lift). That
+  still stands. Because the pivots now exist, one CFD case with the outer pieces swept
+  to 60° is included to measure it on the big wing rather than assume.
+- **The pack now has room.** HAWK1 left 215 mm of body ahead of the air vessel, which a
+  12S 5000 mAh pack did not fit. The longer tail moves the vessel aft: 365 mm.
+- **The launcher mount is in the mass budget.** It was not.
+- **The tube can now follow a target in a turn or flare** (45° of travel, was 15°).
+- **Flight model drag was overstated** for the cambered wing by about 20 % (corrected).
+- **The CFD phase used to change the design list** for the phases after it. Fixed.
 
-| Level-flight drag at 6.92 kg | 45 m/s | 60 m/s | 80 m/s |
-|---|---|---|---|
-| Old thin wing (8 %, 2 % camber) | 13.0 N | 23.6 N | 44.7 N |
-| Current wing, flaps neutral | 16.3 N | 30.3 N | 55.3 N |
-| Current wing, flaps reflexed 6° up | 14.5 N (extrapolated) | 25.9 N | 46.8 N |
-| Same thickness, 2 % camber | 14.6 N | 25.6 N | 46.2 N |
+## 10. What is not known
 
-| Maximum lift coefficient | Flaps up | Flaps down 20° |
-|---|---|---|
-| Current wing (4 % camber) | 0.92 | 1.14 |
-| Same thickness, 2 % camber | 0.84 | about 1.0 |
+- **No HAWK 2 CFD, FEA, stability run or campaign exists.**
+- **Variable-pitch propellers** are not in the propulsion library. Static thrust could
+  be 2.3 or 2.8 times weight rather than 2.56.
+- **The braking flare** (flying nose-high at the target's speed) is not implemented.
+  The model has no measured aerodynamics above 24°. The high-angle CFD cases and the
+  propeller-wash model are the groundwork for it.
+- **Mass** is 8.04 kg on HAND estimates, 0.6 kg more than the sizing study assumed.
+- **Tail spigot** crosses the body low, where the air vessel sits. The vessel must be
+  notched or shortened there. Not drawn.
+- **Full power lasts 1.4 minutes.**
+- **The net** has only been tested from a fixed launcher at a hovering quadcopter.
+  HAWK 2 closes at 5–11 m/s instead of 11–17 m/s, which is nearer those conditions but
+  still not them.
+- **Motor controllers** are assumed in the nacelles; the refill bottle has no place.
 
-**Decision: keep the 4 % wing and reflex the flaps in fast flight.** Reflexing recovers
-nearly all the drag (within 10 % of the thin wing) with no change to the airframe, and the
-4 % wing keeps the better low-speed lift. The 2 % wing is no better when fast and worse
-when slow. The reflex data covers −4° to +2° only.
+## 11. To run
 
-## 9. The attack
+Discard your local copy of the CFD data file once, then pull:
 
-Simulated in `astor_netshot.py`: MuJoCo 6-DOF aircraft, a tracker with 0.1 s latency and
-0.3 m noise, and the net reduced to the launcher's measured numbers.
+```bash
+git checkout -- labs/aero/designs/data/astor_v_cfd_screening.yaml
+```
 
-1. ASTOR comes up behind the quadcopter along its track, slightly above it, at 1.3 times
-   its stall speed (about 28 m/s).
-2. The mount pans and tilts the tube onto the predicted meeting point.
-3. It fires when the net is predicted to pass within 60 % of its half span, between 4.5
-   and 9.5 m of flight.
-4. After a miss it turns back (about 24 s) and fires the next net.
+```bash
+git pull origin dev_astor_hawk
+```
 
-Three behaviours are handled differently:
+CFD of HAWK 2, 38 cases: clean and flaps-down to 60°, reflexed, crow brake, swept 60°.
 
-- **Straight:** proportional navigation onto a point trailing the quadcopter.
-- **Weaving:** the tracker fits a mean line plus the weave and ASTOR flies to where the
-  quadcopter will be on arrival.
-- **Jinking:** once the quadcopter's heading leaves its mean track by more than 25°, ASTOR
-  chases it directly with flaps down, up to 62° of bank, and rolls level for the last 28 m.
+```bash
+bash labs/aero/sims/astor.sh -j 14 --cfd-only
+```
 
-**Result of the last 60-sortie campaign** (user's run, commit `4576ec5`, before the
-jinking chase existed):
+FEA of the wing spar at 8 g, 3 cases (needs CalculiX and Gmsh):
 
-| Quadcopter | Netted | Rate |
-|---|---|---|
-| Straight | 18 of 18 | 100 % |
-| Weaving | 17 of 17 | 100 % |
-| Jinking | 11 of 25 | 44 % |
-| **All** | **46 of 60** | **77 %** |
+```bash
+bash labs/aero/sims/astor_fea.sh -j 8
+```
 
-ASTOR was never lost. The target is 80 %. With the jinking chase, 9 of 13 jinking debug
-sorties were netted (7 of 10 that had failed in the campaign), and 3 of 5 after the flap
-reflex went in; the campaign has not been re-run with either.
+Stability, performance card and the 60 sorties, after the CFD:
 
-## 10. What is not yet known or not done
+```bash
+bash labs/aero/sims/astor.sh -j 14 --skip-cfd
+```
 
-**Design**
+Every run is restartable, shows a progress bar, has `--help` and `--dry-run`, and writes
+one timestamped YAML.
 
-- **Internal layout.** No item-by-item balance exists. The pack has about 215 mm of body
-  ahead of the air vessel and its fit in a 70 mm fuselage is unchecked. The motor
-  controllers are assumed to sit in the nacelles. The refill bottle has no place.
-- **Tail spigot.** It crosses the body where the air vessel sits and must pass over or
-  under it; not drawn.
-- **Structure.** Nothing is sized for 8 g.
-- **Mass.** The whole budget is HAND estimates on top of the earlier ASTOR-T budget.
-- **Pan-tilt mount.** Its mass is not in the budget.
-- **Mount travel.** The tube cannot point above the wing plane, so ASTOR cannot shoot while
-  turning hard toward a target.
-
-**Aerodynamics and control**
-
-- All CFD is screening level.
-- The flap reflex is scheduled on angle of attack with no actuator lag in the model.
-- The lift the propellers' slipstream adds to the inner wing is not in the flight model.
-  A HAND estimate says it could halve the low-speed turn radius at full throttle.
-- The approach guidance uses the flaps only against jinking targets; the performance card
-  does not use them at all.
-- At the 25.6 m/s best-endurance speed a 2.7 m/s gust reaches the stall; it should loiter
-  at 30 m/s or more.
-- The stability output wrongly flags "stalled" with flaps down above 3°.
-
-**Net**
-
-- The net has only been tested from a fixed launcher at a hovering quadcopter. Fired from
-  an aircraft at 28 m/s it leaves at about 68 m/s through the air. This is the largest
-  untested step in the whole concept.
-- A netted quadcopter is counted as a win; what it does after is a simple fall.
-
-## 11. Files and commands
+## 12. Files
 
 | | |
 |---|---|
 | Design (CAD, mass, checks) | `labs/aero/designs/astor_twin.py` |
 | Flight model | `labs/aero/designs/astor_v_flight.py` |
 | CFD cases | `labs/aero/designs/astor_v_cfd.py` |
+| Spar sizing and FEA cases | `labs/aero/designs/astor_twin_fea.py` |
 | Net-shot sortie | `labs/aero/designs/astor_netshot.py` |
-| Turning study | `labs/aero/designs/astor_twin_agility.py` |
-| Launcher for every simulation | `labs/aero/sims/astor.sh` |
-| Drawings, STEP, STL, result files | `labs/aero/designs/data/astor_twin/` |
-
-```bash
-bash labs/aero/sims/astor.sh -j 14                  # CFD, stability, 60 net-shot sorties
-```
-
-```bash
-bash labs/aero/sims/astor.sh -j 14 --netshot-only   # the sorties alone
-```
-
-Every run is restartable, shows a progress bar and writes one timestamped YAML.
+| Sizing study | `labs/aero/designs/astor_twin_margin.py` |
+| Drawings and STEP files | `labs/aero/designs/data/astor_twin/hawk2_*` |

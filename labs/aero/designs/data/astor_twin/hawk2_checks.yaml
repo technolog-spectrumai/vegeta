@@ -1,0 +1,98 @@
+status: 'HAWK 2 (the wing doubled, 2026-11-24): a drawing and a mass budget of hand estimates; its CFD, FEA and flights are not run'
+stowed:
+  span_m: 1.32
+  length_m: 1.1
+  outer_pieces_swung_back_deg: 90.0
+  note: the outer pieces along the body, over the low tail
+wing:
+  glove_m2: 0.272
+  outer_panels_m2: 0.248
+  total_m2: 0.521
+  span_spread_m: 1.93
+  span_dash_m: 1.57
+propellers:
+  diameter_mm: 330.2
+  clear_of_the_fuselage_side_mm: 25
+  between_the_two_discs_mm: 120
+  outboard_edge_inside_the_pivot_mm: 30
+  kind: '13-inch variable pitch (HAND: not in the propulsion library; the thrust is astor_v_flight''s)'
+mass:
+  items:
+  - item: ASTOR-T complete (4 kW, 12S 2500 mAh, legs, nets)
+    g: 3596
+    source: astor_t.budget
+  - item: second motor, 4 kW class
+    g: 460
+    source: catalogue (as ASTOR-T's)
+  - item: second ESC 12S 120 A
+    g: 150
+    source: HAND (+-25)
+  - item: 'pack: 12S 5000 mAh in place of 2500 (190 A)'
+    g: 760
+    source: 'HAND: as astor.PACKS, doubled'
+  - item: second folding propeller, two nacelles and mounts
+    g: 110
+    source: HAND (+-40)
+  - item: glove in place of ASTOR-T's wing carriage and inner panels
+    g: 388
+    source: geometry 0.272 m2 x 1.9 kg/m2 less the carriage (HAND)
+  - item: 'wing fixed at 12 deg: the two sweep servos and linkages off'
+    g: -60
+    source: astor_v.budget's item
+  - item: outer wing pieces against ASTOR-T's panels
+    g: 118
+    source: geometry 0.248 m2 against 0.186 m2 x 1.9 kg/m2
+  - item: two swing-back pivots with their locks and fold servos
+    g: 160
+    source: 'HAND (+-50): 2 x (bearing and pin 30 g, lock 15 g, servo and linkage 35 g)'
+  - item: body 150 mm longer
+    g: 45
+    source: geometry x 0.3 kg/m
+  - item: two 13-inch variable-pitch hubs in place of fixed folding propellers
+    g: 140
+    source: 'HAND (+-50): 2 x 70 g of hub, pitch servo and linkage'
+  - item: 'launcher mount: pan and 45 deg of tilt'
+    g: 90
+    source: 'HAND (+-30): two servos, a yoke and bearings (it was not in the budget)'
+  - item: 'tail: ASTOR-T''s two fin hinges, springs and locks off'
+    g: -18
+    source: astor_t.budget's item
+  - item: 'tail: the blades'' fold actuator off; two all-moving halves on spigots, 2 servos'
+    g: 10
+    source: 'HAND (+-12): -40 g (astor_v.budget''s item) + 2 x 17 g servos + 16 g spigots and bearings'
+  - item: tail and fin area against ASTOR-T's
+    g: 81
+    source: geometry 0.1473 m2 against 0.0704 m2 x 1.05 kg/m2
+  - item: 'ailerons along the whole outer wing piece: 2 larger servos'
+    g: 16
+    source: 'HAND (+-8): 2 x 20 g in place of 2 x 12 g'
+  - item: '8 g rating on the doubled wing: spar, pivot fittings and tail spigot'
+    g: 220
+    source: 'HAND (+-80) until astor_twin_fea is run: its beam reference sizes 25 x 22 mm (inner) and 16 x 13 mm (outer) carbon tubes, 262 g'
+  - item: growth margin 10 % of the additions
+    g: 267
+    source: HAND
+  total_kg: 6.53
+tail:
+  kind: two all-moving halves (pitch together, roll against each other) and one fin
+  each_half_mm:
+    span: 365.0
+    root: 182.0
+    tip: 95.0
+  halves_m2: 0.1011
+  tail_span_mm: 790
+  fin_mm:
+    height: 236.0
+    root: 270.0
+    tip: 121.5
+  fin_m2: 0.0462
+ailerons:
+  along_the_outer_piece:
+  - 0.05
+  - 0.96
+  chord_fraction: 0.3
+stall_spread_m_s:
+  value: 15.2
+  note: CL max 0.87 carried over from ASTOR-V's CFD (HAND for this wing)
+wing_loading_kg_m2: 12.5
+current_A_at_8_kW: 190

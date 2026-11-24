@@ -34,7 +34,7 @@ PACKS = {"12S 5000 mAh": (1.52, 222.0), "12S 2500 mAh": (0.76, 111.0)}
 
 
 def evaluate(area=1.0, span=1.0, nets=3, pack="12S 5000 mAh", prop=next(iter(PROPS))) -> dict:
-    C = VF.get("twin")
+    C = VF.get("twin1")                                                  # HAWK1: the aircraft this study started from (its "wing x2" row became HAWK 2)
     F = VF.with_flap(C, 1.0)
     S0, b0 = C["S"], C["b"]
     S, b = S0 * area, b0 * span
@@ -77,7 +77,7 @@ def evaluate(area=1.0, span=1.0, nets=3, pack="12S 5000 mAh", prop=next(iter(PRO
             for _ in range(30):
                 mid = 0.5 * (lo + hi)
                 lo, hi = (mid, hi) if q * S * cd(mid * Wt / (q * S)) <= thrust(V) else (lo, mid)
-            best = max(best, min(n if q * S * cd(n * Wt / (q * S)) <= thrust(V) else lo, VF.SAS["twin"]["g_max"]))
+            best = max(best, min(n if q * S * cd(n * Wt / (q * S)) <= thrust(V) else lo, 8.0))
         return best
     radius = lambda V: (V * V / (am.G * math.sqrt(n_at(V) ** 2 - 1))) if n_at(V) > 1.02 else float("inf")
     drag = lambda V: 0.5 * am.RHO * V * V * S * cd_up(Wt / (0.5 * am.RHO * V * V * S))
