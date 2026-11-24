@@ -1,6 +1,6 @@
-# HAWK 2 — the ASTOR-TWIN interceptor, as it stands
+# PROTOHAWK — the ASTOR-TWIN interceptor (HAWK 2), stored 2026-11-24
 
-State of the design on 2026-11-24, branch `dev_astor_hawk`.
+State of the design on 2026-11-24, branch `dev_astor_hawk`, git tag `protohawk`. Stored as the baseline before the GOSHAWK design (`labs/aero/goshawk.md`).
 
 HAWK is a compact, autonomous, fixed-wing aircraft that catches small quadcopters by
 firing a net at them. In the code it is **ASTOR-TWIN** (`labs/aero/designs/astor_twin.py`),
