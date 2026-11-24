@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Kestrel-4Q-2N (the net launcher in the pod, labs/aero/designs/kestrel_netter.py): every simulation from one script.
 #
-#   labs/aero/sims/kestrel.sh -j 8                 # stability, then FEA, then CFD (stall, sweep, cruise, transitions) on 8 cores
+#   labs/aero/sims/kestrel.sh -j 8                 # CFD (stall, sweep, cruise, transitions), then FEA, then stability, on 8 cores
 #   labs/aero/sims/kestrel.sh --stability          # the reduced-order checks only (no solver, ~5 min)
 #   labs/aero/sims/kestrel.sh --fea                # the frame and the spar–post joint (CalculiX)        ~1 h on 4 threads
 #   labs/aero/sims/kestrel.sh --cfd -j 8           # the airframe campaigns (OpenFOAM)                  screening: hours
@@ -73,7 +73,19 @@ RESULTS=(); FAILED=0
 echo "Kestrel-$VARIANT — stability $DO_STAB, FEA $DO_FEA, CFD $DO_CFD ($QUALITY: $CAMPAIGNS); $PROCS MPI ranks per CFD case, $THREADS CalculiX threads; python $PY"
 cd "$ROOT"
 
-# 1. the reduced-order checks: no solver; the drive table is built with Boreas on the first run (~40 s)
+# 1. CFD: the bare airframe at the stall angles first (CL max: the wing area with the launcher hangs on it), the sweep
+#    (the model polar's reference), then the blown cases that take the sweep (the cruise and the transition points)
+if [ $DO_CFD -eq 1 ]; then
+  for c in $CAMPAIGNS; do
+    run "cfd-$c-$QUALITY" "$PY" "$SIDE/kestrel/airframe_cfd.py" --variant "$VARIANT" --chapter "$c" --quality "$QUALITY" --processors "$PROCS"
+  done
+fi
+# 2. FEA: the carbon frame (posts) under the 4 g pull-up, the 75 % wing, the heading manoeuvre, the modes; the spar–post joint
+if [ $DO_FEA -eq 1 ]; then
+  run fea-frame-and-joint "$PY" "$SIDE/kestrel/structure_fea.py" --variant "$VARIANT" --chapter all --threads "$THREADS"
+fi
+
+# 3. the reduced-order checks: no solver; the drive table is built with Boreas on the first run (~40 s)
 if [ $DO_STAB -eq 1 ]; then
   if [ "$VARIANT" = "4Q-2N" ]; then
     stab=("$PY" "$HERE/kestrel_netter_stability.py"); [ $MATRIX -eq 1 ] && stab+=(--matrix)
@@ -83,18 +95,6 @@ if [ $DO_STAB -eq 1 ]; then
   fi
 fi
 
-# 2. FEA: the carbon frame (posts) under the 4 g pull-up, the 75 % wing, the heading manoeuvre, the modes; the spar–post joint
-if [ $DO_FEA -eq 1 ]; then
-  run fea-frame-and-joint "$PY" "$SIDE/kestrel/structure_fea.py" --variant "$VARIANT" --chapter all --threads "$THREADS"
-fi
-
-# 3. CFD: the bare airframe at the stall angles first (CL max: the wing area with the launcher hangs on it), the sweep
-#    (the model polar's reference), then the blown cases that take the sweep (the cruise and the transition points)
-if [ $DO_CFD -eq 1 ]; then
-  for c in $CAMPAIGNS; do
-    run "cfd-$c-$QUALITY" "$PY" "$SIDE/kestrel/airframe_cfd.py" --variant "$VARIANT" --chapter "$c" --quality "$QUALITY" --processors "$PROCS"
-  done
-fi
 
 echo
 echo "==== Kestrel-$VARIANT ===="
