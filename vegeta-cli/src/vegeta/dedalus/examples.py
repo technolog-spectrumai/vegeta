@@ -96,7 +96,9 @@ class Propeller(Design):
         Parameter("chord_root", 10.0, "mm", min=1),
         Parameter("chord_max", 16.0, "mm", min=1),
         Parameter("chord_tip", 5.0, "mm", min=0.5),
-        Parameter("thickness", 0.10, "", min=0.04, max=0.3, description="section thickness / chord"),
+        Parameter("thickness", 0.10, "", min=0.04, max=0.3, description="section thickness / chord (at the tip when thickness_root is set)"),
+        Parameter("thickness_root", 0.0, "", min=0.0, max=0.3,
+                  description="root section thickness / chord, tapering linearly to `thickness` at the tip (0 = uniform)"),
         Parameter("camber", 0.04, "", min=0.0, max=0.12, description="section camber / chord"),
         Parameter("stations", 10, min=4, max=30),
         Parameter("skew_deg", 0.0, "deg", min=0.0, max=60.0, description="tip skew, swept back against the rotation (linear from the root)"),
@@ -131,7 +133,8 @@ class Propeller(Design):
             else:
                 c = p["chord_max"] + (p["chord_tip"] - p["chord_max"]) * ((x - 0.35) / 0.65) ** 1.5
             beta = math.degrees(math.atan(p["pitch"] / (2 * math.pi * r)))
-            pts = [(-0.3 * c + u, -v) for u, v in self._section(c, p["thickness"], p["camber"])]
+            t = p["thickness_root"] + (p["thickness"] - p["thickness_root"]) * x if p.get("thickness_root", 0) > 0 else p["thickness"]
+            pts = [(-0.3 * c + u, -v) for u, v in self._section(c, t, p["camber"])]
             # section drawn in the YZ plane at radius r, pitched by beta: a right-hand propeller about +Z (it pushes
             # fluid toward -Z when turning by the right-hand rule; rotated z->x it matches aeromant's rotor templates)
             wp = cq.Workplane("YZ", origin=(r, 0, 0)).polyline([(-u, v) for u, v in pts]).close()

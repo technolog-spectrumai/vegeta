@@ -96,6 +96,7 @@ class EDFRotor(Design):
     downstream face. One closed solid. Building 12 blades takes ~7 s."""
 
     parameters = [Parameter("blades", 12, min=1, max=16)] + _ROTOR + [
+        Parameter("thickness_root", 0.0, "", min=0.0, max=0.3, description="root thickness / chord, tapering to `thickness` (0 = uniform)"),
         Parameter("bore", 4.0, "mm", min=0, description="shaft hole from the downstream face (0 = none)"),
         Parameter("skew_deg", 0.0, "deg", min=0.0, max=60.0, description="tip skew (Propeller's)"),
         Parameter("spinner_length", 22.0, "mm", min=0, description="the nose cone ahead of the hub (0 = none)"),
