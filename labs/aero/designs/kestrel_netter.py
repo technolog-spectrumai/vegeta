@@ -64,10 +64,11 @@ import numpy as np
 import kestrel
 import kestrel2 as k2
 import kestrel_systems as ks
+import kestrel_transition as kt
 from vegeta.dedalus import Design, Parameter
 
-__all__ = ["NET", "VESSEL", "TUBE", "params", "layout", "vessel", "shot", "masses", "cg", "checks", "vehicle", "sizing",
-           "summary", "KestrelNetter", "views", "export"]
+__all__ = ["NET", "VESSEL", "TUBE", "MAGAZINE", "params", "layout", "vessel", "shot", "masses", "cg", "checks", "vehicle", "drive",
+           "vehicle_model", "sizing", "summary", "KestrelNetter", "views", "export"]
 
 G, RHO = ks.G, ks.RHO0
 R_GAS, T_AIR = 287.05, 293.15
@@ -363,6 +364,35 @@ def vehicle() -> dict:
         except Exception as e:                               # NeuralFoil / Boreas not available: the table is left out
             rows[cand.name] = {"error": repr(e)}
     return rows
+
+
+# ================================================================================================= the vehicle for the solvers
+DRIVE_KEY = "10x7_2814"
+
+
+def drive():
+    """The 10x7 on the 2814 1000KV as a Kestrel drive table (``kestrel_systems.drive_table_for``: cached in
+    ``data/kestrel_drive_10x7_2814.json``, built with Boreas in ~40 s when missing)."""
+    import kestrel_fast as kfst
+    c = kfst.Candidate("Kestrel-4Q-2N", prop="10x7", motor="2814 1000KV")
+    return ks.drive_table_for(kfst.propulsion(c), DRIVE_KEY)
+
+
+def vehicle_model(*, drive_table=None):
+    """Kestrel-4Q-2N for the transition model and the campaigns (``kestrel_transition.Vehicle``): the launcher's mass
+    rows and the battery where ``cg`` puts it, 4Q-2's polar on the stretched pod (``kestrel2.polar_for``), the 10x7 /
+    2814 drive, the elevon time constant from the section study."""
+    import kestrel_flight as kf
+    p = params()
+    L = kestrel.Kestrel4Q.layout(p)
+    c = cg()
+    a = kf.aero(p)
+    sec = k2.section_numbers()
+    pol = k2.polar_for("4Q-2", p, a, sec)
+    v = kt.Vehicle("Kestrel-4Q-2N", p, L, c["mass_kg"], c["x_cg"], c["z_cg"], c["Iyy"], c["Ixx"], pol, drive_table or drive(),
+                   elevons=True, **kt.kestrel_rotors(p))
+    v.elevon_tau = sec["tau"]
+    return v
 
 
 def sizing() -> dict:

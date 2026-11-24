@@ -3,7 +3,7 @@
 The engineering content of the thin scripts in ``side_labs/kestrel/`` and of the unified notebook's prerequisite
 checks, kept here so that both read the same definitions:
 
-- the **variants** (``4Q-1``, ``4Q-2``, ``4Q-3``: ``kestrel2.params``) and each one's **fingerprint** — the resolved
+- the **variants** (``4Q-1``, ``4Q-2``, ``4Q-3``: ``kestrel2.params``; ``4Q-2N``: ``kestrel_netter``) and each one's **fingerprint** — the resolved
   CAD parameters and their hash, the CAD source's hash, the mass and CG the cases are set up for, the propeller
   calibration the rotor disks and the drive tables carry — written into every run's manifest and compared by the
   notebook before a run is used (``compare``: file existence is not compatibility);
@@ -58,7 +58,8 @@ SCHEMA = 1
 
 VARIANTS = {"4Q-1": "Kestrel-4Q-1: round struts, X bracing, rotors as the only effectors, NACA 0012",
             "4Q-2": "Kestrel-4Q-2: elevons, faired posts, no diagonals, the reflexed section",
-            "4Q-3": "Kestrel-4Q-3: 4Q-2's airframe with wider elevons (crow brake) and reverse-capable drives"}
+            "4Q-3": "Kestrel-4Q-3: 4Q-2's airframe with wider elevons (crow brake) and reverse-capable drives",
+            "4Q-2N": "Kestrel-4Q-2N: 4Q-2 with GAVILAN's net launcher in the stretched pod (kestrel_netter), 10x7 on 2814"}
 TOLERANCE = {"x_cg_mm": 2.0, "mass_frac": 0.02}
 
 
@@ -66,12 +67,18 @@ TOLERANCE = {"x_cg_mm": 2.0, "mass_frac": 0.02}
 def params(variant: str) -> dict:
     if variant not in VARIANTS:
         raise ValueError(f"variant {variant!r}: one of {list(VARIANTS)}")
+    if variant == "4Q-2N":
+        import kestrel_netter as kn
+        return kn.params()
     return k2.params(variant)
 
 
 def vehicle(variant: str) -> kt.Vehicle:
     """The transition model's vehicle of the variant, as notebook 40 / 42 built it (the mass table, the lattice, the
     polar with the section's numbers): the mass, CG and polar every case is set up for."""
+    if variant == "4Q-2N":
+        import kestrel_netter as kn
+        return kn.vehicle_model()
     return k2.vehicles(which=(variant,))[variant]
 
 
