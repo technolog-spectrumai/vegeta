@@ -10,6 +10,8 @@ Nothing here is weighed. Stations are x from the spinner tip [mm].
 """
 from __future__ import annotations
 
+import math
+
 WING_KG_M2 = 1.18        # +-0.25: closed-cell foam core, thin glass skin, carbon tube spar (the lab's moulded-EPO value is 1.55)
 TAIL_KG_M2 = 0.90        # +-0.2 (arigo_mass)
 FUSE_KG_M = 0.30         # +-0.06 per metre: glass-epoxy shell 100 x 125 mm with frames and two hatches
@@ -21,6 +23,7 @@ MODULE_LEN = 78.0
 PALLET_X = 250.0
 PAYLOAD_LIMIT_G = 250.0
 MTOW_G = 2450.0
+BASE_AR = 7.19               # STERNA's aspect ratio: the wing's areal density is its value
 
 FIXED = [  # (group, item, grams, station, source)
     ("structure", "wing joiner, root fittings, connectors", 60.0, 402.0, "HAND (+-15)"),
@@ -67,36 +70,48 @@ def empty(p: dict, L: dict) -> list:
     """The empty aircraft's items (no pallet, no battery): the structure from the CAD's areas, the fixed equipment,
     and a growth margin of 5 % of the rest at the items' own centroid."""
     S_w, S_t = L["S_mm2"] / 1e6, (L["S_h_mm2"] + L["S_v_mm2"]) / 1e6
-    items = [("structure", "wing panels, pair", 1000 * WING_KG_M2 * S_w, L["x_mac_le"] + 0.42 * L["mac"], f"geometry: {S_w:.3f} m2 x {WING_KG_M2} kg/m2 (HAND +-20 %)"),
-             ("structure", "fuselage shell, frames, hatches", 1000 * FUSE_KG_M * L["length"] / 1000, 445.0, f"geometry: {L['length']:.0f} mm x {FUSE_KG_M} kg/m (HAND +-20 %)"),
+    k = L.get("scale", 1.0)
+    ar = math.sqrt(L["AR"] / BASE_AR) if L["AR"] > BASE_AR else 1.0          # a longer wing bends more: the spar grows with it (HAND)
+    grow = {"structure": k * k, "propulsion": p.get("mtow_g", MTOW_G) / MTOW_G, "actuation": k, "avionics": 1.0}
+    items = [("structure", "wing panels, pair", 1000 * WING_KG_M2 * S_w * ar, L["x_mac_le"] + 0.42 * L["mac"], f"geometry: {S_w:.3f} m2 x {WING_KG_M2 * ar:.2f} kg/m2 (HAND +-20 %)"),
+             ("structure", "fuselage shell, frames, hatches", 1000 * FUSE_KG_M * L["length"] / 1000 * k, 445.0 * k, f"geometry: {L['length']:.0f} mm x {FUSE_KG_M * k:.2f} kg/m (HAND +-20 %)"),
              ("structure", "tailplane halves, fin and rudder", 1000 * TAIL_KG_M2 * S_t, 0.5 * (L["x_ac_h"] + L["x_ac_v"]) + 25.0, f"geometry: {S_t:.3f} m2 x {TAIL_KG_M2} kg/m2 (HAND +-20 %)")]
-    items += FIXED
+    items += [(g, n, grams * grow[g], x * k, src) for g, n, grams, x, src in FIXED]
     m = sum(i[2] for i in items)
     x = sum(i[2] * i[3] for i in items) / m
     items.append(("margin", "growth margin (5 % of the items above)", 0.05 * m, x, "HAND: paint, sealant, coatings"))
     return items
 
 
-def budget(p: dict, L: dict, case: str = DEFAULT_CASE) -> dict:
-    pallet, n, x_tray = CASES[case]
+def budget(p: dict, L: dict, case=DEFAULT_CASE) -> dict:
+    """``case``: a name in ``CASES`` (STERNA's own), or (payload grams, modules, tray centre station) for a variant;
+    the payload at the pallet's station, scaled with the airframe."""
+    k = L.get("scale", 1.0)
+    if isinstance(case, str):
+        pallet, n, x_tray = CASES[case]
+        g_pay, x_tray = PALLETS[pallet][0], x_tray * k
+    else:
+        g_pay, n, x_tray = case
+        pallet, case = f"{g_pay:.0f} g", f"{g_pay:.0f} g, {n} modules"
     items = empty(p, L)
     m_e = sum(i[2] for i in items)
     mom = sum(i[2] * i[3] for i in items)
-    g_p = PALLETS[pallet][0]
+    g_p = g_pay
     g_b = n * MODULE_G
     total = m_e + g_p + g_b
-    x_cg = (mom + g_p * PALLET_X + g_b * x_tray) / total
+    x_cg = (mom + g_p * PALLET_X * k + g_b * x_tray) / total
     return {"case": case, "items": [{"group": g, "item": n_, "g": round(v, 1), "x_mm": round(x, 0), "source": s} for g, n_, v, x, s in items],
             "empty_g": round(m_e, 1), "empty_x_mm": round(mom / m_e, 1),
-            "pallet": {"name": pallet, "g": g_p, "x_mm": PALLET_X}, "battery": {"modules": n, "g": g_b, "Wh_nominal": round(n * MODULE_WH, 1), "x_mm": x_tray},
+            "pallet": {"name": pallet, "g": g_p, "x_mm": PALLET_X * k}, "battery": {"modules": n, "g": g_b, "Wh_nominal": round(n * MODULE_WH, 1), "x_mm": x_tray},
             "total_g": round(total, 1), "x_cg_mm": round(x_cg, 1), "cg_mac": round((x_cg - L["x_mac_le"]) / L["mac"], 4),
-            "within_mtow": total <= MTOW_G}
+            "within_mtow": total <= p.get("mtow_g", MTOW_G)}
 
 
-def tray_for(p: dict, L: dict, pallet: str, modules: int, cg_mac: float = 0.30) -> float:
-    """The tray centre station that puts the CG at ``cg_mac`` (may lie outside the bay: check against the travel)."""
+def tray_for(p: dict, L: dict, pallet, modules: int, cg_mac: float = 0.30) -> float:
+    """The tray centre station that puts the CG at ``cg_mac`` (may lie outside the bay: check against the travel).
+    ``pallet``: a name in ``PALLETS`` or the payload's grams."""
     items = empty(p, L)
     m_e, mom = sum(i[2] for i in items), sum(i[2] * i[3] for i in items)
-    g_p, g_b = PALLETS[pallet][0], modules * MODULE_G
+    g_p, g_b = (PALLETS[pallet][0] if isinstance(pallet, str) else float(pallet)), modules * MODULE_G
     x_t = L["x_mac_le"] + cg_mac * L["mac"]
-    return (x_t * (m_e + g_p + g_b) - mom - g_p * PALLET_X) / g_b
+    return (x_t * (m_e + g_p + g_b) - mom - g_p * PALLET_X * L.get("scale", 1.0)) / g_b

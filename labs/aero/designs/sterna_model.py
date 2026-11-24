@@ -46,7 +46,7 @@ def alpha_stall(CL0: float, CLa: float, CL_MAX: float) -> float:
     return float(a_s)
 
 
-def coefficients(case: str = sm.DEFAULT_CASE, cl_max_2d: float | None = None, **over) -> dict:
+def coefficients(case=sm.DEFAULT_CASE, cl_max_2d: float | None = None, **over) -> dict:
     p = st.resolve(over)
     L = st.Sterna.layout(p)
     mb = sm.budget(p, L, case)
@@ -71,12 +71,12 @@ def coefficients(case: str = sm.DEFAULT_CASE, cl_max_2d: float | None = None, **
     S_h, S_v = L["S_h_mm2"] / 1e6, L["S_v_mm2"] / 1e6
     AR_h = p["htail_span"] ** 2 / L["S_h_mm2"]
     a_h = 2 * math.pi * AR_h / (2 + (AR_h ** 2 + 4) ** 0.5)
-    AR_v = 1.5 * 205.0 ** 2 / L["S_v_mm2"]                         # HAND: the fuselage as a partial end plate (x1.5)
+    AR_v = 1.5 * L["fin_root_chord"] ** 2 / L["S_v_mm2"]                         # HAND: the fuselage as a partial end plate (x1.5)
     a_v = 2 * math.pi * AR_v / (2 + (AR_v ** 2 + 4) ** 0.5)
     eta = 0.9                                                      # HAND: the low tail near the wing's wake
     z_v = L["z_ac_v"] / 1e3
     CYb = -eta * a_v * S_v / S
-    Cnb = eta * a_v * S_v * l_v / (S * b) - 0.3 * 1.1 * 0.11 ** 2 / (S * b) * 2.0     # the fuselage's share as in arigo1_model
+    Cnb = eta * a_v * S_v * l_v / (S * b) - 0.3 * (L["length"] / 1e3) * (0.1 * L["scale"]) ** 2 / (S * b) * 2.0     # the fuselage's share as in arigo1_model
     CLa_w = 2 * math.pi * AR / (2 + (AR * AR + 4) ** 0.5)
     yb, b2 = p["centre_span"] / 2, p["span"] / 2
     gam_eff = math.radians(p["dihedral_deg"]) * (1 - (yb / b2) ** 2)                  # HAND: the outer panels' share of the rolling arm
@@ -96,7 +96,7 @@ def coefficients(case: str = sm.DEFAULT_CASE, cl_max_2d: float | None = None, **
     CD0 = 0.030                                                    # HAND: build-up class value with rails and a window step (+-0.008)
     Lx, Ly = b, L["length"] / 1e3
     I = (mass * (0.22 * Lx) ** 2, mass * (0.26 * Ly) ** 2, mass * ((0.22 * Lx) ** 2 + (0.26 * Ly) ** 2) * 0.95)   # HAND (+-30 %)
-    T0 = T_STATIC_OVER_WEIGHT * sm.MTOW_G / 1000.0 * am.G
+    T0 = T_STATIC_OVER_WEIGHT * p["mtow_g"] / 1000.0 * am.G
     return {"variant": "sterna", "propulsion": "tractor", "case": case, "S": S, "c": c, "b": b, "AR": AR, "mass": mass, "inertia": I,
             "x_cg_m": x_cg, "z_cg_m": 0.0, "x_np_m": x_np, "x_np_lattice_m": x_np_lattice, "static_margin": (x_np - x_cg) / c,
             "CL0": r0["CL"], "CLa": CLa, "CL_MAX": CL_MAX, "alpha_stall": alpha_stall(r0["CL"], CLa, CL_MAX), "CD0": CD0, "k": 1 / (math.pi * e * AR),
@@ -153,17 +153,18 @@ RPM_THROTTLES = tuple(round(0.1 * k, 1) for k in range(1, 11))     # the drive's
 AVIONICS_W = 12.0            # HAND: autopilot, radios, video downlink, camera, servos at rest (+-5)
 
 
-def propulsion(modules: int = 1, kv: float = 700.0):
+def propulsion(modules: int = 1, kv: float = 700.0, prop_in: tuple = (11.0, 7.0), max_a: float = 40.0):
     """The drive as a Boreas system: an 11x7 folding propeller (generic section: Boreas says its static points come
     out about 25 % low against measured propellers), a 35 mm outrunner class motor (HAND resistance and no-load
     current), 4S Li-ion modules in parallel."""
     from vegeta import boreas
     import sterna_mass as sm
-    d, pitch = boreas.inches(11, 7)
-    prop = boreas.Propeller.from_pitch("11x7 folding", d, pitch, blades=2, chord_root_m=0.018, chord_max_m=0.026, chord_tip_m=0.008,
-                                       mass_kg=0.020, rotor_mass_kg=0.040)
+    d, pitch = boreas.inches(*prop_in)
+    f = prop_in[0] / 11.0
+    prop = boreas.Propeller.from_pitch(f"{prop_in[0]:g}x{prop_in[1]:g} folding", d, pitch, blades=2, chord_root_m=0.018 * f, chord_max_m=0.026 * f,
+                                       chord_tip_m=0.008 * f, mass_kg=0.020 * f ** 2, rotor_mass_kg=0.040 * f ** 2)
     airfoil = boreas.Airfoil(cl_alpha=5.7, alpha0_deg=-2.0, cl_max=1.1, cd0=0.02, k=0.04)
-    motor = boreas.Motor(f"35 mm outrunner, {kv:.0f} KV class", kv_rpm_per_volt=kv, resistance_ohm=0.05, no_load_current_a=1.0, max_current_a=40.0)
+    motor = boreas.Motor(f"35 mm outrunner, {kv:.0f} KV class", kv_rpm_per_volt=kv, resistance_ohm=0.05, no_load_current_a=1.0, max_current_a=max_a)
     battery = boreas.Battery(f"4S{modules}P P42A", cells=4, capacity_ah=sm.CELL_AH * modules)
     return boreas.Propulsion(prop, airfoil, motor, battery)
 

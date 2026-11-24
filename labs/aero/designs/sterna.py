@@ -87,6 +87,9 @@ class Sterna(Design):
         # ---- propulsion and balance
         Parameter("prop_diameter", 280.0, "mm", min=150.0, description="folding, 11 in class"),
         Parameter("cg_x", 401.0, "mm", description="the design CG from the spinner tip: 30 % MAC"),
+        # ---- size (the variants: sterna_long)
+        Parameter("scale", 1.0, "", min=0.5, max=3.0, description="the fuselage, fin, rails and spinner scaled by this (their tables are STERNA's); the wing and tailplane are set by their own parameters"),
+        Parameter("mtow_g", 2450.0, "g", min=500.0, description="the design mass limit"),
     ]
 
     # ------------------------------------------------------------------------------------------------ geometry
@@ -97,7 +100,7 @@ class Sterna(Design):
         b2, yb = p["span"] / 2, p["centre_span"] / 2
         cr, ct = p["root_chord"], p["tip_chord"]
         x_qc = p["wing_x"] + 0.25 * cr
-        y_r = b2 - 15.0                                            # the rounding's start
+        y_r = b2 * 735.0 / 750.0                                   # the rounding's start
         tan_d = math.tan(math.radians(p["dihedral_deg"]))
 
         def at(y, c):
@@ -106,10 +109,10 @@ class Sterna(Design):
             return (y, x_qc - 0.25 * c, c, z, tw)
         chord = lambda y: cr if y <= yb else cr + (ct - cr) * (y - yb) / (y_r - yb)
         out = [at(0.0, cr), at(yb, cr), at(0.5 * (yb + y_r), chord(0.5 * (yb + y_r))), at(700.0 * b2 / 750.0, chord(700.0 * b2 / 750.0)), at(y_r, ct)]
-        y, x_le, c, z, tw = at(b2 - 3.0, 0.79 * ct)
-        out.append((y, x_le + 10.0, c, z, tw))                     # the rounded tip: the chord falls, the leading edge runs aft
+        y, x_le, c, z, tw = at(b2 * 747.0 / 750.0, 0.79 * ct)
+        out.append((y, x_le + ct / 15.0, c, z, tw))                # the rounded tip: the chord falls, the leading edge runs aft
         y, x_le, c, z, tw = at(b2, 0.40 * ct)
-        out.append((y, x_le + 20.0, c, z, tw))
+        out.append((y, x_le + ct / 7.5, c, z, tw))
         return out
 
     @staticmethod
@@ -125,7 +128,8 @@ class Sterna(Design):
         hb2, hcr, hct = p["htail_span"] / 2, p["htail_root_chord"], p["htail_tip_chord"]
         S_h = (hcr + hct) * hb2
         x_ac_h = p["htail_x"] + 0.25 * hcr                         # unswept quarter chord
-        zf = np.array([f[0] for f in FIN]); cf = np.array([f[2] - f[1] for f in FIN]); xf = np.array([f[1] for f in FIN])
+        k = p["scale"]
+        zf = k * np.array([f[0] for f in FIN]); cf = k * np.array([f[2] - f[1] for f in FIN]); xf = k * np.array([f[1] for f in FIN])
         S_v = float(np.trapezoid(cf, zf))
         z_ac_v = float(np.trapezoid(cf * zf, zf)) / S_v
         x_ac_v = float(np.interp(z_ac_v, zf, xf + 0.25 * cf))
@@ -133,7 +137,8 @@ class Sterna(Design):
                 "S_h_mm2": S_h, "x_ac_h": x_ac_h, "S_v_mm2": S_v, "x_ac_v": x_ac_v, "z_ac_v": z_ac_v,
                 "l_h": x_ac_h - x_ac, "l_v": x_ac_v - x_ac, "V_h": S_h * (x_ac_h - x_ac) / (S * mac),
                 "V_v": S_v * (x_ac_v - x_ac) / (S * p["span"]), "cg_mac": (p["cg_x"] - x_mac) / mac,
-                "length": 1100.0, "height": 233.0 + 75.0 + RAILS[3], "prop_below_rails": p["prop_diameter"] / 2 - 75.0 - RAILS[3],
+                "length": 1100.0 * k, "height": (233.0 + 75.0 + RAILS[3]) * k, "prop_below_rails": p["prop_diameter"] / 2 - (75.0 + RAILS[3]) * k,
+                "scale": k, "fin_root_chord": 205.0 * k,
                 "stations": st}
 
     # ---------------------------------------------------------------------------------------------------- solids
@@ -161,8 +166,10 @@ class Sterna(Design):
         return half.union(half.mirror("XZ"))
 
     def _fuselage(self, p, n_around: int = 28, exponent: float = 2.7):
+        sc = p["scale"]
         xs = np.concatenate([np.linspace(45.0, 215.0, 9), np.linspace(250.0, 500.0, 6), np.linspace(550.0, 1085.0, 12)])
-        top, bot, hw = _smooth(xs, TOP), _smooth(xs, BOT), _smooth(xs, HALF_WIDTH)
+        top, bot, hw = sc * _smooth(xs, TOP), sc * _smooth(xs, BOT), sc * _smooth(xs, HALF_WIDTH)
+        xs = sc * xs
         e = 2.0 / exponent
         wp = None
         for k, x in enumerate(xs):
@@ -174,11 +181,11 @@ class Sterna(Design):
                 pts.append((hw[k] * math.copysign(abs(ca) ** e, ca), zc + hh * math.copysign(abs(sa) ** e, sa)))
             wp = (cq.Workplane("YZ").workplane(offset=float(x)) if wp is None else wp.workplane(offset=float(x - xs[k - 1]))).polyline(pts).close()
         body = wp.loft(combine=True, ruled=True)
-        spinner = cq.Workplane("XY").polyline([(0.0, 0.0)] + SPINNER + [(45.0, 0.0)]).close().revolve(360.0, (0, 0, 0), (1, 0, 0))
+        spinner = cq.Workplane("XY").polyline([(0.0, 0.0)] + [(sc * x, sc * r) for x, r in SPINNER] + [(45.0 * sc, 0.0)]).close().revolve(360.0, (0, 0, 0), (1, 0, 0))
         body = body.union(spinner)
-        x0, x1, yr, w = RAILS
+        x0, x1, yr, w = (sc * v for v in RAILS)
         for s in (1, -1):
-            body = body.union(cq.Workplane("XY").box(x1 - x0, w, w + 10.0).translate(((x0 + x1) / 2, s * yr, -75.0 - w / 2 + 5.0)))   # up into the curved belly
+            body = body.union(cq.Workplane("XY").box(x1 - x0, w, w + 10.0).translate(((x0 + x1) / 2, s * yr, -75.0 * sc - w / 2 + 5.0)))   # up into the curved belly
         return body
 
     def _tail(self, p):
@@ -191,18 +198,19 @@ class Sterna(Design):
                 .workplane(offset=-hb2).polyline([(x, z + z0) for x, z in sec(hct, x_qc - 0.25 * hct)]).close().loft(combine=True, ruled=True))
         tail = half.union(half.mirror("XZ"))
         wp = None
-        for k, (z, xl, xt) in enumerate(FIN):
-            wp = (cq.Workplane("XY").workplane(offset=z) if wp is None else wp.workplane(offset=z - FIN[k - 1][0])).polyline(sec(xt - xl, xl, 0.8)).close()
+        fin = [tuple(p["scale"] * v for v in f) for f in FIN]
+        for k, (z, xl, xt) in enumerate(fin):
+            wp = (cq.Workplane("XY").workplane(offset=z) if wp is None else wp.workplane(offset=z - fin[k - 1][0])).polyline(sec(xt - xl, xl, 0.8)).close()
         return tail.union(wp.loft(combine=True, ruled=True))
 
     def _joiner(self, p):
         """One half of the joiner tube, from the fuselage wall (y = 50) to its end in the panel, along +y."""
-        j = JOINER
-        return (cq.Workplane("XZ").workplane(offset=-50.0).center(j["x"], j["z"]).circle(j["od"] / 2).circle(j["od"] / 2 - j["wall"])
+        j, k = JOINER, p["scale"]
+        return (cq.Workplane("XZ").workplane(offset=-50.0 * k).center(p["wing_x"] + 0.30 * p["root_chord"], p["wing_z"]).circle(j["od"] / 2).circle(j["od"] / 2 - j["wall"])
                 .extrude(-j["in_panel"]))
 
     def _props(self, p):
-        return cq.Workplane("YZ").workplane(offset=24.0).circle(p["prop_diameter"] / 2).extrude(1.5)
+        return cq.Workplane("YZ").workplane(offset=24.0 * p["scale"]).circle(p["prop_diameter"] / 2).extrude(1.5)
 
     def parts(self, p) -> dict:
         return {"fuselage": self._fuselage(p), "wing": self._wing(p), "tail": self._tail(p), "props": self._props(p)}
