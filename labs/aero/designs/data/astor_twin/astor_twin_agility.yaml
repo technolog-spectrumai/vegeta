@@ -14,73 +14,73 @@ hand:
 options:
   flaps up (CFD):
     envelope:
-    - stall_m_s: 21.4
-      lift_at_the_limiter: 0.862
+    - stall_m_s: 21.6
+      lift_at_the_limiter: 0.82
     - V_m_s: 22.0
-      n: 0.97
+      n: 0.92
       limit: lift
       radius_m: null
       rate_deg_s: null
     - V_m_s: 25.0
-      n: 1.25
+      n: 1.19
       limit: lift
-      radius_m: 85.2
-      rate_deg_s: 16.8
+      radius_m: 99.6
+      rate_deg_s: 14.4
     - V_m_s: 30.0
-      n: 1.8
+      n: 1.71
       limit: lift
-      radius_m: 61.4
-      rate_deg_s: 28.0
+      radius_m: 66.2
+      rate_deg_s: 26.0
     - V_m_s: 40.0
-      n: 3.2
+      n: 3.04
       limit: lift
-      radius_m: 53.7
-      rate_deg_s: 42.7
+      radius_m: 56.8
+      rate_deg_s: 40.3
     - V_m_s: 50.0
-      n: 5.0
+      n: 4.75
       limit: lift
-      radius_m: 52.1
-      rate_deg_s: 55.0
+      radius_m: 54.9
+      rate_deg_s: 52.2
     - V_m_s: 60.0
-      n: 7.02
-      limit: thrust
-      radius_m: 52.8
-      rate_deg_s: 65.1
+      n: 6.84
+      limit: lift
+      radius_m: 54.3
+      rate_deg_s: 63.4
     - V_m_s: 80.0
-      n: 6.19
-      limit: thrust
-      radius_m: 106.8
-      rate_deg_s: 42.9
+      n: 8.0
+      limit: structure
+      radius_m: 82.2
+      rate_deg_s: 55.7
   flaps down 20 deg (CFD):
     envelope:
     - &id001
       stall_m_s: 19.4
-      lift_at_the_limiter: 1.095
+      lift_at_the_limiter: 1.098
     - V_m_s: 22.0
       n: 1.23
       limit: lift
-      radius_m: 69.1
-      rate_deg_s: 18.2
+      radius_m: 68.6
+      rate_deg_s: 18.4
     - V_m_s: 25.0
       n: 1.59
       limit: lift
-      radius_m: 51.7
-      rate_deg_s: 27.7
+      radius_m: 51.5
+      rate_deg_s: 27.8
     - V_m_s: 30.0
-      n: 2.28
+      n: 2.29
       limit: lift
-      radius_m: 44.7
-      rate_deg_s: 38.5
+      radius_m: 44.5
+      rate_deg_s: 38.6
     - V_m_s: 40.0
-      n: 4.06
+      n: 4.07
       limit: lift
-      radius_m: 41.4
-      rate_deg_s: 55.3
+      radius_m: 41.3
+      rate_deg_s: 55.5
     - V_m_s: 50.0
-      n: 6.35
+      n: 6.36
       limit: lift
-      radius_m: 40.7
-      rate_deg_s: 70.4
+      radius_m: 40.6
+      rate_deg_s: 70.6
     - V_m_s: 60.0
       n: 8.0
       limit: structure
@@ -97,32 +97,32 @@ options:
     - V_m_s: 22.0
       n: 1.23
       limit: lift
-      radius_m: 69.1
-      rate_deg_s: 18.2
+      radius_m: 68.6
+      rate_deg_s: 18.4
       flaps: down
     - V_m_s: 25.0
       n: 1.59
       limit: lift
-      radius_m: 51.7
-      rate_deg_s: 27.7
+      radius_m: 51.5
+      rate_deg_s: 27.8
       flaps: down
     - V_m_s: 30.0
-      n: 2.28
+      n: 2.29
       limit: lift
-      radius_m: 44.7
-      rate_deg_s: 38.5
+      radius_m: 44.5
+      rate_deg_s: 38.6
       flaps: down
     - V_m_s: 40.0
-      n: 4.06
+      n: 4.07
       limit: lift
-      radius_m: 41.4
-      rate_deg_s: 55.3
+      radius_m: 41.3
+      rate_deg_s: 55.5
       flaps: down
     - V_m_s: 50.0
-      n: 6.35
+      n: 6.36
       limit: lift
-      radius_m: 40.7
-      rate_deg_s: 70.4
+      radius_m: 40.6
+      rate_deg_s: 70.6
       flaps: down
     - V_m_s: 60.0
       n: 8.0
@@ -131,43 +131,43 @@ options:
       rate_deg_s: 74.3
       flaps: down
     - V_m_s: 80.0
-      n: 6.19
-      limit: thrust
-      radius_m: 106.8
-      rate_deg_s: 42.9
+      n: 8.0
+      limit: structure
+      radius_m: 82.2
+      rate_deg_s: 55.7
       flaps: up
   + the propellers' slipstream at full throttle (HAND):
     envelope:
     - *id001
     - V_m_s: 22.0
-      n: 2.49
+      n: 2.5
       limit: lift
-      radius_m: 21.6
-      rate_deg_s: 58.4
+      radius_m: 21.5
+      rate_deg_s: 58.5
       flaps: down
     - V_m_s: 25.0
-      n: 2.85
+      n: 2.86
       limit: lift
       radius_m: 23.8
-      rate_deg_s: 60.1
+      rate_deg_s: 60.3
       flaps: down
     - V_m_s: 30.0
-      n: 3.55
+      n: 3.56
       limit: lift
-      radius_m: 27.0
-      rate_deg_s: 63.8
+      radius_m: 26.9
+      rate_deg_s: 63.9
       flaps: down
     - V_m_s: 40.0
-      n: 5.29
+      n: 5.31
       limit: lift
-      radius_m: 31.4
-      rate_deg_s: 73.0
+      radius_m: 31.3
+      rate_deg_s: 73.2
       flaps: down
     - V_m_s: 50.0
-      n: 7.5
+      n: 7.52
       limit: lift
-      radius_m: 34.3
-      rate_deg_s: 83.6
+      radius_m: 34.2
+      rate_deg_s: 83.8
       flaps: down
     - V_m_s: 60.0
       n: 8.0
@@ -176,8 +176,8 @@ options:
       rate_deg_s: 74.3
       flaps: down
     - V_m_s: 80.0
-      n: 6.52
-      limit: thrust
-      radius_m: 101.3
-      rate_deg_s: 45.2
+      n: 8.0
+      limit: structure
+      radius_m: 82.2
+      rate_deg_s: 55.7
       flaps: up

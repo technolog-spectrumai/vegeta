@@ -1,6 +1,6 @@
 # HAWK — the ASTOR-TWIN interceptor, as it stands
 
-State of the design on 2026-11-23, branch `dev_astor_hawk`, commit `a509fcd`.
+State of the design on 2026-11-24, branch `dev_astor_hawk`.
 
 HAWK is a compact, autonomous, fixed-wing aircraft that catches small quadcopters by
 firing a net at them. In the code it is called **ASTOR-TWIN** (`labs/aero/designs/astor_twin.py`);
@@ -37,7 +37,8 @@ or tail.
 **Wing.** One plain tapered trapezoid, fixed at 12° of leading-edge sweep.
 
 - Chord 260 mm at the centre plane to 117 mm at the tip; half span 691 mm.
-- Section 12 % thick with 4 % camber. **This section is under review**, see section 8.
+- Section 12 % thick with 4 % camber. In fast flight every flap is reflexed 6° up to
+  flatten it, see section 8.
 - Built in three pieces: an inner piece through the fuselage carrying both motors, and two
   outer pieces that plug onto joiner tubes 235 mm from the centre (for transport).
 - **Flaperons** along 5–96 % of each outer piece, 30 % of the chord: roll control, and
@@ -83,13 +84,16 @@ All from CFD, on the aircraft's own wing area.
 
 - Flaps add 0.65 to the lift at a fixed angle.
 - Static margin 10 % with the centre of gravity at 385 mm from the nose.
-- Level-flight drag at 6.92 kg: 7.9 N at 30 m/s, 30 N at 60 m/s, 55 N at 80 m/s.
+- Level-flight drag at 6.92 kg, flaps scheduled: 8.5 N at 30 m/s, 15 N at 45 m/s,
+  26 N at 60 m/s, 47 N at 80 m/s.
 - Thrust (propulsion library, both propellers): 125 N static, 108 N at 30 m/s, 84 N at
   60 m/s, 68 N at 80 m/s.
 
 ## 5. Flight controller
 
 - **Angle-of-attack limiter** under every elevator command; it follows the flap position.
+- **Flap schedule.** Flaps up, every flap is reflexed 6° up below 2° angle of attack and
+  returns to neutral by 4°. Flaps go 20° down on command for slow, tight turning.
 - **Yaw damper** on the rudder, with the steady rate of a turn washed out.
 - **Pitch-rate damper** on the elevator.
 - **g limit: 8 g.** The user's choice. 100 g of structure is budgeted for it (HAND);
@@ -115,9 +119,9 @@ required, not optional. No test stalled the aircraft under the limiter.
 
 | Speed | 25 m/s | 30 m/s | 40 m/s | 50 m/s | 60 m/s | 80 m/s |
 |---|---|---|---|---|---|---|
-| Load factor | 1.6 g | 2.3 g | 4.1 g | 6.4 g | 8.0 g | 6.3 g |
-| Turn radius | 52 m | 45 m | 41 m | 41 m | 46 m | 104 m |
-| What limits it | lift | lift | lift | lift | structure | thrust |
+| Load factor | 1.6 g | 2.3 g | 4.1 g | 6.4 g | 8.0 g | 8.0 g |
+| Turn radius | 52 m | 45 m | 41 m | 41 m | 46 m | 82 m |
+| What limits it | lift | lift | lift | lift | structure | structure |
 
 **Performance card** (model, user's run at commit `4576ec5`, flaps not used by the card):
 
@@ -129,29 +133,34 @@ required, not optional. No test stalled the aircraft under the limiter.
 | Time at full power | 1.2 min |
 | Catapult launch | safe in 1.6 s from 27.5 m/s |
 
-The card's mission radius (0.4 km economy) and the 10 km reserve (−27 %) are poor. They
-come from the cambered wing's drag in fast flight, see section 8.
+**That card is out of date at the fast end.** It was flown before the flap reflex, and with
+a drag table that counted part of the cambered wing's drag twice (corrected 2026-11-24).
+On the corrected model the aircraft trims at 88 m/s with 91 % throttle, so the top speed is
+about 90 m/s, and the 0.4 km mission radius on that card is no longer valid. The stability
+phase must be re-run to refresh it.
 
-## 8. Open question: the wing section
+## 8. The wing section: settled by CFD
 
-CFD shows the 4 % cambered wing costs about 25 % more drag than the earlier thin wing
-(8 %, 2 % camber) from 45 m/s upward, for only +0.06 of maximum lift. The flaps are what
-bring the low-speed lift (+0.20).
+The 4 % cambered wing, flown clean, costs about 25 % more drag than the earlier thin wing
+(8 %, 2 % camber) from 45 m/s upward: it flies there at about −2°, off its design lift.
+Two fixes were run in CFD on 2026-11-23:
 
-| Speed | Thin wing | Current wing | Difference |
+| Level-flight drag at 6.92 kg | 45 m/s | 60 m/s | 80 m/s |
 |---|---|---|---|
-| 30 m/s | 8.4 N | 7.9 N | −6 % |
-| 45 m/s | 13.0 N | 16.3 N | +25 % |
-| 60 m/s | 23.6 N | 30.3 N | +28 % |
-| 80 m/s | 44.7 N | 55.3 N | +24 % |
+| Old thin wing (8 %, 2 % camber) | 13.0 N | 23.6 N | 44.7 N |
+| Current wing, flaps neutral | 16.3 N | 30.3 N | 55.3 N |
+| Current wing, flaps reflexed 6° up | 14.5 N (extrapolated) | 25.9 N | 46.8 N |
+| Same thickness, 2 % camber | 14.6 N | 25.6 N | 46.2 N |
 
-Two fixes are prepared as CFD cases and **not yet run**: the same 12 % wing with 2 %
-camber (flaps up and down), and the current wing with every flap reflexed 6° up in fast
-flight. The wing will be chosen on those results.
+| Maximum lift coefficient | Flaps up | Flaps down 20° |
+|---|---|---|
+| Current wing (4 % camber) | 0.92 | 1.14 |
+| Same thickness, 2 % camber | 0.84 | about 1.0 |
 
-```bash
-bash labs/aero/sims/astor.sh -j 14 --section-cfd
-```
+**Decision: keep the 4 % wing and reflex the flaps in fast flight.** Reflexing recovers
+nearly all the drag (within 10 % of the thin wing) with no change to the airframe, and the
+4 % wing keeps the better low-speed lift. The 2 % wing is no better when fast and worse
+when slow. The reflex data covers −4° to +2° only.
 
 ## 9. The attack
 
@@ -184,14 +193,13 @@ jinking chase existed):
 | **All** | **46 of 60** | **77 %** |
 
 ASTOR was never lost. The target is 80 %. With the jinking chase, 9 of 13 jinking debug
-sorties were netted (7 of 10 that had failed in the campaign); the campaign has not been
-re-run with it.
+sorties were netted (7 of 10 that had failed in the campaign), and 3 of 5 after the flap
+reflex went in; the campaign has not been re-run with either.
 
 ## 10. What is not yet known or not done
 
 **Design**
 
-- The wing section (section 8).
 - **Internal layout.** No item-by-item balance exists. The pack has about 215 mm of body
   ahead of the air vessel and its fit in a 70 mm fuselage is unchecked. The motor
   controllers are assumed to sit in the nacelles. The refill bottle has no place.
@@ -206,6 +214,7 @@ re-run with it.
 **Aerodynamics and control**
 
 - All CFD is screening level.
+- The flap reflex is scheduled on angle of attack with no actuator lag in the model.
 - The lift the propellers' slipstream adds to the inner wing is not in the flight model.
   A HAND estimate says it could halve the low-speed turn radius at full throttle.
 - The approach guidance uses the flaps only against jinking targets; the performance card
@@ -239,10 +248,6 @@ bash labs/aero/sims/astor.sh -j 14                  # CFD, stability, 60 net-sho
 
 ```bash
 bash labs/aero/sims/astor.sh -j 14 --netshot-only   # the sorties alone
-```
-
-```bash
-bash labs/aero/sims/astor.sh -j 14 --section-cfd    # the wing-section question, 24 cases
 ```
 
 Every run is restartable, shows a progress bar and writes one timestamped YAML.

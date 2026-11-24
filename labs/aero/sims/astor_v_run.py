@@ -93,6 +93,18 @@ def phase_cfd(a) -> int:
     R.OUT.mkdir(parents=True, exist_ok=True)
     path = R.OUT / f"astor_v_cfd{'_fine' if a.full_cfd else ''}.yaml"
     doc = R._load(path, a.fresh) or {"aircraft": "ASTOR-V / ASTOR-BOOST", "quality": quality, "configurations": {}}
+    # the saved progress is dropped whenever the code changes; the INSTALLED data keeps every configuration ever solved
+    # (2026-11-24: a run of three new configurations had replaced it, and the flight model lost the wing it flies).
+    # Solved rows of this run's configurations are taken back from it, unless --fresh.
+    import yaml
+    kept = (yaml.safe_load(DATA.read_text()) or {}).get("configurations", {}) if DATA.exists() and not a.fresh and not a.full_cfd else {}
+    for d in a.designs:
+        for s in cf.sweeps(d):
+            old = [r for r in kept.get(cf.key(d, s), {}).get("rows", []) if r.get("status") == "solved"]
+            have = {float(r["alpha_deg"]) for r in doc["configurations"].get(cf.key(d, s), {}).get("rows", []) if r.get("status") == "solved"}
+            if old:
+                c = doc["configurations"].setdefault(cf.key(d, s), {**{k: v for k, v in kept[cf.key(d, s)].items() if k != "rows"}, "rows": []})
+                c["rows"] = c["rows"] + [r for r in old if float(r["alpha_deg"]) not in have]
     for d in a.designs:
         for s in cf.sweeps(d):
             c = doc["configurations"].setdefault(cf.key(d, s), {"design": d, "sweep_deg": s, "speed_m_s": cf.CASES[s][0], "reference": cf.reference(d, s), "rows": []})
@@ -127,7 +139,11 @@ def phase_cfd(a) -> int:
     usable = [k for k, c in doc["configurations"].items() if sum(r.get("status") == "solved" for r in c["rows"]) >= 4]
     installed = False
     if usable and not a.no_install and not a.full_cfd:
-        shutil.copy(path, DATA)
+        inst = (yaml.safe_load(DATA.read_text()) or {}) if DATA.exists() else {}
+        inst.setdefault("configurations", {})
+        inst.update({k: v for k, v in doc.items() if k != "configurations"})
+        inst["configurations"].update({k: doc["configurations"][k] for k in usable})      # merged: nothing already installed is lost
+        DATA.write_text(yaml.safe_dump(inst, sort_keys=False, allow_unicode=True, width=150))
         installed = True
         print(f"installed -> {DATA}  ({len(usable)} configurations; phases 2 and 3 now use the CFD's corrections)")
     run = R._write("cfd", {"run": {**_meta("cfd", a), "quality": quality, "installed": installed},

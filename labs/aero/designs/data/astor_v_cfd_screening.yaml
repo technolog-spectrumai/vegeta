@@ -647,6 +647,933 @@ configurations:
       CL_alpha_per_rad: 2.885832617892612
       static_margin: 0.13310195254308954
       drag_area_cm2: 67.49582202
+  twin_sweep12:
+    design: twin
+    sweep_deg: 12.0
+    speed_m_s: 25.0
+    reference:
+      S: 0.198
+      c: 0.2
+      cg_mm:
+      - 365.0
+      - 0.0
+      carriage_travel_mm: 0.0
+      camber: 0.02
+    rows:
+    - alpha_deg: -4.0
+      V: 25.0
+      lattice:
+        Cl: -0.2673
+        Cm: 0.0556
+      status: solved
+      Cl: -0.326716663
+      Cd: 0.0835691535
+      Cm_cg: 0.02551918279621622
+      converged: true
+      iterations: 136
+      cells: 162825
+      mesh_ok: false
+    - alpha_deg: 0.0
+      V: 25.0
+      lattice:
+        Cl: 0.196
+        Cm: -0.0049
+      status: solved
+      Cl: 0.221775977
+      Cd: 0.0553532641
+      Cm_cg: -0.0459937034254054
+      converged: false
+      iterations: 300
+      cells: 147740
+      mesh_ok: false
+    - alpha_deg: 4.0
+      V: 25.0
+      lattice:
+        Cl: 0.6593
+        Cm: -0.0699
+      status: solved
+      Cl: 0.620380171
+      Cd: 0.0723172759
+      Cm_cg: -0.11874146416297297
+      converged: true
+      iterations: 162
+      cells: 142903
+      mesh_ok: false
+    - alpha_deg: 8.0
+      V: 25.0
+      lattice:
+        Cl: 1.1203
+        Cm: -0.1259
+      status: solved
+      Cl: 0.909008452
+      Cd: 0.143493775
+      Cm_cg: -0.2446065133945946
+      converged: false
+      iterations: 300
+      cells: 133101
+      mesh_ok: false
+    - alpha_deg: 10.0
+      V: 25.0
+      lattice:
+        Cl: 1.3493
+        Cm: -0.1463
+      status: solved
+      Cl: 1.058264
+      Cd: 0.193281342
+      Cm_cg: -0.30511999487027025
+      converged: false
+      iterations: 300
+      cells: 134873
+      mesh_ok: false
+    - alpha_deg: 12.0
+      V: 25.0
+      lattice:
+        Cl: 1.5768
+        Cm: -0.1595
+      status: solved
+      Cl: 1.103501
+      Cd: 0.250087373
+      Cm_cg: -0.3489245928486487
+      converged: true
+      iterations: 253
+      cells: 127776
+      mesh_ok: false
+    - alpha_deg: 14.0
+      V: 25.0
+      lattice:
+        Cl: 1.8027
+        Cm: -0.1638
+      status: solved
+      Cl: 1.14694038
+      Cd: 0.300655373
+      Cm_cg: -0.3988869092270271
+      converged: false
+      iterations: 300
+      cells: 125093
+      mesh_ok: false
+    - alpha_deg: 16.0
+      V: 25.0
+      lattice:
+        Cl: 2.0266
+        Cm: -0.1577
+      status: solved
+      Cl: 1.14460503
+      Cd: 0.352430829
+      Cm_cg: -0.41861114712972974
+      converged: false
+      iterations: 300
+      cells: 131555
+      mesh_ok: false
+    summary:
+      solved: 8
+      CD_min: 0.0553532641
+      CL_max: 1.14694038
+      alpha_CL_max_deg: 14.0
+      CL_alpha_per_rad: 6.783081422300289
+      static_margin: 0.15098942341668725
+      drag_area_cm2: 109.59946291800001
+  twin_stowed_sweep12:
+    design: twin_stowed
+    sweep_deg: 12.0
+    speed_m_s: 25.0
+    reference:
+      S: 0.198
+      c: 0.2
+      cg_mm:
+      - 365.0
+      - 0.0
+      carriage_travel_mm: 0.0
+      camber: 0.02
+    rows:
+    - alpha_deg: -4.0
+      V: 25.0
+      lattice:
+        Cl: -0.2673
+        Cm: 0.0556
+      status: solved
+      Cl: -0.195086137
+      Cd: 0.0724483681
+      Cm_cg: 0.027108256501621623
+      converged: false
+      iterations: 300
+      cells: 140937
+      mesh_ok: false
+    - alpha_deg: 0.0
+      V: 25.0
+      lattice:
+        Cl: 0.196
+        Cm: -0.0049
+      status: solved
+      Cl: 0.222009966
+      Cd: 0.0504323506
+      Cm_cg: -0.037292819274324325
+      converged: false
+      iterations: 300
+      cells: 131397
+      mesh_ok: false
+    - alpha_deg: 4.0
+      V: 25.0
+      lattice:
+        Cl: 0.6593
+        Cm: -0.0699
+      status: solved
+      Cl: 0.567635294
+      Cd: 0.0667816808
+      Cm_cg: -0.11442944646162163
+      converged: true
+      iterations: 112
+      cells: 132216
+      mesh_ok: false
+    - alpha_deg: 8.0
+      V: 25.0
+      lattice:
+        Cl: 1.1203
+        Cm: -0.1259
+      status: solved
+      Cl: 0.967065964
+      Cd: 0.144252225
+      Cm_cg: -0.22105085235405406
+      converged: true
+      iterations: 198
+      cells: 133278
+      mesh_ok: false
+    - alpha_deg: 10.0
+      V: 25.0
+      lattice:
+        Cl: 1.3493
+        Cm: -0.1463
+      status: solved
+      Cl: 1.05927704
+      Cd: 0.191269626
+      Cm_cg: -0.3188332612864865
+      converged: true
+      iterations: 224
+      cells: 127414
+      mesh_ok: false
+    - alpha_deg: 12.0
+      V: 25.0
+      lattice:
+        Cl: 1.5768
+        Cm: -0.1595
+      status: solved
+      Cl: 1.10744247
+      Cd: 0.245400597
+      Cm_cg: -0.335032717572973
+      converged: false
+      iterations: 300
+      cells: 127525
+      mesh_ok: false
+    - alpha_deg: 14.0
+      V: 25.0
+      lattice:
+        Cl: 1.8027
+        Cm: -0.1638
+      status: solved
+      Cl: 1.13978877
+      Cd: 0.29845642
+      Cm_cg: -0.4005660801972973
+      converged: false
+      iterations: 300
+      cells: 124158
+      mesh_ok: false
+    - alpha_deg: 16.0
+      V: 25.0
+      lattice:
+        Cl: 2.0266
+        Cm: -0.1577
+      status: solved
+      Cl: 1.14901474
+      Cd: 0.35389425
+      Cm_cg: -0.4165064019405405
+      converged: false
+      iterations: 300
+      cells: 130678
+      mesh_ok: false
+    summary:
+      solved: 8
+      CD_min: 0.0504323506
+      CL_max: 1.14901474
+      alpha_CL_max_deg: 16.0
+      CL_alpha_per_rad: 5.462589867559828
+      static_margin: 0.18450775016633642
+      drag_area_cm2: 99.85605418800002
+  twin_agile_sweep12:
+    design: twin_agile
+    sweep_deg: 12.0
+    speed_m_s: 25.0
+    reference:
+      S: 0.198
+      c: 0.2
+      cg_mm:
+      - 365.0
+      - 0.0
+      carriage_travel_mm: 0.0
+      camber: 0.04
+    rows:
+    - alpha_deg: -4.0
+      V: 25.0
+      lattice:
+        Cl: -0.0713
+        Cm: 0.053
+      status: solved
+      Cl: -0.0307608205
+      Cd: 0.092665651
+      Cm_cg: 0.0414562516872973
+      converged: false
+      iterations: 300
+      cells: 140940
+      mesh_ok: false
+    - alpha_deg: -2.0
+      V: 25.0
+      lattice:
+        Cl: 0.1602
+        Cm: 0.0228
+      status: solved
+      Cl: 0.0613418741
+      Cd: 0.0719030163
+      Cm_cg: -0.02785861405540541
+      converged: false
+      iterations: 300
+      cells: 140893
+      mesh_ok: false
+    - alpha_deg: 0.0
+      V: 25.0
+      lattice:
+        Cl: 0.392
+        Cm: -0.0098
+      status: solved
+      Cl: 0.387254385
+      Cd: 0.063455926
+      Cm_cg: -0.05820823459378379
+      converged: false
+      iterations: 300
+      cells: 132449
+      mesh_ok: false
+    - alpha_deg: 2.0
+      V: 25.0
+      lattice:
+        Cl: 0.6237
+        Cm: -0.0431
+      status: solved
+      Cl: 0.584636079
+      Cd: 0.0679939002
+      Cm_cg: -0.09796441937027028
+      converged: false
+      iterations: 300
+      cells: 132705
+      mesh_ok: false
+    - alpha_deg: 4.0
+      V: 25.0
+      lattice:
+        Cl: 0.8552
+        Cm: -0.0754
+      status: solved
+      Cl: 0.674426035
+      Cd: 0.0785637155
+      Cm_cg: -0.12233346501567569
+      converged: true
+      iterations: 108
+      cells: 132533
+      mesh_ok: false
+    - alpha_deg: 8.0
+      V: 25.0
+      lattice:
+        Cl: 1.3163
+        Cm: -0.1304
+      status: solved
+      Cl: 1.00882145
+      Cd: 0.158631914
+      Cm_cg: -0.32306221790270273
+      converged: true
+      iterations: 128
+      cells: 133707
+      mesh_ok: false
+    - alpha_deg: 10.0
+      V: 25.0
+      lattice:
+        Cl: 1.5452
+        Cm: -0.1497
+      status: solved
+      Cl: 1.11718616
+      Cd: 0.203381725
+      Cm_cg: -0.3538639464567568
+      converged: true
+      iterations: 188
+      cells: 127519
+      mesh_ok: false
+    - alpha_deg: 12.0
+      V: 25.0
+      lattice:
+        Cl: 1.7728
+        Cm: -0.1614
+      status: solved
+      Cl: 1.19815463
+      Cd: 0.251889479
+      Cm_cg: -0.3937679682486487
+      converged: true
+      iterations: 133
+      cells: 127605
+      mesh_ok: false
+    - alpha_deg: 14.0
+      V: 25.0
+      lattice:
+        Cl: 1.9987
+        Cm: -0.1638
+      status: solved
+      Cl: 1.1989174
+      Cd: 0.302064586
+      Cm_cg: -0.4129730476783784
+      converged: true
+      iterations: 257
+      cells: 124938
+      mesh_ok: false
+    - alpha_deg: 16.0
+      V: 25.0
+      lattice:
+        Cl: 2.2226
+        Cm: -0.1554
+      status: solved
+      Cl: 1.1651844
+      Cd: 0.339648718
+      Cm_cg: -0.4215399748135136
+      converged: false
+      iterations: 300
+      cells: 131033
+      mesh_ok: false
+    summary:
+      solved: 10
+      CD_min: 0.063455926
+      CL_max: 1.1989174
+      alpha_CL_max_deg: 14.0
+      CL_alpha_per_rad: 5.539550528046391
+      static_margin: 0.1965893467200785
+      drag_area_cm2: 125.64273347999999
+  twin_agile_flap_sweep12:
+    design: twin_agile_flap
+    sweep_deg: 12.0
+    speed_m_s: 25.0
+    reference:
+      S: 0.198
+      c: 0.2
+      cg_mm:
+      - 365.0
+      - 0.0
+      carriage_travel_mm: 0.0
+      camber: 0.04
+    rows:
+    - alpha_deg: -4.0
+      V: 25.0
+      lattice:
+        Cl: -0.0713
+        Cm: 0.053
+      status: solved
+      Cl: 0.732534697
+      Cd: 0.126565809
+      Cm_cg: -0.06336307076513514
+      converged: false
+      iterations: 300
+      cells: 140987
+      mesh_ok: false
+    - alpha_deg: -2.0
+      V: 25.0
+      lattice:
+        Cl: 0.1602
+        Cm: 0.0228
+      status: solved
+      Cl: 0.970394393
+      Cd: 0.133800659
+      Cm_cg: -0.10039563364378379
+      converged: false
+      iterations: 300
+      cells: 141461
+      mesh_ok: false
+    - alpha_deg: 0.0
+      V: 25.0
+      lattice:
+        Cl: 0.392
+        Cm: -0.0098
+      status: solved
+      Cl: 1.23318139
+      Cd: 0.149100221
+      Cm_cg: -0.1429454456181081
+      converged: true
+      iterations: 136
+      cells: 132979
+      mesh_ok: false
+    - alpha_deg: 2.0
+      V: 25.0
+      lattice:
+        Cl: 0.6237
+        Cm: -0.0431
+      status: solved
+      Cl: 1.36584653
+      Cd: 0.164135128
+      Cm_cg: -0.2016582850540541
+      converged: false
+      iterations: 300
+      cells: 133587
+      mesh_ok: false
+    - alpha_deg: 4.0
+      V: 25.0
+      lattice:
+        Cl: 0.8552
+        Cm: -0.0754
+      status: solved
+      Cl: 1.48287459
+      Cd: 0.188056671
+      Cm_cg: -0.23283026761621625
+      converged: true
+      iterations: 145
+      cells: 133615
+      mesh_ok: false
+    - alpha_deg: 8.0
+      V: 25.0
+      lattice:
+        Cl: 1.3163
+        Cm: -0.1304
+      status: solved
+      Cl: 1.46100918
+      Cd: 0.282747083
+      Cm_cg: -0.4137788374054054
+      converged: true
+      iterations: 155
+      cells: 133560
+      mesh_ok: false
+    - alpha_deg: 10.0
+      V: 25.0
+      lattice:
+        Cl: 1.5452
+        Cm: -0.1497
+      status: solved
+      Cl: 1.38564224
+      Cd: 0.319662401
+      Cm_cg: -0.4010837439810811
+      converged: true
+      iterations: 135
+      cells: 127642
+      mesh_ok: false
+    - alpha_deg: 12.0
+      V: 25.0
+      lattice:
+        Cl: 1.7728
+        Cm: -0.1614
+      status: solved
+      Cl: 1.43132417
+      Cd: 0.374945798
+      Cm_cg: -0.4461483538054054
+      converged: true
+      iterations: 212
+      cells: 127746
+      mesh_ok: false
+    - alpha_deg: 14.0
+      V: 25.0
+      lattice:
+        Cl: 1.9987
+        Cm: -0.1638
+      status: solved
+      Cl: 1.43939404
+      Cd: 0.4304119
+      Cm_cg: -0.4353573087324325
+      converged: false
+      iterations: 300
+      cells: 125536
+      mesh_ok: false
+    - alpha_deg: 16.0
+      V: 25.0
+      lattice:
+        Cl: 2.2226
+        Cm: -0.1554
+      status: solved
+      Cl: 1.43139151
+      Cd: 0.500656641
+      Cm_cg: -0.4714632473108108
+      converged: false
+      iterations: 300
+      cells: 130947
+      mesh_ok: false
+    summary:
+      solved: 10
+      CD_min: 0.126565809
+      CL_max: 1.48287459
+      alpha_CL_max_deg: 4.0
+      CL_alpha_per_rad: 5.432017829396237
+      static_margin: 0.2246962326585555
+      drag_area_cm2: 250.60030182000003
+  twin_c2_sweep12:
+    design: twin_c2
+    sweep_deg: 12.0
+    speed_m_s: 25.0
+    reference:
+      S: 0.198
+      c: 0.2
+      cg_mm:
+      - 365.0
+      - 0.0
+      carriage_travel_mm: 0.0
+      camber: 0.02
+    rows:
+    - alpha_deg: -4.0
+      V: 25.0
+      lattice:
+        Cl: -0.2673
+        Cm: 0.0556
+      status: solved
+      Cl: -0.189121036
+      Cd: 0.0827156308
+      Cm_cg: 0.06549654276648649
+      converged: null
+      iterations: null
+      cells: 140700
+      mesh_ok: false
+    - alpha_deg: -2.0
+      V: 25.0
+      lattice:
+        Cl: -0.0358
+        Cm: 0.0268
+      status: solved
+      Cl: -0.124377678
+      Cd: 0.0617682311
+      Cm_cg: 0.01874700769702703
+      converged: false
+      iterations: 300
+      cells: 139899
+      mesh_ok: false
+    - alpha_deg: 0.0
+      V: 25.0
+      lattice:
+        Cl: 0.196
+        Cm: -0.0049
+      status: solved
+      Cl: 0.219190761
+      Cd: 0.0580413243
+      Cm_cg: -0.023817820054864863
+      converged: false
+      iterations: 300
+      cells: 131732
+      mesh_ok: false
+    - alpha_deg: 2.0
+      V: 25.0
+      lattice:
+        Cl: 0.4278
+        Cm: -0.0377
+      status: solved
+      Cl: 0.454124868
+      Cd: 0.0635292521
+      Cm_cg: -0.0789180059327027
+      converged: false
+      iterations: 300
+      cells: 132140
+      mesh_ok: false
+    - alpha_deg: 4.0
+      V: 25.0
+      lattice:
+        Cl: 0.6593
+        Cm: -0.0699
+      status: solved
+      Cl: 0.511798331
+      Cd: 0.0716641611
+      Cm_cg: -0.10013674122162164
+      converged: true
+      iterations: 120
+      cells: 132116
+      mesh_ok: false
+    - alpha_deg: 8.0
+      V: 25.0
+      lattice:
+        Cl: 1.1203
+        Cm: -0.1259
+      status: solved
+      Cl: 0.861373781
+      Cd: 0.150424927
+      Cm_cg: -0.2831050965810811
+      converged: true
+      iterations: 134
+      cells: 133412
+      mesh_ok: false
+    - alpha_deg: 10.0
+      V: 25.0
+      lattice:
+        Cl: 1.3493
+        Cm: -0.1463
+      status: solved
+      Cl: 1.00008359
+      Cd: 0.194096056
+      Cm_cg: -0.3177899663756757
+      converged: true
+      iterations: 222
+      cells: 126831
+      mesh_ok: false
+    - alpha_deg: 12.0
+      V: 25.0
+      lattice:
+        Cl: 1.5768
+        Cm: -0.1595
+      status: solved
+      Cl: 1.05309863
+      Cd: 0.247976545
+      Cm_cg: -0.3578804176864865
+      converged: true
+      iterations: 160
+      cells: 127651
+      mesh_ok: false
+    - alpha_deg: 14.0
+      V: 25.0
+      lattice:
+        Cl: 1.8027
+        Cm: -0.1638
+      status: solved
+      Cl: 1.08349168
+      Cd: 0.294943984
+      Cm_cg: -0.36882714438648656
+      converged: false
+      iterations: 300
+      cells: 124429
+      mesh_ok: false
+    - alpha_deg: 16.0
+      V: 25.0
+      lattice:
+        Cl: 2.0266
+        Cm: -0.1577
+      status: solved
+      Cl: 1.03413338
+      Cd: 0.33835875
+      Cm_cg: -0.3830063713378379
+      converged: false
+      iterations: 300
+      cells: 130970
+      mesh_ok: false
+    summary:
+      solved: 10
+      CD_min: 0.0580413243
+      CL_max: 1.08349168
+      alpha_CL_max_deg: 14.0
+      CL_alpha_per_rad: 5.673259866976761
+      static_margin: 0.2078138828476232
+      drag_area_cm2: 114.92182211400002
+  twin_c2_flap_sweep12:
+    design: twin_c2_flap
+    sweep_deg: 12.0
+    speed_m_s: 25.0
+    reference:
+      S: 0.198
+      c: 0.2
+      cg_mm:
+      - 365.0
+      - 0.0
+      carriage_travel_mm: 0.0
+      camber: 0.02
+    rows:
+    - alpha_deg: -4.0
+      V: 25.0
+      lattice:
+        Cl: -0.2673
+        Cm: 0.0556
+      status: solved
+      Cl: 0.632601604
+      Cd: 0.110813323
+      Cm_cg: -0.038959149657567575
+      converged: true
+      iterations: 149
+      cells: 140807
+      mesh_ok: false
+    - alpha_deg: -2.0
+      V: 25.0
+      lattice:
+        Cl: -0.0358
+        Cm: 0.0268
+      status: solved
+      Cl: 0.855332868
+      Cd: 0.115218095
+      Cm_cg: -0.0758759936991892
+      converged: true
+      iterations: 118
+      cells: 141208
+      mesh_ok: false
+    - alpha_deg: 0.0
+      V: 25.0
+      lattice:
+        Cl: 0.196
+        Cm: -0.0049
+      status: solved
+      Cl: 1.0474353
+      Cd: 0.13401956
+      Cm_cg: -0.10411179860594595
+      converged: false
+      iterations: 300
+      cells: 132286
+      mesh_ok: false
+    - alpha_deg: 2.0
+      V: 25.0
+      lattice:
+        Cl: 0.4278
+        Cm: -0.0377
+      status: solved
+      Cl: 1.25952129
+      Cd: 0.151463197
+      Cm_cg: -0.14671052627999998
+      converged: false
+      iterations: 300
+      cells: 133017
+      mesh_ok: false
+    - alpha_deg: 4.0
+      V: 25.0
+      lattice:
+        Cl: 0.6593
+        Cm: -0.0699
+      status: solved
+      Cl: 1.20064446
+      Cd: 0.18954785
+      Cm_cg: -0.2974333821081081
+      converged: true
+      iterations: 275
+      cells: 133146
+      mesh_ok: false
+    - alpha_deg: 8.0
+      V: 25.0
+      lattice:
+        Cl: 1.1203
+        Cm: -0.1259
+      status: solved
+      Cl: 1.24068428
+      Cd: 0.269474809
+      Cm_cg: -0.339802833372973
+      converged: true
+      iterations: 150
+      cells: 133275
+      mesh_ok: false
+    - alpha_deg: 10.0
+      V: 25.0
+      lattice:
+        Cl: 1.3493
+        Cm: -0.1463
+      status: solved
+      Cl: 1.27084024
+      Cd: 0.313089971
+      Cm_cg: -0.3775783509162162
+      converged: true
+      iterations: 160
+      cells: 127032
+      mesh_ok: false
+    - alpha_deg: 12.0
+      V: 25.0
+      lattice:
+        Cl: 1.5768
+        Cm: -0.1595
+      status: solved
+      Cl: 1.26497962
+      Cd: 0.36683864
+      Cm_cg: -0.3639399285081081
+      converged: true
+      iterations: 250
+      cells: 127787
+      mesh_ok: false
+    - alpha_deg: 14.0
+      V: 25.0
+      lattice:
+        Cl: 1.8027
+        Cm: -0.1638
+      status: solved
+      Cl: 1.30104083
+      Cd: 0.421524019
+      Cm_cg: -0.4051895474918919
+      converged: true
+      iterations: 190
+      cells: 125314
+      mesh_ok: false
+    - alpha_deg: 16.0
+      V: 25.0
+      lattice:
+        Cl: 2.0266
+        Cm: -0.1577
+      status: solved
+      Cl: 1.34005835
+      Cd: 0.490779937
+      Cm_cg: -0.4531078216297298
+      converged: false
+      iterations: 300
+      cells: 130994
+      mesh_ok: false
+    summary:
+      solved: 10
+      CD_min: 0.110813323
+      CL_max: 1.34005835
+      alpha_CL_max_deg: 16.0
+      CL_alpha_per_rad: 4.41256035856839
+      static_margin: 0.2934659942206932
+      drag_area_cm2: 219.41037954
+  twin_agile_reflex_sweep12:
+    design: twin_agile_reflex
+    sweep_deg: 12.0
+    speed_m_s: 25.0
+    reference:
+      S: 0.198
+      c: 0.2
+      cg_mm:
+      - 365.0
+      - 0.0
+      carriage_travel_mm: 0.0
+      camber: 0.04
+    rows:
+    - alpha_deg: -4.0
+      V: 25.0
+      lattice:
+        Cl: -0.0713
+        Cm: 0.053
+      status: solved
+      Cl: -0.385717022
+      Cd: 0.109529509
+      Cm_cg: 0.0801201170472973
+      converged: false
+      iterations: 300
+      cells: 140728
+      mesh_ok: false
+    - alpha_deg: -2.0
+      V: 25.0
+      lattice:
+        Cl: 0.1602
+        Cm: 0.0228
+      status: solved
+      Cl: -0.203699781
+      Cd: 0.0799864427
+      Cm_cg: 0.018291274011000003
+      converged: false
+      iterations: 300
+      cells: 141393
+      mesh_ok: false
+    - alpha_deg: 0.0
+      V: 25.0
+      lattice:
+        Cl: 0.392
+        Cm: -0.0098
+      status: solved
+      Cl: -0.00412250199
+      Cd: 0.0616197781
+      Cm_cg: -0.01715423289981081
+      converged: false
+      iterations: 300
+      cells: 132550
+      mesh_ok: false
+    - alpha_deg: 2.0
+      V: 25.0
+      lattice:
+        Cl: 0.6237
+        Cm: -0.0431
+      status: solved
+      Cl: 0.232218968
+      Cd: 0.0583322564
+      Cm_cg: -0.06540496659486486
+      converged: false
+      iterations: 300
+      cells: 133234
+      mesh_ok: false
+    summary:
+      solved: 4
+      CD_min: 0.0583322564
+      CL_max: 0.232218968
+      alpha_CL_max_deg: 2.0
+      CL_alpha_per_rad: 5.882515424134633
+      static_margin: 0.22835907563783786
+      drag_area_cm2: 115.49786767200001
 fingerprint: 7f36d65776612bce
 saved_at: '2026-11-21 23:52:51'
 run:

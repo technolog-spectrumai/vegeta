@@ -188,6 +188,7 @@ def coefficients(name: str = "twin", sweep: float = 12.0) -> dict:
             C["aero_source"] = (f"cfd run 1 (camber {cam_cfd:g}, carriage {trav_cfd:.0f} mm) for drag, slopes and stall + the lattice's "
                                 f"difference to this geometry (camber {p['panel_camber']:g}, carriage {V.travel(sweep, p):.0f} mm): rerun the CFD")
     lift_table(C, name, sweep, cfg)
+    reflex(C, cfg, cfd_config(CFD_REFLEX_KEY.get(name, "-"), sweep))
     dx = CG_AFT_MM.get(name, 0.0) / 1000.0 if cfg else 0.0
 
     def cg_aft(Cx):                                                    # the same aircraft balanced further aft: the moment gains the lift x the shift
@@ -211,6 +212,30 @@ def coefficients(name: str = "twin", sweep: float = 12.0) -> dict:
 # ASTOR-TWIN's CFD with the 12 % wing and the tube level gave a static margin of 23 % at the 365 mm CG the CFD turned
 # about: more than it needs, and it costs elevator at high lift. The pack sits 20 mm further aft (CG 385 mm): ~13 %.
 CG_AFT_MM = {"twin": 20.0}
+CFD_REFLEX_KEY = {"twin": "twin_agile_reflex"}
+REFLEX_DEG, REFLEX_FULL_BELOW_DEG, REFLEX_NONE_ABOVE_DEG = -6.0, 2.0, 4.0
+
+
+def reflex(C, cfg, cfgr) -> None:
+    """Flaps up, the flight controller reflexes every flap 6 deg UP at low angles of attack (fully below 2 deg, none
+    above 4 deg, linear between): the 4 % cambered wing flies fast at about -2 deg, off its design lift, and the CFD of
+    2026-11-23 gave it ~25 % more drag there than the thin wing; reflexed, 15 % of that goes (25.9 N against 30.3 N at
+    60 m/s). The clean table takes the CFD's differences (reflexed less clean, at the angles both were run) times that
+    schedule, so every user of the table flies the scheduled wing."""
+    rows = {float(r["alpha_deg"]): r for r in (cfgr or {}).get("rows", []) if r.get("status") == "solved"}
+    base = {float(r["alpha_deg"]): r for r in (cfg or {}).get("rows", []) if r.get("status") == "solved"}
+    al = sorted(set(rows) & set(base))
+    if len(al) < 3 or "cfd" not in C:
+        return
+    ref = cfg["reference"]
+    kL, kM = ref["S"] / C["S"], ref["S"] * ref["c"] / (C["S"] * C["c"])
+    A = C["cfd"]["alpha_deg"]
+    f = np.clip((REFLEX_NONE_ABOVE_DEG - A) / (REFLEX_NONE_ABOVE_DEG - REFLEX_FULL_BELOW_DEG), 0.0, 1.0)
+    d = lambda key, k: np.interp(A, al, [(rows[a][key] - base[a][key]) * k for a in al])
+    C["cfd"] = {"alpha_deg": A, "CL": C["cfd"]["CL"] + f * d("Cl", kL), "CD": C["cfd"]["CD"] + f * d("Cd", kL), "Cm": C["cfd"]["Cm"] + f * d("Cm_cg", kM)}
+    C["reflex"] = {"deg": REFLEX_DEG, "full_below_deg": REFLEX_FULL_BELOW_DEG, "none_above_deg": REFLEX_NONE_ABOVE_DEG, "source": "cfd (screening RANS) at " + ", ".join(f"{a:g}" for a in al) + " deg"}
+
+
 CFD_KEY = {"twin": "twin_agile"}             # the CFD configuration a design's clean state flies (astor_v_cfd.DESIGNS)
 CFD_FLAP_KEY = {"twin": "twin_agile_flap"}   # and its state with every flap down
 FLAP_DEG, FLAP_TRAVEL_S = 20.0, 1.0
@@ -259,7 +284,10 @@ def lift_table(C, name, sweep, cfg) -> None:
         m = (A >= a.min()) & (A <= a_last)
         CL[m] = np.interp(A[m], a, np.array([r["Cl"] for r in rows]) * kL)
         CM[m] = np.interp(A[m], a, np.array([r["Cm_cg"] for r in rows]) * kM)
-        CDx[m] = np.maximum(np.interp(A[m], a, np.array([r["Cd"] for r in rows]) * kL) - (C["CD0"] + C["k"] * CL[m] ** 2), 0.0)
+        # the CFD's own drag at its angles. (Until 2026-11-24 only its EXCESS over CD0 + k CL^2 was kept, with CD0 the lowest
+        # drag sampled: for a cambered wing that minimum is at a lift of ~0.3, and the table then counted that lift's drag
+        # twice: ASTOR-TWIN's 4 % wing was flown with ~20 % too much drag at every speed.)
+        CDx[m] = np.interp(A[m], a, np.array([r["Cd"] for r in rows]) * kL) - (C["CD0"] + C["k"] * CL[m] ** 2)
         src = "the CFD's points"
     elif name in ("t", "twin"):
         Cv = coefficients("v", sweep)
