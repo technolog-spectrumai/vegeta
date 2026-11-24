@@ -11,6 +11,7 @@ its predecessors, kept for comparison (``--design t | v | boost``).
     labs/aero/sims/astor.sh -j 12 --launch-only       # ASTOR-T out of its tube: 216 launches (exit speed x elevation x wind x late wings or motor)
     labs/aero/sims/astor.sh -j 12 --design twin       # ASTOR-TWIN (two wing motors, the net launcher; designs/astor_twin): CFD, stability, net-shot sorties
     labs/aero/sims/astor.sh -j 12 --design twin --cfd-only | --stability-only ;  --netshot-only (ASTOR-TWIN's sorties alone)
+    labs/aero/sims/astor.sh -j 12 --design x          # ASTOR-X (swept wing, four pushers on an X; designs/astor_x): CFD (37 cases), then stability as an aeroplane
     labs/aero/sims/astor.sh --dry-run                 # list what would run, and stop
 
 ``-j N`` is the CPU cores for every phase: OpenFOAM's MPI processes in the CFD (used as given); worker processes in
@@ -54,17 +55,18 @@ import astor_run as R                                                # noqa: E40
 R.GLOBS_ACTIVE = ["arigo*.py", "astor*.py", "raptors*.py"]
 DATA = DESIGNS / "data" / "astor_v_cfd_screening.yaml"
 STATES = ((12.0, 25.0), (35.0, 40.0), (60.0, 60.0))                  # (sweep deg, test speed m/s)
-STATES_BY_DESIGN = {"twin": ((12.0, 24.0), (12.0, 45.0), (12.0, 60.0)), "goshawk": ((12.0, 14.0), (12.0, 20.0), (12.0, 30.0))}   # ASTOR-TWIN: the wing fixed at 12 deg, three speeds (it stalls at 23 m/s with its three nets)
+STATES_BY_DESIGN = {"twin": ((12.0, 24.0), (12.0, 45.0), (12.0, 60.0)), "goshawk": ((12.0, 14.0), (12.0, 20.0), (12.0, 30.0)),
+                    "x": ((12.0, 24.0), (12.0, 45.0), (12.0, 60.0))}   # ASTOR-TWIN: the wing fixed at 12 deg, three speeds (it stalls at 23 m/s with its three nets)
 
 
 CFD_STATES = {"twin": ["twin2", "twin2_flap", "twin2_reflex", "twin2_crow", "twin2_swept", "twin2_tail_up", "twin2_tail_lift"],
-              "goshawk": ["goshawk", "goshawk_flap", "goshawk_flap35", "goshawk_tucked"]}       # HAWK 2 (astor_v_cfd.HAWK2_STATES)             # what "--design twin" means to the CFD phase (astor_v_cfd.DESIGNS)
-FLAP_STATES = {"twin": ((12.0, 19.0),), "goshawk": ((12.0, 10.5),)}                              # stability with every flap down: (sweep, speed)
+              "goshawk": ["goshawk", "goshawk_flap", "goshawk_flap35", "goshawk_tucked"], "x": ["x", "x_flap", "x_tail_up", "x_reflex"]}       # HAWK 2 (astor_v_cfd.HAWK2_STATES)             # what "--design twin" means to the CFD phase (astor_v_cfd.DESIGNS)
+FLAP_STATES = {"twin": ((12.0, 19.0),), "goshawk": ((12.0, 10.5),), "x": ((12.0, 20.0),)}                              # stability with every flap down: (sweep, speed)
 
 
 def states(design):
     return STATES_BY_DESIGN.get(design, STATES)
-NAMES = {"v": "ASTOR-V", "boost": "ASTOR-BOOST", "t": "ASTOR-T", "twin": "ASTOR-TWIN", "twin_stowed": "TWIN tube 0", "twin_agile": "TWIN 12%/4%", "twin_agile_flap": "TWIN flaps 20", "twin_c2": "TWIN 12%/2%", "twin_c2_flap": "TWIN 2% flaps", "twin_agile_reflex": "TWIN reflex -6", "twin2": "HAWK2 clean", "twin2_flap": "HAWK2 flaps 20", "twin2_reflex": "HAWK2 reflex",
+NAMES = {"x": "ASTOR-X", "x_flap": "X flaps 20", "x_tail_up": "X tail up", "x_reflex": "X reflex", "v": "ASTOR-V", "boost": "ASTOR-BOOST", "t": "ASTOR-T", "twin": "ASTOR-TWIN", "twin_stowed": "TWIN tube 0", "twin_agile": "TWIN 12%/4%", "twin_agile_flap": "TWIN flaps 20", "twin_c2": "TWIN 12%/2%", "twin_c2_flap": "TWIN 2% flaps", "twin_agile_reflex": "TWIN reflex -6", "twin2": "HAWK2 clean", "twin2_flap": "HAWK2 flaps 20", "twin2_reflex": "HAWK2 reflex",
          "twin2_crow": "HAWK2 crow", "twin2_swept": "HAWK2 swept 60", "twin2_tail_up": "HAWK2 tail up", "twin2_tail_lift": "HAWK2 tail lift", "goshawk": "GOSHAWK", "goshawk_flap": "GOSHAWK flap20",
          "goshawk_flap35": "GOSHAWK flap35", "goshawk_tucked": "GOSHAWK tucked"}
 
@@ -366,7 +368,7 @@ def main(argv=None) -> int:
     g.add_argument("--launch-only", action="store_true", help="only ASTOR-T's tube launch (exit speed x elevation x wind x late wings or motor)")
     g.add_argument("--netshot-only", action="store_true", help="only ASTOR-TWIN's net-launcher sorties (3 x --sorties)")
     g.add_argument("--skip-cfd", action="store_true", help="stability and the net drop, no CFD")
-    ap.add_argument("--design", choices=("v", "boost", "t", "twin", "goshawk"), action="append", help="twin (ASTOR-TWIN: the ASTOR product, the default), or the earlier t (ASTOR-T), v (ASTOR-V), boost (ASTOR-BOOST)")
+    ap.add_argument("--design", choices=("v", "boost", "t", "twin", "goshawk", "x"), action="append", help="twin (ASTOR-TWIN: the ASTOR product, the default), or the earlier t (ASTOR-T), v (ASTOR-V), boost (ASTOR-BOOST)")
     ap.add_argument("--fresh", action="store_true", help="forget the saved progress of the phases that run")
     ap.add_argument("--dry-run", action="store_true", help="list the cases and jobs and stop")
     ap.add_argument("--quality", default="screening", help="cfd: mesh quality")
@@ -407,6 +409,10 @@ def main(argv=None) -> int:
         phases = [ph for ph in phases if ph not in ("netdrop", "launch")]
         if not (a.cfd_only or a.stability_only):
             phases.append("netshot")
+    if "x" in a.designs:                                                 # ASTOR-X (designs/astor_x): its CFD and its stability as an aeroplane
+        if len(a.designs) > 1:
+            ap.error("--design x is run on its own")
+        phases = [ph for ph in phases if ph in ("cfd", "stability")]
     if "goshawk" in a.designs:                                           # GOSHAWK: its CFD and stability (its hunt in the wood is not written)
         if len(a.designs) > 1:
             ap.error("--design goshawk is run on its own")

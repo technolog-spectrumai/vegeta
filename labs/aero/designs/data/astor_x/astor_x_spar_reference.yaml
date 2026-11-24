@@ -1,0 +1,63 @@
+beam_reference:
+  load_factor: 8.0
+  ultimate_factor: 1.5
+  mass_kg: 8.55
+  allowable_MPa: 400.0
+  material: roll-wrapped carbon tube
+  wing_spar:
+    inner_od: 25.0
+    inner_id: 22.0
+    outer_od: 16.0
+    outer_id: 13.0
+    plug_mm: 80.0
+    step_at: 0.5
+    chord_line: 0.3
+    sweep_deg: 29.6
+    length_each_side_mm: 690
+    mass_both_wings_g: 192
+    half_wing_lift_ultimate_N: 503
+    fits:
+      wing_depth_at_the_root_mm: 67
+      at_the_step_mm: 51
+      at_the_tip_mm: 35
+    root:
+      moment_Nm: 130.6
+      stress_MPa: 213
+      margin: 0.88
+    step:
+      moment_Nm: 28.3
+      stress_MPa: 125
+      margin: 2.2
+    tip_deflection_ultimate_mm: 28
+    tip_deflection_share_of_the_spar: 0.04
+    note: a straight cantilever of the swept spar's own length; the root twist of a swept wing is not in it
+  strut:
+    od: 12.0
+    id: 9.0
+    length_mm: 155
+    motor_kg: 0.365
+    thrust_ultimate_N: 75.9
+    motor_weight_at_8g_ultimate_N: 43.0
+    root_moment_Nm: 13.51
+    stress_MPa: 117
+    margin: 2.43
+    tip_deflection_mm: 2.22
+    first_bending_Hz: 52.2
+    mass_four_g: 48
+    propeller_once_per_turn_Hz:
+      at_6000_rpm: 100.0
+      at_12000_rpm: 200.0
+    note: 'the first bending frequency must stay clear of the propeller''s once-per-turn over the working speeds (HAND: the speed range is not
+      yet set)'
+faces_selected_per_region:
+  wing_spar:
+    root: 3
+    S0: 2
+    S1: 2
+    S2: 5
+    S3: 4
+    S4: 2
+    S5: 3
+  strut:
+    root: 3
+    mount: 3

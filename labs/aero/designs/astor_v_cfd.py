@@ -55,8 +55,17 @@ HAWK2_STATES = {"twin2": {}, "twin2_flap": {"flaperon_deg": 20.0, "inboard_flap_
 #   goshawk_flap35   every flap down 35 deg       goshawk_tucked   the outer pieces drawn in 70 deg
 GOSHAWK_STATES = {"goshawk": {}, "goshawk_flap": {"flaperon_deg": 20.0, "inboard_flap_deg": 20.0}, "goshawk_flap35": {"flaperon_deg": 35.0, "inboard_flap_deg": 35.0},
                   "goshawk_tucked": {"wing_sweep_deg": 70.0}}
+# ASTOR-X (designs/astor_x: a swept wing of 1.2 m span, four pushers on a short X, 2026-11-24). The propellers are not in
+# the geometry (as for every design here); the struts and pods are. At 25 m/s.
+#   x          flaps up, to 60 deg (it flies beyond the stall on its rotors: the high angles are its transition)
+#   x_flap     ailerons and inboard flaps down 20 deg, to 60 deg
+#   x_tail_up  the tail halves 8 deg leading edge down with their flaps 8 deg up: the tail's pitch-up power on this wing
+#   x_reflex   every flap 6 deg up at the fast-flight angles
+X_STATES = {"x": {}, "x_flap": {"flaperon_deg": 20.0, "inboard_flap_deg": 20.0}, "x_tail_up": {"tail_incidence_deg": -8.0, "tail_flap_deg": -8.0},
+            "x_reflex": {"flaperon_deg": -6.0, "inboard_flap_deg": -6.0}}
+ONLY_ALPHA.update({"x_tail_up": (0.0, 8.0, 14.0), "x_reflex": (-4.0, -2.0, 0.0, 2.0)})
 SPEED_M_S = {k: 12.0 for k in GOSHAWK_STATES}                              # a design's own CFD speed (else CASES')
-DESIGNS = ("v", "boost", "t", "twin", "twin_stowed", "twin_agile", "twin_agile_flap", "twin_c2", "twin_c2_flap", "twin_agile_reflex") + tuple(HAWK2_STATES) + tuple(GOSHAWK_STATES)
+DESIGNS = ("v", "boost", "t", "twin", "twin_stowed", "twin_agile", "twin_agile_flap", "twin_c2", "twin_c2_flap", "twin_agile_reflex") + tuple(HAWK2_STATES) + tuple(GOSHAWK_STATES) + tuple(X_STATES)
 
 
 def speed(design, sweep) -> float:
@@ -65,12 +74,13 @@ def speed(design, sweep) -> float:
 
 def sweeps(design) -> tuple:
     """The wing states run for this design: ASTOR-TWIN's wing is fixed at 12 deg (its one state, 8 angles)."""
-    return (12.0,) if design.startswith(("twin", "goshawk")) else tuple(CASES)
+    return (12.0,) if design.startswith(("twin", "goshawk")) or design in X_STATES else tuple(CASES)
 
 
 EXTRA_ALPHA = {"twin_agile": (-2.0, 2.0), "twin_agile_flap": (-2.0, 2.0), "twin_c2": (-2.0, 2.0), "twin_c2_flap": (-2.0, 2.0),
                "twin2": (-2.0, 2.0, 20.0, 30.0, 45.0, 60.0), "twin2_flap": (-2.0, 2.0, 20.0, 30.0, 45.0, 60.0),
-               "goshawk": (-2.0, 2.0, 20.0, 30.0, 45.0, 60.0), "goshawk_flap": (-2.0, 2.0, 20.0, 30.0, 45.0, 60.0)}   # the cambered wing flies fast at about -2 deg; the flaps' lift peaks near 4
+               "goshawk": (-2.0, 2.0, 20.0, 30.0, 45.0, 60.0), "goshawk_flap": (-2.0, 2.0, 20.0, 30.0, 45.0, 60.0),
+               "x": (-2.0, 2.0, 20.0, 24.0, 30.0, 45.0, 60.0), "x_flap": (-2.0, 2.0, 20.0, 24.0, 30.0, 45.0, 60.0)}   # the cambered wing flies fast at about -2 deg; the flaps' lift peaks near 4
 
 
 def alphas(design, sweep) -> tuple:
@@ -94,6 +104,9 @@ def _cls(design):
     if design == "twin":                                              # the OLD thin wing, the launcher at its rest tilt (15 deg down)
         import astor_twin as W
         return W.AstorTwin, (lambda **over: W.variant1(**{"net_launchers": 1, "talon_deploy": -1.0, "net_count": 0, **THIN, **over}))
+    if design in X_STATES:
+        import astor_x as AX
+        return AX.AstorX, (lambda **over: AX.variant(**{"net_launchers": 1, "talon_deploy": -1.0, "net_count": 0, "launcher_depression_deg": 0.0, **over, **X_STATES[design]}))
     if design in GOSHAWK_STATES:
         import goshawk as GH
         return GH.Goshawk, (lambda **over: GH.variant(**{"talon_deploy": -1.0, **over, **GOSHAWK_STATES[design]}))      # legs off: folded they are in the body's shadow
@@ -127,7 +140,8 @@ def l_ref(design="v", sweep=12.0) -> float:
     cls, var = _cls(design)
     p = cls().resolve(**var())
     length = (p.get("edf_x", 0.0) + p.get("edf_length", 0.0)) or p["fuselage_length"]
-    body = max(V.wing_numbers(p, sweep)["span_mm"], max(length, p["fuselage_length"]) + 80.0) / 1000.0
+    span = 2 * p["sw_half_span"] if design in X_STATES else V.wing_numbers(p, sweep)["span_mm"]
+    body = max(span, max(length, p["fuselage_length"]) + 80.0) / 1000.0
     return max(VM.C_REF, body / 3.7)
 
 
@@ -162,6 +176,11 @@ def lattice_row(sweep, alpha_deg, design="v") -> dict:
     """The lattice's CL and Cm about the CG at this sweep and angle (no drag: inviscid), for the comparison: on the
     design's own wing and tail."""
     cls, var = _cls(design)
+    if design in X_STATES:                                            # its own wing: astor_x_flight's lattice, with the state's flaps and tail
+        import astor_x_flight as XF
+        st = X_STATES[design]
+        r = XF.lattice(cls().resolve(**var()), alpha=alpha_deg, tail_inc=st.get("tail_incidence_deg", 0.0), flap=st.get("inboard_flap_deg", 0.0))
+        return {"Cl": round(r["CL"], 4), "Cm": round(r["Cm"] + r["CL"] * V.CG_MM / 1000.0 / VM.C_REF, 4)}
     r = VM.lattice(sweep, tail_fan=CASES[sweep][1], alpha=alpha_deg, p=cls().resolve(**var()))
     return {"Cl": round(r["CL"], 4), "Cm": round(r["Cm"] + r["CL"] * V.CG_MM / 1000.0 / VM.C_REF, 4)}
 
