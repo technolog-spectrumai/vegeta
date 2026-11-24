@@ -1,0 +1,77 @@
+status: 'GOSHAWK (2026-11-24): a drawing, a mass budget of hand estimates and a carried-over flight model; no CFD, FEA or flight of its own'
+size:
+  wing_m2: 0.45
+  inner_m2: 0.17
+  outer_m2: 0.28
+  tail_m2: 0.172
+  fin_m2: 0.027
+  span_m: 1.5
+  aspect_ratio: 5.0
+  tucked_span_m: 1.044
+  length_m: 1.316
+mass_kg: 2.05
+wing_loading_kg_m2: 4.6
+tail_share_of_the_wing: 0.38
+the_bird:
+  mass_kg: 0.7-1.5
+  span_m: 1.0-1.2
+  wing_loading_kg_m2: about 5
+  source: 'HAND: a northern goshawk, from memory'
+propellers:
+  diameter_mm: 203.2
+  clear_of_the_fuselage_side_mm: 8
+  outboard_edge_inside_the_pivot_mm: 8
+  thrust_N_at_0_10_20_m_s:
+  - 41.1
+  - 40.0
+  - 31.7
+budget:
+  total_g: 2052
+  empty_g: 1807
+  without_nets_g: 2052
+  pack:
+    name: 4S 2200 mAh LiPo
+    g: 245.0
+    Wh_nominal: 32.6
+    max_A: 99.0
+    source: 'HAND: 110 g per Ah at 4S, 45C (+-10 %)'
+  items:
+  - item: wing
+    g: 675
+    source: geometry 0.450 m2 x 1.5 kg/m2 (HAND +-25 %)
+  - item: tail halves and fin
+    g: 209
+    source: geometry 0.199 m2 x 1.05 kg/m2 (HAND +-25 %)
+  - item: fuselage
+    g: 196
+    source: geometry x 0.2 kg/m (HAND +-25 %)
+  - item: 2 motors, 2806 class, 600 W
+    g: 90
+    source: 'HAND (+-12): 2 x 45 g'
+  - item: 2 controllers, 45 A
+    g: 28
+    source: HAND (+-8)
+  - item: 2 propellers, 8 inch, guards
+    g: 30
+    source: HAND (+-10)
+  - item: flight controller, GNSS, radio
+    g: 45
+    source: HAND (+-12)
+  - item: vision computer and two cameras (the wood is flown by sight)
+    g: 95
+    source: 'HAND (+-30): a 60 g module, 2 x 12 g cameras, leads'
+  - item: '7 servos: 2 flaperons, 2 inner flaps, 2 tail halves, rudder'
+    g: 70
+    source: 'HAND (+-14): 7 x 10 g; the tail flaps are geared, not driven'
+  - item: 2 wing pivots, their locks and tuck servos
+    g: 60
+    source: HAND (+-20)
+  - item: wiring and connectors
+    g: 35
+    source: HAND (+-10)
+  - item: 2 legs, tear-away feet, line and drag strip
+    g: 110
+    source: 'HAND (+-40): ASTOR-T''s 220 g at about two thirds the size'
+  - item: growth margin 10 %
+    g: 164
+    source: HAND

@@ -54,17 +54,19 @@ import astor_run as R                                                # noqa: E40
 R.GLOBS_ACTIVE = ["arigo*.py", "astor*.py", "raptors*.py"]
 DATA = DESIGNS / "data" / "astor_v_cfd_screening.yaml"
 STATES = ((12.0, 25.0), (35.0, 40.0), (60.0, 60.0))                  # (sweep deg, test speed m/s)
-STATES_BY_DESIGN = {"twin": ((12.0, 24.0), (12.0, 45.0), (12.0, 60.0))}   # ASTOR-TWIN: the wing fixed at 12 deg, three speeds (it stalls at 23 m/s with its three nets)
+STATES_BY_DESIGN = {"twin": ((12.0, 24.0), (12.0, 45.0), (12.0, 60.0)), "goshawk": ((12.0, 14.0), (12.0, 20.0), (12.0, 30.0))}   # ASTOR-TWIN: the wing fixed at 12 deg, three speeds (it stalls at 23 m/s with its three nets)
 
 
-CFD_STATES = {"twin": ["twin2", "twin2_flap", "twin2_reflex", "twin2_crow", "twin2_swept", "twin2_tail_up", "twin2_tail_lift"]}       # HAWK 2 (astor_v_cfd.HAWK2_STATES)             # what "--design twin" means to the CFD phase (astor_v_cfd.DESIGNS)
-FLAP_STATES = {"twin": ((12.0, 19.0),)}                              # stability with every flap down: (sweep, speed)
+CFD_STATES = {"twin": ["twin2", "twin2_flap", "twin2_reflex", "twin2_crow", "twin2_swept", "twin2_tail_up", "twin2_tail_lift"],
+              "goshawk": ["goshawk", "goshawk_flap", "goshawk_flap35", "goshawk_tucked"]}       # HAWK 2 (astor_v_cfd.HAWK2_STATES)             # what "--design twin" means to the CFD phase (astor_v_cfd.DESIGNS)
+FLAP_STATES = {"twin": ((12.0, 19.0),), "goshawk": ((12.0, 10.5),)}                              # stability with every flap down: (sweep, speed)
 
 
 def states(design):
     return STATES_BY_DESIGN.get(design, STATES)
 NAMES = {"v": "ASTOR-V", "boost": "ASTOR-BOOST", "t": "ASTOR-T", "twin": "ASTOR-TWIN", "twin_stowed": "TWIN tube 0", "twin_agile": "TWIN 12%/4%", "twin_agile_flap": "TWIN flaps 20", "twin_c2": "TWIN 12%/2%", "twin_c2_flap": "TWIN 2% flaps", "twin_agile_reflex": "TWIN reflex -6", "twin2": "HAWK2 clean", "twin2_flap": "HAWK2 flaps 20", "twin2_reflex": "HAWK2 reflex",
-         "twin2_crow": "HAWK2 crow", "twin2_swept": "HAWK2 swept 60", "twin2_tail_up": "HAWK2 tail up", "twin2_tail_lift": "HAWK2 tail lift"}
+         "twin2_crow": "HAWK2 crow", "twin2_swept": "HAWK2 swept 60", "twin2_tail_up": "HAWK2 tail up", "twin2_tail_lift": "HAWK2 tail lift", "goshawk": "GOSHAWK", "goshawk_flap": "GOSHAWK flap20",
+         "goshawk_flap35": "GOSHAWK flap35", "goshawk_tucked": "GOSHAWK tucked"}
 
 
 def _inputs() -> str:
@@ -88,7 +90,7 @@ def phase_cfd(a) -> int:
     todo_all = [(d, s, al) for d in designs for s in cf.sweeps(d) for al in cf.alphas(d, s)]
     if a.dry_run:
         for d, s, al in todo_all:
-            print(f"cfd  {NAMES[d]:12s} sweep {s:4.0f} deg  V {cf.CASES[s][0]:4.0f} m/s  alpha {al:+5.1f}")
+            print(f"cfd  {NAMES[d]:12s} sweep {s:4.0f} deg  V {cf.speed(d, s):4.0f} m/s  alpha {al:+5.1f}")
         print(len(todo_all), "cases")
         return 0
     R.OUT.mkdir(parents=True, exist_ok=True)
@@ -186,7 +188,8 @@ def _job(job):
             out["flaps_deg"] = VF.FLAP_DEG * flap
             k = VF.SAS.get(name)
             if k:                                                    # the modes with the dampers, as equivalent damping derivatives (the washout left out)
-                Ca = {**C, "Cnr": C["Cnr"] - abs(C["Cndr"]) * k["yaw_k"] * 57.3 * 2 * Vt / C["b"], "Cmq": C["Cmq"] + C["Cmde"] * k["pitch_k"] * k["pitch_v_ref"] / Vt * 57.3 * 2 * Vt / C["c"]}
+                Ca = {**C, "Cnr": C["Cnr"] - abs(C["Cndr"]) * k["yaw_k"] * 57.3 * 2 * Vt / C["b"], "Cmq": C["Cmq"] + C["Cmde"] * k["pitch_k"] * k["pitch_v_ref"] / Vt * 57.3 * 2 * Vt / C["c"],
+                      "Cma": C["Cma"] + C["Cmde"] * k.get("alpha_k", 0.0) * 57.3}
                 out["linear_modes_bare_airframe"] = out["linear_modes"]
                 out["linear_modes"] = {kk: {a_: (round(b_, 4) if isinstance(b_, float) else b_) for a_, b_ in r.items()} for kk, r in am.name_modes(am.modes(Ca, Vt)).items()}
                 out["verdict"].update({"dutch_roll_zeta": out["linear_modes"].get("dutch_roll", {}).get("zeta"), "spiral_time_to_double_s": out["linear_modes"].get("spiral", {}).get("t_half_or_double_s")})
@@ -363,7 +366,7 @@ def main(argv=None) -> int:
     g.add_argument("--launch-only", action="store_true", help="only ASTOR-T's tube launch (exit speed x elevation x wind x late wings or motor)")
     g.add_argument("--netshot-only", action="store_true", help="only ASTOR-TWIN's net-launcher sorties (3 x --sorties)")
     g.add_argument("--skip-cfd", action="store_true", help="stability and the net drop, no CFD")
-    ap.add_argument("--design", choices=("v", "boost", "t", "twin"), action="append", help="twin (ASTOR-TWIN: the ASTOR product, the default), or the earlier t (ASTOR-T), v (ASTOR-V), boost (ASTOR-BOOST)")
+    ap.add_argument("--design", choices=("v", "boost", "t", "twin", "goshawk"), action="append", help="twin (ASTOR-TWIN: the ASTOR product, the default), or the earlier t (ASTOR-T), v (ASTOR-V), boost (ASTOR-BOOST)")
     ap.add_argument("--fresh", action="store_true", help="forget the saved progress of the phases that run")
     ap.add_argument("--dry-run", action="store_true", help="list the cases and jobs and stop")
     ap.add_argument("--quality", default="screening", help="cfd: mesh quality")
@@ -404,6 +407,10 @@ def main(argv=None) -> int:
         phases = [ph for ph in phases if ph not in ("netdrop", "launch")]
         if not (a.cfd_only or a.stability_only):
             phases.append("netshot")
+    if "goshawk" in a.designs:                                           # GOSHAWK: its CFD and stability (its hunt in the wood is not written)
+        if len(a.designs) > 1:
+            ap.error("--design goshawk is run on its own")
+        phases = [ph for ph in phases if ph in ("cfd", "stability")]
     if a.netshot_only:
         a.designs, phases = ["twin"], ["netshot"]
     fns = {"cfd": phase_cfd, "stability": phase_stability, "netdrop": phase_netdrop, "launch": phase_launch, "netshot": phase_netshot}

@@ -389,6 +389,9 @@ def setup_of(name):
     if name.startswith("ASTOR-BOOST"):
         import astor_boost
         return astor_boost.AstorBoost, astor_boost.variant(), "tractor_lowcam"
+    if name.startswith("GOSHAWK"):
+        import goshawk
+        return goshawk.Goshawk, goshawk.variant(), "twin"
     if name.startswith("ASTOR-TWIN"):
         import astor_twin
         return astor_twin.AstorTwin, astor_twin.variant(net_launchers=1, talon_deploy=-1.0, net_count=0), "twin"

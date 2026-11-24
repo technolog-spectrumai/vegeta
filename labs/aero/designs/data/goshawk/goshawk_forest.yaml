@@ -1,0 +1,111 @@
+stall_m_s:
+  flaps_up: 9.5
+  flaps_down: 8.5
+  flaps_down_if_the_section_holds: 6.9
+lift_coefficient:
+  as_modelled: 0.98
+  if_the_section_holds: 1.57
+  section:
+    naca: '6412'
+    cl_max_flaps_up: 1.52
+    Re: 200000.0
+    source: vegeta.zephyr / NeuralFoil, n_crit 6
+    wing_factor_rule: 0.9
+    wing_factor_cfd: 0.69
+    flap_gain_cfd: 0.2
+    flap_gain_note: 'HAWK1''s CFD: + 0.20 of wing lift coefficient for every flap down 20 deg'
+static_thrust_over_weight: 2.04
+span_m: 1.5
+tucked_span_m: 1.04
+turns:
+- V_m_s: 8.0
+  wing_as_modelled:
+    n: 1.54
+    radius_m: 5.6
+    quarter_turn_s: 1.09
+  wing_if_the_section_holds:
+    n: 2.05
+    radius_m: 3.7
+    quarter_turn_s: 0.72
+  on_the_propellers_40_deg:
+    n: 2.07
+    radius_m: 3.6
+    quarter_turn_s: 0.71
+    thrust_holds_the_speed: true
+- V_m_s: 10.0
+  wing_as_modelled:
+    n: 2.06
+    radius_m: 5.7
+    quarter_turn_s: 0.89
+  wing_if_the_section_holds:
+    n: 2.84
+    radius_m: 3.8
+    quarter_turn_s: 0.6
+  on_the_propellers_40_deg:
+    n: 2.47
+    radius_m: 4.5
+    quarter_turn_s: 0.71
+    thrust_holds_the_speed: true
+- V_m_s: 12.0
+  wing_as_modelled:
+    n: 2.67
+    radius_m: 5.9
+    quarter_turn_s: 0.77
+  wing_if_the_section_holds:
+    n: 3.8
+    radius_m: 4.0
+    quarter_turn_s: 0.52
+  on_the_propellers_40_deg:
+    n: 2.94
+    radius_m: 5.3
+    quarter_turn_s: 0.7
+    thrust_holds_the_speed: false
+- V_m_s: 14.0
+  wing_as_modelled:
+    n: 3.4
+    radius_m: 6.1
+    quarter_turn_s: 0.69
+  wing_if_the_section_holds:
+    n: 4.94
+    radius_m: 4.1
+    quarter_turn_s: 0.46
+  on_the_propellers_40_deg:
+    n: 3.5
+    radius_m: 6.0
+    quarter_turn_s: 0.67
+    thrust_holds_the_speed: false
+- V_m_s: 17.0
+  wing_as_modelled:
+    n: 4.7
+    radius_m: 6.4
+    quarter_turn_s: 0.59
+  wing_if_the_section_holds:
+    n: 6.0
+    radius_m: 5.0
+    quarter_turn_s: 0.46
+  on_the_propellers_40_deg:
+    n: 4.53
+    radius_m: 6.7
+    quarter_turn_s: 0.62
+    thrust_holds_the_speed: false
+- V_m_s: 20.0
+  wing_as_modelled:
+    n: 6.0
+    radius_m: 6.9
+    quarter_turn_s: 0.54
+  wing_if_the_section_holds:
+    n: 6.0
+    radius_m: 6.9
+    quarter_turn_s: 0.54
+  on_the_propellers_40_deg:
+    n: 5.78
+    radius_m: 7.2
+    quarter_turn_s: 0.56
+    thrust_holds_the_speed: false
+mean_distance_between_stems_m:
+  400 stems/ha: 5.0
+  700 stems/ha: 3.8
+  1000 stems/ha: 3.2
+stem_densities: 'HAND: 400-1000 stems per hectare for a grown managed conifer stand; a thicket is denser'
+reading: a radius under the stems' distance turns round one tree; the tucked span, or the aircraft rolled on its side (0.3 m), is what passes between two
+aero_source: 'carried over from HAWK1''s CFD by area, aspect ratio and body size (HAND; at a third of its Reynolds number): no CFD of its own yet'

@@ -35,7 +35,8 @@ C2 = {"panel_thickness": 0.12, "panel_camber": 0.02, "inboard_flap_chord": 0.30}
 SECTION_STATES = {"twin_c2": C2, "twin_c2_flap": {**C2, "flaperon_deg": 20.0, "inboard_flap_deg": 20.0},
                   "twin_agile_reflex": {**AGILE, "flaperon_deg": -6.0, "inboard_flap_deg": -6.0}}
 ONLY_ALPHA = {"twin_agile_reflex": (-4.0, -2.0, 0.0, 2.0), "twin2_reflex": (-4.0, -2.0, 0.0, 2.0), "twin2_crow": (0.0, 4.0, 8.0), "twin2_swept": (-2.0, 0.0, 2.0),
-              "twin2_tail_up": (0.0, 8.0, 14.0), "twin2_tail_lift": (4.0, 8.0, 14.0)}
+              "twin2_tail_up": (0.0, 8.0, 14.0), "twin2_tail_lift": (4.0, 8.0, 14.0),
+              "goshawk_flap35": (0.0, 4.0, 8.0, 12.0), "goshawk_tucked": (0.0, 4.0, 8.0)}
 # HAWK 2 (2026-11-24: the wing doubled, astor_twin's default geometry; the tube level). Every older "twin..." name
 # above is HAWK1 (astor_twin.variant1) and stays what it was.
 #   twin2         flaps up, to 60 deg (the high angles are for the nose-high flare)
@@ -49,16 +50,27 @@ HAWK2_STATES = {"twin2": {}, "twin2_flap": {"flaperon_deg": 20.0, "inboard_flap_
                 "twin2_crow": {"flaperon_deg": -20.0, "inboard_flap_deg": 40.0}, "twin2_swept": {"flaperon_deg": -6.0, "inboard_flap_deg": -6.0, "wing_sweep_deg": 60.0},
                 "twin2_tail_up": {"tail_incidence_deg": -8.0, "tail_flap_deg": -8.0},
                 "twin2_tail_lift": {"flaperon_deg": 20.0, "inboard_flap_deg": 20.0, "tail_incidence_deg": 6.0, "tail_flap_deg": 6.0}}
-DESIGNS = ("v", "boost", "t", "twin", "twin_stowed", "twin_agile", "twin_agile_flap", "twin_c2", "twin_c2_flap", "twin_agile_reflex") + tuple(HAWK2_STATES)      # twin_stowed: ASTOR-TWIN with the launch tube level along the belly (0 deg), for its drag
+# GOSHAWK (designs/goshawk: 1.15 m, 1.7 kg, for the wood), at 12 m/s (its speed; a third of HAWK1's Reynolds number):
+#   goshawk          flaps up, to 60 deg          goshawk_flap     every flap down 20 deg, to 60 deg
+#   goshawk_flap35   every flap down 35 deg       goshawk_tucked   the outer pieces drawn in 70 deg
+GOSHAWK_STATES = {"goshawk": {}, "goshawk_flap": {"flaperon_deg": 20.0, "inboard_flap_deg": 20.0}, "goshawk_flap35": {"flaperon_deg": 35.0, "inboard_flap_deg": 35.0},
+                  "goshawk_tucked": {"wing_sweep_deg": 70.0}}
+SPEED_M_S = {k: 12.0 for k in GOSHAWK_STATES}                              # a design's own CFD speed (else CASES')
+DESIGNS = ("v", "boost", "t", "twin", "twin_stowed", "twin_agile", "twin_agile_flap", "twin_c2", "twin_c2_flap", "twin_agile_reflex") + tuple(HAWK2_STATES) + tuple(GOSHAWK_STATES)
+
+
+def speed(design, sweep) -> float:
+    return SPEED_M_S.get(design, CASES[sweep][0])      # twin_stowed: ASTOR-TWIN with the launch tube level along the belly (0 deg), for its drag
 
 
 def sweeps(design) -> tuple:
     """The wing states run for this design: ASTOR-TWIN's wing is fixed at 12 deg (its one state, 8 angles)."""
-    return (12.0,) if design.startswith("twin") else tuple(CASES)
+    return (12.0,) if design.startswith(("twin", "goshawk")) else tuple(CASES)
 
 
 EXTRA_ALPHA = {"twin_agile": (-2.0, 2.0), "twin_agile_flap": (-2.0, 2.0), "twin_c2": (-2.0, 2.0), "twin_c2_flap": (-2.0, 2.0),
-               "twin2": (-2.0, 2.0, 20.0, 30.0, 45.0, 60.0), "twin2_flap": (-2.0, 2.0, 20.0, 30.0, 45.0, 60.0)}   # the cambered wing flies fast at about -2 deg; the flaps' lift peaks near 4
+               "twin2": (-2.0, 2.0, 20.0, 30.0, 45.0, 60.0), "twin2_flap": (-2.0, 2.0, 20.0, 30.0, 45.0, 60.0),
+               "goshawk": (-2.0, 2.0, 20.0, 30.0, 45.0, 60.0), "goshawk_flap": (-2.0, 2.0, 20.0, 30.0, 45.0, 60.0)}   # the cambered wing flies fast at about -2 deg; the flaps' lift peaks near 4
 
 
 def alphas(design, sweep) -> tuple:
@@ -82,6 +94,9 @@ def _cls(design):
     if design == "twin":                                              # the OLD thin wing, the launcher at its rest tilt (15 deg down)
         import astor_twin as W
         return W.AstorTwin, (lambda **over: W.variant1(**{"net_launchers": 1, "talon_deploy": -1.0, "net_count": 0, **THIN, **over}))
+    if design in GOSHAWK_STATES:
+        import goshawk as GH
+        return GH.Goshawk, (lambda **over: GH.variant(**{"talon_deploy": -1.0, **over, **GOSHAWK_STATES[design]}))      # legs off: folded they are in the body's shadow
     if design in HAWK2_STATES:                                        # the given state last: export_stl passes the case's own sweep (12 deg)
         import astor_twin as W
         return W.AstorTwin, (lambda **over: W.variant(**{"net_launchers": 1, "talon_deploy": -1.0, "net_count": 0, "launcher_depression_deg": 0.0, **over, **HAWK2_STATES[design]}))
@@ -132,7 +147,7 @@ def export_stl(folder, design, sweep, alpha_deg):
 
 def case(workdir, design, sweep, *, alpha_deg=0.0, quality="screening", env=None):
     from vegeta import aeromant
-    Vv = CASES[sweep][0]
+    Vv = speed(design, sweep)
     ref = reference(design, sweep)
     stl, tag = export_stl(Path(workdir) / "stl", design, sweep, alpha_deg)
     params = dict(velocity=Vv, kinematic_viscosity=NU, density=RHO, reference_area=ref["S"], reference_length=l_ref(design, sweep),
@@ -152,7 +167,7 @@ def lattice_row(sweep, alpha_deg, design="v") -> dict:
 
 
 def row(design, sweep, alpha_deg, result) -> dict:
-    out = {"alpha_deg": alpha_deg, "V": CASES[sweep][0], "lattice": lattice_row(sweep, alpha_deg, design)}
+    out = {"alpha_deg": alpha_deg, "V": speed(design, sweep), "lattice": lattice_row(sweep, alpha_deg, design)}
     if result is None or not getattr(result, "ok", False):
         out["status"] = "NOT RUN" if result is None or any("NOT RUN" in s for s in getattr(result, "messages", [])) else "FAILED"
         out["messages"] = [str(m)[:200] for m in list(getattr(result, "messages", []))[:3]]
