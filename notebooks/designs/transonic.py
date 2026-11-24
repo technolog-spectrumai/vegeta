@@ -41,9 +41,9 @@ CFRP = dict(name="CFRP, 60 % UD 0 / 40 % +-45 (equivalent isotropic)", E=75000.0
 
 # ------------------------------------------------------------------------------------------------------------ designs
 TPROP = dict(diameter_mm=254.0, pitch_mm=530.0, blades=2, chord_root_mm=20.0, chord_max_mm=24.0, chord_tip_mm=11.0,
-             thickness=0.06, camber=0.02, skew_deg=25.0, hub_diameter=26.0, hub_height=14.0, bore=6.0)
+             thickness=0.06, thickness_root=0.16, camber=0.02, skew_deg=8.0, hub_diameter=26.0, hub_height=14.0, bore=6.0)
 TFAN = dict(diameter_mm=75.0, blades=14, hub_diameter_mm=34.0, hub_height_mm=14.0, pitch_mm=115.0,
-            chord_root_mm=12.0, chord_max_mm=13.0, chord_tip_mm=11.0, thickness=0.05, camber=0.03, skew_deg=15.0,
+            chord_root_mm=12.0, chord_max_mm=13.0, chord_tip_mm=11.0, thickness=0.05, thickness_root=0.11, camber=0.03, skew_deg=15.0,
             tip_clearance_mm=0.25, exit_area_ratio=0.72, stator_vanes=11, stator_chord_mm=12.0, stator_thickness=0.07,
             stator_gap_mm=8.0, rpm=90000.0, pressure_ratio=1.30, eta_poly=0.88)
 OLD_PROP = dict(diameter_mm=254.0, pitch_mm=152.4, blades=2, chord_root_mm=18.0, chord_max_mm=26.0, chord_tip_mm=10.0,
@@ -97,7 +97,7 @@ def solve_prop(d: dict, rpm: float, V: float):
     pr = boreas_prop(d)
     r, _, _, _ = pr.stations(N_ST)
     mach = np.hypot(V, rpm * 2 * math.pi / 60 * r) / A0
-    tc = np.interp(r / pr.radius, [0.1, 1.0], [0.12, d["thickness"]])
+    tc = np.interp(r / pr.radius, [d["hub_diameter"] / d["diameter_mm"] * 0.9, 1.0], [d.get("thickness_root") or d["thickness"], d["thickness"]])
     return boreas.solve(pr, MachAirfoil(mach, tc, d["camber"]), rpm, V, RHO, n_stations=N_ST, speed_of_sound=A0)
 
 
@@ -177,6 +177,8 @@ def prop_cad(d: dict, blades: int | None = None):
               stations=10, hub_diameter=d["hub_diameter"], hub_height=d["hub_height"], bore=d["bore"])
     if d.get("skew_deg"):
         kw["skew_deg"] = d["skew_deg"]
+    if d.get("thickness_root"):
+        kw["thickness_root"] = d["thickness_root"]
     return Propeller().generate(**kw)
 
 
@@ -199,6 +201,8 @@ def edf_cad(d: dict):
     if d.get("skew_deg"):
         kw["skew_deg"] = d["skew_deg"]
     kw["spinner_length"] = 22.0 * d["diameter_mm"] / 90.0
+    if d.get("thickness_root"):
+        kw["thickness_root"] = d["thickness_root"]
     return df.EDFRotor().generate(**kw), df.EDFHousing().generate(**hp)
 
 
@@ -229,7 +233,7 @@ def picture(shapes: dict, path: Path):
     from vegeta.dedalus import viz as dviz
     pv.OFF_SCREEN = True
     T, O = "TRANSONIC carbon", "old subsonic (notebook 25)"
-    panels = [("transonic_prop", "prop", f"{T} prop 10 in, 530 mm pitch, swept tips, 6 % thick"),
+    panels = [("transonic_prop", "prop", f"{T} prop 10 in, 530 mm pitch, 8 deg swept tips, 16 % root -> 6 % tip"),
               ("subsonic_prop_nb25", "prop", f"{O} 10x6 prop, 10 % thick"),
               ("transonic_fan", "rotor", f"{T} fan rotor 75 mm, 14 blades, skewed"),
               ("subsonic_edf_nb25", "rotor", f"{O} EDF rotor 90 mm, 12 blades"),

@@ -36,7 +36,7 @@
     "summary": "/tmp/claude-0/-home-user-vegeta/944887ba-e2df-53d1-9843-88f4a7d80082/scratchpad/tr/notebooks/designs/data/transonic/subsonic_edf_nb25_housing/summary.json"
   },
   "messages": [],
-  "duration_s": 0.558262582999987,
+  "duration_s": 0.5799466439998469,
   "execution": [],
   "metadata": {
     "name": "EDFHousing",
@@ -76,7 +76,7 @@
       "source_sha256": "88385da26b124eb63ddd8f32e51dba2b73953c92dcb8c5fa8df38a3ce03130dd"
     },
     "origin": null,
-    "created_at": "2026-11-24T05:05:52+00:00",
+    "created_at": "2026-11-24T05:16:38+00:00",
     "tool_versions": {
       "cadquery": "2.8.0"
     },

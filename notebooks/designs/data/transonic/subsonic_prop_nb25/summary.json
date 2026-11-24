@@ -36,7 +36,7 @@
     "summary": "/tmp/claude-0/-home-user-vegeta/944887ba-e2df-53d1-9843-88f4a7d80082/scratchpad/tr/notebooks/designs/data/transonic/subsonic_prop_nb25/summary.json"
   },
   "messages": [],
-  "duration_s": 1.1453979759999129,
+  "duration_s": 1.1776944870000534,
   "execution": [],
   "metadata": {
     "name": "Propeller",
@@ -52,6 +52,7 @@
       "chord_max": 26.0,
       "chord_tip": 10.0,
       "thickness": 0.1,
+      "thickness_root": 0.0,
       "camber": 0.04,
       "stations": 10,
       "skew_deg": 0.0
@@ -61,10 +62,10 @@
       "module": "vegeta.dedalus.examples",
       "qualname": "Propeller.build",
       "source_file": "/tmp/claude-0/-home-user-vegeta/944887ba-e2df-53d1-9843-88f4a7d80082/scratchpad/tr/vegeta-cli/src/vegeta/dedalus/examples.py",
-      "source_sha256": "99d1289c72eeb7c9c76fa037e1978d0a3af948424a33ca8e3a5aa0d9c518657e"
+      "source_sha256": "793d5113b712cb0f90aa21a0decdf2c904c05c79e47a24cf7cd6c5aefe15236e"
     },
     "origin": null,
-    "created_at": "2026-11-24T05:05:38+00:00",
+    "created_at": "2026-11-24T05:16:23+00:00",
     "tool_versions": {
       "cadquery": "2.8.0"
     },

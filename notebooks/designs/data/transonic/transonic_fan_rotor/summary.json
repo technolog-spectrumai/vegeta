@@ -8,26 +8,26 @@
     "n_faces": 481,
     "n_edges": 1424,
     "bbox_min": [
-      -37.497329505375006,
-      -37.50000010000308,
+      -37.49733285336146,
+      -37.500000100002424,
       -25.333333433333333
     ],
     "bbox_max": [
-      37.49732950537501,
-      37.50000010000308,
+      37.49733285336147,
+      37.500000100002424,
       7.0000001
     ],
     "dimensions": [
-      74.99465901075001,
-      75.00000020000616,
+      74.99466570672294,
+      75.00000020000485,
       32.33333353333333
     ],
-    "surface_area": 11527.09627458617,
-    "volume": 25106.47522069408,
+    "surface_area": 11497.210934346132,
+    "volume": 25958.02648684217,
     "center_of_mass": [
-      -1.2390560342179893e-06,
-      -3.1048587505091214e-09,
-      -6.099995568778408
+      -1.1921094697108776e-06,
+      -3.18417172170347e-09,
+      -5.877134907906867
     ]
   },
   "artifacts": {
@@ -36,7 +36,7 @@
     "summary": "/tmp/claude-0/-home-user-vegeta/944887ba-e2df-53d1-9843-88f4a7d80082/scratchpad/tr/notebooks/designs/data/transonic/transonic_fan_rotor/summary.json"
   },
   "messages": [],
-  "duration_s": 1.7431428580000556,
+  "duration_s": 1.886750364999898,
   "execution": [],
   "metadata": {
     "name": "EDFRotor",
@@ -53,6 +53,7 @@
       "thickness": 0.05,
       "camber": 0.03,
       "stations": 6,
+      "thickness_root": 0.11,
       "bore": 4.0,
       "skew_deg": 15.0,
       "spinner_length": 18.333333333333332
@@ -65,7 +66,7 @@
       "source_sha256": "e65f571c7e4bc40aaf1d41d0075c5002c7e304972eeeae8796defc3fb8d10cd0"
     },
     "origin": null,
-    "created_at": "2026-11-24T05:05:43+00:00",
+    "created_at": "2026-11-24T05:16:28+00:00",
     "tool_versions": {
       "cadquery": "2.8.0"
     },

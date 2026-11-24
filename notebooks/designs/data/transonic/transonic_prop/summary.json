@@ -8,26 +8,26 @@
     "n_faces": 75,
     "n_edges": 219,
     "bbox_min": [
-      -116.26282618364027,
-      -59.3379382480804,
+      -126.14661835697079,
+      -23.86524678836823,
       -7.0000001
     ],
     "bbox_max": [
-      116.26282618364027,
-      59.33793824808041,
-      14.13298198416771
+      126.14661835697079,
+      23.86524678836824,
+      14.159042518489537
     ],
     "dimensions": [
-      232.52565236728054,
-      118.67587649616081,
-      21.13298208416771
+      252.29323671394158,
+      47.730493576736464,
+      21.159042618489536
     ],
-    "surface_area": 11562.94013594469,
-    "volume": 10840.161279026062,
+    "surface_area": 11534.39817669795,
+    "volume": 14466.573770099745,
     "center_of_mass": [
-      4.3736330029093697e-07,
-      -6.307781962345428e-08,
-      0.6613475019258861
+      7.109291294127795e-07,
+      1.3485628324761887e-09,
+      1.0387452797297818
     ]
   },
   "artifacts": {
@@ -36,7 +36,7 @@
     "summary": "/tmp/claude-0/-home-user-vegeta/944887ba-e2df-53d1-9843-88f4a7d80082/scratchpad/tr/notebooks/designs/data/transonic/transonic_prop/summary.json"
   },
   "messages": [],
-  "duration_s": 1.1982167969999864,
+  "duration_s": 1.2006903019998845,
   "execution": [],
   "metadata": {
     "name": "Propeller",
@@ -52,19 +52,20 @@
       "chord_max": 24.0,
       "chord_tip": 11.0,
       "thickness": 0.06,
+      "thickness_root": 0.16,
       "camber": 0.02,
       "stations": 10,
-      "skew_deg": 25.0
+      "skew_deg": 8.0
     },
     "source": {
       "design": "Propeller",
       "module": "vegeta.dedalus.examples",
       "qualname": "Propeller.build",
       "source_file": "/tmp/claude-0/-home-user-vegeta/944887ba-e2df-53d1-9843-88f4a7d80082/scratchpad/tr/vegeta-cli/src/vegeta/dedalus/examples.py",
-      "source_sha256": "99d1289c72eeb7c9c76fa037e1978d0a3af948424a33ca8e3a5aa0d9c518657e"
+      "source_sha256": "793d5113b712cb0f90aa21a0decdf2c904c05c79e47a24cf7cd6c5aefe15236e"
     },
     "origin": null,
-    "created_at": "2026-11-24T05:05:36+00:00",
+    "created_at": "2026-11-24T05:16:21+00:00",
     "tool_versions": {
       "cadquery": "2.8.0"
     },

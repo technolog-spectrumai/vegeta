@@ -24,8 +24,9 @@
   "chord_max_mm": 24.0,
   "chord_tip_mm": 11.0,
   "thickness": 0.06,
+  "thickness_root": 0.16,
   "camber": 0.02,
-  "skew_deg": 25.0,
+  "skew_deg": 8.0,
   "hub_diameter": 26.0,
   "hub_height": 14.0,
   "bore": 6.0
@@ -40,6 +41,7 @@
   "chord_max_mm": 13.0,
   "chord_tip_mm": 11.0,
   "thickness": 0.05,
+  "thickness_root": 0.11,
   "camber": 0.03,
   "skew_deg": 15.0,
   "tip_clearance_mm": 0.25,
@@ -114,21 +116,21 @@
    "thrust_N": 42.05,
    "rpm": 18482,
    "shaft_kW": 6.78,
-   "efficiency": 0.869,
+   "efficiency": 0.868,
    "tip_helical_mach": 0.831,
-   "torque_Nm": 3.501,
+   "torque_Nm": 3.503,
    "advance_ratio": 1.789
   },
   {
    "speed_m_s": 166.67,
    "speed_kmh": 600,
    "thrust_N": 59.57,
-   "rpm": 21895,
-   "shaft_kW": 12.23,
-   "efficiency": 0.812,
+   "rpm": 21904,
+   "shaft_kW": 12.29,
+   "efficiency": 0.808,
    "tip_helical_mach": 0.986,
-   "torque_Nm": 5.333,
-   "advance_ratio": 1.798
+   "torque_Nm": 5.359,
+   "advance_ratio": 1.797
   }
  ],
  "fan_meanline": {
