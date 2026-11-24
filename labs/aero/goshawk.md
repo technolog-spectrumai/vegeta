@@ -71,6 +71,38 @@ Stall: 8.5 m/s flaps down as modelled, 6.9 m/s if the section holds.
 
 **The wing's real maximum lift decides this aircraft.** The two estimates differ by 60 %.
 
+## 3b. Flown: the forest scenario
+
+`labs/aero/designs/goshawk_forest.py` flies the MuJoCo aircraft through a strip of
+trunks 150 m long, level at 4 m, flaps down, steered by a short-sighted planner (it sees
+30 m ahead, tries 31 dodges, S-turns and turns every 0.05 s, keeps 0.35 m of margin).
+Trunks only: no branches, no ground, no canopy, perfect sight of every trunk in view.
+
+Single debug flights so far, on the carried-over (pessimistic) lift:
+
+| Stand | Stems apart | Flights | Result |
+|---|---|---|---|
+| 150 stems/ha | 8.2 m | 1 | through, closest pass 1.7 m |
+| 250 stems/ha | 6.3 m | 2 at 12 m/s | both through, closest 0.6–0.9 m |
+| 400 stems/ha | 5.0 m | 2 at 12 m/s | one hit after 36 m, one turned out of the strip |
+
+Seven flights are a smoke test, not a rate. The campaign (240 flights) is prepared:
+
+```bash
+bash labs/aero/sims/goshawk_forest.sh -j 12
+```
+
+What these flights taught:
+
+- **The shared autopilot was too slow in pitch** for this aircraft: a turn's load factor
+  took about 2 s to build. The scenario has its own model-based pitch law.
+- **The angle-of-attack augmentation fought every pull-up** and is switched off. Balanced
+  stable, the aircraft does not need it.
+- **The track turns about 72 % as fast as the bank alone implies**; the planner is
+  calibrated to that.
+- **Speed runs 1–1.5 m/s over the command** in turns: the crow brake is too weak to hold
+  it against the turn throttle.
+
 ## 4. Stability and balance
 
 - Balance point 300 mm from the nose, static margin 5 %.
@@ -78,8 +110,8 @@ Stall: 8.5 m/s flaps down as modelled, 6.9 m/s if the section holds.
   point at or behind the neutral point. Tried at 305 mm on the first sizing: the tail
   carried 7 %, and hands off the aircraft lost 60 m in 20 s. The bird does this with a
   brain; here it needs an autopilot loop that does not exist yet.
-- Angle-of-attack augmentation is in the controller for this design. Its gains are
-  PROTOHAWK's, moved to GOSHAWK's speeds, **not tuned**.
+- The yaw and pitch dampers' gains are PROTOHAWK's, moved to GOSHAWK's speeds, **not
+  tuned**. Angle-of-attack augmentation exists in the controller but is switched off.
 - One debug stability job at 14 m/s: stable hands off, Dutch-roll damping 0.32, roll
   rate 240 °/s through the first turn. A 3 m/s gust reaches the stall at that speed.
 
@@ -87,8 +119,9 @@ Stall: 8.5 m/s flaps down as modelled, 6.9 m/s if the section holds.
 
 - **Maximum lift** (section 3). CFD at this aircraft's speed is prepared.
 - **Reynolds number.** The carried-over data is from 3.5 × 10⁵; GOSHAWK flies at 2 × 10⁵.
-- **No forest flight simulation exists.** Nothing here flies between obstacles. The turn
-  table is a steady-turn calculation.
+- **The forest scenario is trunks only**, with perfect sight. It says nothing about
+  branches, perception or wind.
+- **The wing tuck is drawn but not flown.** The swung-back state has no aerodynamics.
 - **Perception.** Flying a wood by sight is assumed (95 g of computer and cameras) and
   not designed.
 - **The catch.** The legs are drawn; no catch has been simulated on this aircraft.

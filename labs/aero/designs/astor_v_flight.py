@@ -492,7 +492,8 @@ SAS = {"twin": {"yaw_k": 0.25, "yaw_washout_s": 1.0,     # rudder [deg] per deg/
                 "pitch_k": 0.06, "pitch_v_ref": 30.0,    # elevator [deg] per deg/s of pitch rate at 30 m/s, less with speed (x 30 / V)
                 "g_max": 8.0},
        "goshawk": {"yaw_k": 0.25, "yaw_washout_s": 1.0, "pitch_k": 0.06, "pitch_v_ref": 12.0, "g_max": 6.0,
-                   "alpha_k": 0.25, "alpha_washout_s": 3.0}}       # elevator [deg] per deg of angle of attack off its 3 s average      # PROTOHAWK's gains at GOSHAWK's speeds: NOT tuned                           # the client's choice (2026-11-23); the airframe must be built to it (astor_twin's budget: +100 g, HAND)
+                   "alpha_k": 0.0, "alpha_washout_s": 3.0}}        # the angle-of-attack augmentation OFF: balanced stable (5 %) it is not needed, and in
+                                                                   # the forest flights it held the nose down for seconds when a turn asked for load factor      # PROTOHAWK's gains at GOSHAWK's speeds: NOT tuned                           # the client's choice (2026-11-23); the airframe must be built to it (astor_twin's budget: +100 g, HAND)
 
 
 def alpha_for_g(C, V, n) -> float:
