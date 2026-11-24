@@ -6,8 +6,9 @@ catcher net out of the nose. The hunter version of the medical courier: it chase
 fixed launcher at a hovering quadcopter: 22 captures in 24 between 4 and 10 m):
 
 * a 2.4 m square net in a 150 g cartridge, leaving at 40 m/s, 2.95 m across when open;
-* **two** tubes (GAVILAN carries one), 42.7 mm bore, 0.30 m, 1 mm aluminium, one above the other, a fast valve each;
-* one air vessel, 1.3 L at 30 bar (gauge) — a third larger than GAVILAN's, for the second shot at full speed.
+* one tube, 42.7 mm bore, 0.30 m, 1 mm aluminium, one 25 mm fast valve — and a **magazine of two spare cartridges
+  under the tube**, fed up into it from below (GAVILAN carries one cartridge and needs a second tube for a second shot);
+* one air vessel, 1.3 L at 30 bar (gauge) — a third larger than GAVILAN's: three shots at full speed from one fill.
 
 **Where it goes** (``layout``): the pod is stretched 140 mm (470 → 610 mm; the constant mid-body 220 → 360 mm) and the
 medical capsule's bay becomes the launcher's; the electronics keep their shelf:
@@ -21,9 +22,14 @@ medical capsule's bay becomes the launcher's; the electronics keep their shelf:
 * the **battery** slides on the pod's floor under the tube, forward of the vessel (``cg``: the launcher is nose-heavy,
   the cartridge and the tube sit ahead of the wing; the battery goes where it trims the CG to Kestrel's target);
 * the **valve block** (the fast valve, its pilot, the breech) between the vessel's front dome and the tube, x 220-250;
-* the **tubes** run forward on the centre plane through the nose, 26 mm above and below the bay's axis, 300 mm from
-  the breech to muzzles 80 mm ahead of the nose tip; a cartridge sits in the front 100 mm of each. Fired one after the
-  other (``shot``: the vessel keeps 22 bar after the first, enough for the second at full speed);
+* the **tube** runs forward on the axis (raised 25 mm, ``BAY_Z_MM``, to make room under it) through the nose, 300 mm
+  from the breech to a muzzle 80 mm ahead of the nose tip; the live cartridge sits in its front 100 mm;
+* the **magazine** hangs under the rear 110 mm of the tube, just ahead of the valve block: two spare cartridges
+  stacked on a spring follower, a port in the tube's underside above them. After a shot the lifter's servo slides
+  the port sleeve back, the follower pushes the next cartridge up into the bore, the sleeve closes the port and the
+  gas pushes the cartridge forward through the tube on the next shot — a pump shotgun's tubular magazine turned on
+  its side, loaded from below. The battery leaves the floor to the magazine and rides above the tube in the nose,
+  where the CG wants it (``cg``);
 * the **camera** leaves the nose tip for a chin window at x 70 mm, 58 mm below the axis, looking ahead and a little
   down — the chase is flown in cruise, nose into the wind, and the net leaves where the camera looks.
 
@@ -83,12 +89,15 @@ VESSEL = {"d_mm": 90.0, "wall_mm": 2.0, "x0_mm": 250.0, "x1_mm": 510.0, "materia
 TUBE = {"x_breech_mm": 250.0, "valve_mm": 30.0}      #: the muzzle follows: breech - valve - NET["tube_m"] = -80 mm (80 mm ahead of the nose tip)
 CAMERA = {"x_mm": 70.0, "z_mm": -58.0, "window_mm": 24.0}     #: under the lower tube
 POD_STRETCH_MM = 140.0
-N_TUBES = 2                                   #: two tubes, one above the other, on the pod's centre plane
-TUBE_DZ_MM = 26.0                             #: their axes above and below the bay's axis (3 mm between the walls)
+N_TUBES = 1                                   #: one tube on the pod's axis
+MAGAZINE = {"spares": 2, "port_mm": 110.0, "pitch_mm": 45.0, "spring_mm": 20.0, "box_g": 60.0, "spring_g": 20.0, "lifter_g": 70.0}
+#: the spare cartridges stacked under the breech end of the tube, fed up through a port in its underside by a spring follower;
+#: a sleeve round the tube, slid by a small servo, closes the port before a shot (the lifter: servo, sleeve, linkage)
 ELECTRONICS_MM = {"flight stack": (250.0, 340.0), "mission computer": (345.0, 405.0), "electronics spare": (410.0, 505.0)}   #: along x, above the vessel
+BAY_Z_MM = 25.0                               #: the launcher's axis above the pod's: room for the magazine under the tube
 BATTERY_MM = (140.0, 44.0, 32.0)              #: the 4S 3300 (kestrel_systems.COMPONENTS["battery"])
-BATTERY_Z_MM = -80.0                          #: its centre: on the pod's floor, under the tube and the vessel
-BATTERY_TRAVEL_MM = (170.0, 440.0)            #: its centre's travel: from the nose's full section to the end of the mid-body
+BATTERY_Z_MM = 71.0                           #: its centre: above the tube, in the nose and the front of the mid-body
+BATTERY_TRAVEL_MM = (125.0, 300.0)            #: its centre's travel above the tube: the nose's full section to the valve block            #: its centre's travel: from the nose's full section to the end of the mid-body
 
 
 # ================================================================================================= the aircraft
@@ -99,14 +108,16 @@ def params(p=None) -> dict:
     d = VESSEL["d_mm"]
     return kestrel.resolve(dict(base, pod_length=base["pod_length"] + POD_STRETCH_MM, x_feet=base["x_feet"] + POD_STRETCH_MM,
                                 prop_diameter=254.0,
-                                bay_length=VESSEL["x1_mm"] - VESSEL["x0_mm"], bay_width=d, bay_height=d, bay_x=VESSEL["x0_mm"], bay_z=10.0))
+                                bay_length=VESSEL["x1_mm"] - VESSEL["x0_mm"], bay_width=d, bay_height=d, bay_x=VESSEL["x0_mm"], bay_z=BAY_Z_MM))
 
 
 def tube_offsets() -> list[float]:
-    """The tubes' axes above the bay's axis [mm]: one on it, or two (and more) spread by ``TUBE_DZ_MM``."""
-    if N_TUBES == 1:
-        return [0.0]
-    return [TUBE_DZ_MM * (2 * i - (N_TUBES - 1)) for i in range(N_TUBES)]
+    """The tube's axis above the bay's axis [mm]: on it."""
+    return [0.0] * N_TUBES
+
+
+def shots_per_fill_count() -> int:
+    return N_TUBES + MAGAZINE["spares"]
 
 
 def layout(p=None, battery_x: float | None = None) -> dict:
@@ -120,12 +131,15 @@ def layout(p=None, battery_x: float | None = None) -> dict:
     x_muzzle = x_breech - TUBE["valve_mm"] - NET["tube_m"] * 1e3
     boxes = {
         "vessel": (VESSEL["x0_mm"], VESSEL["x1_mm"], -r, r, bz - r, bz + r),
-        "valve block": (x_breech - TUBE["valve_mm"], x_breech, -ro - 6, ro + 6, bz - TUBE_DZ_MM - ro - 6, bz + TUBE_DZ_MM + ro + 6),
+        "valve block": (x_breech - TUBE["valve_mm"], x_breech, -ro - 6, ro + 6, bz - ro - 6, bz + ro + 6),
         "camera (chin window)": (CAMERA["x_mm"] - 15, CAMERA["x_mm"] + 15, -CAMERA["window_mm"] / 2, CAMERA["window_mm"] / 2, CAMERA["z_mm"] - 12, CAMERA["z_mm"] + 12),
     }
-    for i, dz in enumerate(tube_offsets(), 1):
-        boxes[f"tube {i}"] = (x_muzzle, x_breech - TUBE["valve_mm"], -ro, ro, bz + dz - ro, bz + dz + ro)
-        boxes[f"cartridge {i}"] = (x_muzzle + 5.0, x_muzzle + 5.0 + NET["cartridge_len_mm"], -NET["bore_mm"] / 2, NET["bore_mm"] / 2, bz + dz - NET["bore_mm"] / 2, bz + dz + NET["bore_mm"] / 2)
+    x_port1 = x_breech - TUBE["valve_mm"]
+    boxes["tube"] = (x_muzzle, x_port1, -ro, ro, bz - ro, bz + ro)
+    boxes["cartridge"] = (x_muzzle + 5.0, x_muzzle + 5.0 + NET["cartridge_len_mm"], -NET["bore_mm"] / 2, NET["bore_mm"] / 2, bz - NET["bore_mm"] / 2, bz + NET["bore_mm"] / 2)
+    h_mag = MAGAZINE["spares"] * MAGAZINE["pitch_mm"] + MAGAZINE["spring_mm"]
+    boxes["magazine"] = (x_port1 - MAGAZINE["port_mm"], x_port1, -ro - 4, ro + 4, bz - ro - h_mag, bz - ro)
+    boxes["lifter"] = (x_port1 - MAGAZINE["port_mm"] - 25.0, x_port1 - MAGAZINE["port_mm"], -14.0, 14.0, bz - ro - 30.0, bz - ro)
     z_top = b["flight stack"][4]                                            # the pod's own electronics shelf above the bay
     for k, (xa, xb_) in ELECTRONICS_MM.items():
         boxes[k] = (xa, xb_, -30.0, 30.0, z_top, z_top + 30.0)
@@ -176,7 +190,7 @@ def shot(mass_aircraft_kg: float | None = None) -> dict:
     dv = J / m
     # the shots in turn from one fill: each starts at the pressure the last one left
     seq, pk = [], p0
-    for i in range(1, N_TUBES + 1):
+    for i in range(1, shots_per_fill_count() + 1):
         W_i = pk * V_ves * math.log((V_ves + V_tube) / V_ves)
         p_next = pk * V_ves / (V_ves + V_tube)
         seq.append({"shot": i, "vessel_before_bar_g": pk / BAR - 1.013, "work_margin": W_i / W_gas, "full_speed": W_i >= W_gas,
@@ -185,20 +199,24 @@ def shot(mass_aircraft_kg: float | None = None) -> dict:
     return {"cartridge_J": E, "impulse_Ns": J, "recoil_m_s": dv, "recoil_g_over_0_05_s": dv / 0.05 / G,
             "gas_work_available_J": W_full, "gas_work_needed_J": W_gas, "work_margin": W_full / W_gas,
             "vessel_after_shot_bar_g": p_after / BAR - 1.013, "air_used_g": m_air_used * 1e3,
-            "air_used_recoilless_g": NET["air_g_per_shot_recoilless"], "tubes": N_TUBES,
+            "air_used_recoilless_g": NET["air_g_per_shot_recoilless"], "tubes": N_TUBES, "cartridges": shots_per_fill_count(),
             "shots_per_fill": sum(1 for q in seq if q["full_speed"]), "shots": seq,
-            "note": f"one cartridge per tube, {N_TUBES} tubes: {sum(1 for q in seq if q['full_speed'])} full-speed shots a fill; no reloading in flight"}
+            "note": f"one tube, {MAGAZINE['spares']} spare cartridges in the magazine under it: {sum(1 for q in seq if q['full_speed'])} full-speed shots a fill"}
 
 
 def masses() -> dict:
     """The launcher's parts [kg] and what the airframe changes cost."""
     v = vessel()
+    n = shots_per_fill_count()
     parts = {}
     for k, g in NET["parts_g"].items():
-        if k == "mounts":
-            parts[k] = g * 1e-3 * (1 + 0.5 * (N_TUBES - 1))
+        if k == "net cartridge":
+            parts[f"net cartridges (x{n}: one in the tube, {MAGAZINE['spares']} in the magazine)"] = g * 1e-3 * n
         else:
-            parts[f"{k} (x{N_TUBES})" if N_TUBES > 1 else k] = g * 1e-3 * N_TUBES
+            parts[k] = g * 1e-3
+    parts["magazine box and port sleeve"] = MAGAZINE["box_g"] * 1e-3
+    parts["magazine spring and follower"] = MAGAZINE["spring_g"] * 1e-3
+    parts["lifter servo and linkage"] = MAGAZINE["lifter_g"] * 1e-3
     parts[f"vessel Ø{VESSEL['d_mm']:.0f} × {VESSEL['x1_mm'] - VESSEL['x0_mm']:.0f} mm, {VESSEL['material']}"] = v["mass_kg"]
     parts[f"air, {v['volume_l']:.1f} L at 30 bar"] = v["air_g"] * 1e-3
     launcher = sum(parts.values())
@@ -218,17 +236,24 @@ def _launcher_rows() -> list[dict]:
     m = masses()["launcher"]
     rows = []
     for k, mk in m.items():
+        z = bz
         if k.startswith("tube"):
-            x, rod = mid("tube 1"), ("x", NET["tube_m"])
+            x, rod = mid("tube"), ("x", NET["tube_m"])
         elif k.startswith("chamber") or k.startswith("25 mm"):
             x, rod = mid("valve block"), None
         elif k.startswith("net cartridge"):
-            x, rod = mid("cartridge 1"), None
+            n = shots_per_fill_count()
+            rows.append({"item": "net cartridge in the tube", "mass_kg": mk / n, "x": mid("cartridge"), "y": 0.0, "z": bz, "group": "payload", "rod": None})
+            mk = mk * (n - 1) / n
+            k = f"net cartridges in the magazine (x{n - 1})"
+            x, rod, z = mid("magazine"), None, 0.5 * (b["magazine"][4] + b["magazine"][5]) * 1e-3
+        elif k.startswith("magazine") or k.startswith("lifter"):
+            x, rod, z = mid("magazine"), None, 0.5 * (b["magazine"][4] + b["magazine"][5]) * 1e-3
         elif k.startswith("vessel") or k.startswith("air"):
             x, rod = mid("vessel"), ("x", (VESSEL["x1_mm"] - VESSEL["x0_mm"]) * 1e-3)
         else:
-            x, rod = 0.5 * (mid("tube 1") + mid("vessel")), None
-        rows.append({"item": k, "mass_kg": mk, "x": x, "y": 0.0, "z": bz, "group": "payload", "rod": rod})
+            x, rod = 0.5 * (mid("tube") + mid("vessel")), None
+        rows.append({"item": k, "mass_kg": mk, "x": x, "y": 0.0, "z": z, "group": "payload", "rod": rod})
     return rows
 
 
@@ -276,17 +301,20 @@ def checks() -> list[str]:
     ws = [s[1] / 2 for s in prof]
     hs = [s[2] / 2 for s in prof]
     x_enter = None
-    z_out = max(abs(dz) for dz in tube_offsets()) + abs(p["bay_z"]) + ro          # the outermost tube's reach from the axis
+    z_out = abs(p["bay_z"]) + ro                                                    # the tube's reach from the pod's axis
     for x in np.arange(0.0, p["nose_length"], 1.0):
         if np.interp(x, xs, ws) - p["pod_wall"] >= ro and np.interp(x, xs, hs) - p["pod_wall"] >= z_out and x_enter is None:
             x_enter = float(x)
     if x_enter is None or x_enter > 60.0:
-        out.append(f"the tubes ({2 * ro:.1f} mm, {z_out:.0f} mm off the axis) do not fit inside the nose skin until x = {x_enter} mm")
+        out.append(f"the tube ({2 * ro:.1f} mm, {z_out:.0f} mm off the axis) does not fit inside the nose skin until x = {x_enter} mm")
+    mg = b["magazine"]
+    if mg[4] < -(h_in := L["inside_mm"][1]) / 2:
+        out.append(f"the magazine's bottom ({mg[4]:.0f} mm) is below the pod's floor ({-h_in / 2:.0f} mm)")
     # boxes clear of each other (the tube passes through the valve block by design: skip that pair)
     names = list(b)
     for i, a in enumerate(names):
         for c in names[i + 1:]:
-            if (a.startswith("tube") and c == "valve block") or (a.startswith("tube") and c.startswith("cartridge") and a[-1] == c[-1]):
+            if {a, c} in ({"tube", "valve block"}, {"tube", "cartridge"}, {"magazine", "lifter"}):
                 continue
             A, C = b[a], b[c]
             if all(A[2 * k] < C[2 * k + 1] and C[2 * k] < A[2 * k + 1] for k in range(3)):
@@ -302,7 +330,7 @@ def checks() -> list[str]:
     for x in (bb[0], bb[1]):
         half_h = np.interp(x, xs, hs) if x < p["nose_length"] else 0.49 * p["gap"]
         half_w = np.interp(x, xs, ws) if x < p["nose_length"] else p["pod_width"] / 2
-        if -bb[4] > half_h - p["pod_wall"] or bb[3] > half_w - p["pod_wall"]:
+        if max(-bb[4], bb[5]) > half_h - p["pod_wall"] or bb[3] > half_w - p["pod_wall"]:
             out.append(f"the battery does not clear the pod's skin at x = {x:.0f} mm")
     v = vessel()
     if v["yield_margin"] < 2.5:
@@ -378,11 +406,15 @@ class KestrelNetter(Design):
         vb = b["valve block"]
         valve = cq.Workplane("XY").box(vb[1] - vb[0], vb[3] - vb[2], vb[5] - vb[4]).translate((0.5 * (vb[0] + vb[1]), 0, 0.5 * (vb[4] + vb[5]))).edges("|X").fillet(4.0)
         out = ves.union(valve)
-        for i, dz in enumerate(tube_offsets(), 1):
-            tb, cb = b[f"tube {i}"], b[f"cartridge {i}"]
-            tube = _cyl_x(ro, tb[0], tb[1], z=bz + dz).cut(_cyl_x(NET["bore_mm"] / 2, tb[0] - 1.0, tb[1] + 1.0, z=bz + dz))
-            cart = _cyl_x(NET["bore_mm"] / 2 - 0.5, cb[0], cb[1], z=bz + dz)
-            out = out.union(tube).union(cart)
+        tb, cb, mg, lf = b["tube"], b["cartridge"], b["magazine"], b["lifter"]
+        tube = _cyl_x(ro, tb[0], tb[1], z=bz).cut(_cyl_x(NET["bore_mm"] / 2, tb[0] - 1.0, tb[1] + 1.0, z=bz))
+        cart = _cyl_x(NET["bore_mm"] / 2 - 0.5, cb[0], cb[1], z=bz)
+        mag = cq.Workplane("XY").box(mg[1] - mg[0], mg[3] - mg[2], mg[5] - mg[4]).translate((0.5 * (mg[0] + mg[1]), 0, 0.5 * (mg[4] + mg[5]))).edges("|X").fillet(3.0)
+        for i in range(MAGAZINE["spares"]):                                     # the spare cartridges showing through a cut-out
+            zc = mg[4] + MAGAZINE["spring_mm"] + MAGAZINE["pitch_mm"] * (i + 0.5)
+            mag = mag.union(_cyl_x(NET["bore_mm"] / 2 - 0.5, mg[0] + 5.0, mg[0] + 5.0 + NET["cartridge_len_mm"], z=zc))
+        lifter = cq.Workplane("XY").box(lf[1] - lf[0], lf[3] - lf[2], lf[5] - lf[4]).translate((0.5 * (lf[0] + lf[1]), 0, 0.5 * (lf[4] + lf[5])))
+        out = out.union(tube).union(cart).union(mag).union(lifter)
         cam = b["camera (chin window)"]
         camera = cq.Workplane("XY").box(cam[1] - cam[0], cam[3] - cam[2], cam[5] - cam[4]).translate((0.5 * (cam[0] + cam[1]), 0, 0.5 * (cam[4] + cam[5])))
         return out.union(camera)
@@ -429,7 +461,7 @@ def _tess(geom, tol=2.0, ang=0.35):
     return v[t] if len(t) else np.zeros((0, 3, 3))
 
 
-def views(path, title="Kestrel-4Q-2N - the net launcher in the pod: 1.3 L vessel, valve block, two tubes and cartridges; the electronics shelf (green), the chin camera"):
+def views(path, title="Kestrel-4Q-2N - the net launcher in the pod: 1.3 L vessel, valve block, one tube, the magazine of nets under it (orange); the electronics shelf (green), the chin camera"):
     """Four shaded views (3/4 front, side, top, nose-on) of the airframe (grey, translucent) with the launcher coloured."""
     import matplotlib
     matplotlib.use("Agg")
@@ -441,7 +473,8 @@ def views(path, title="Kestrel-4Q-2N - the net launcher in the pod: 1.3 L vessel
     L = layout()
     bz = L["p"]["bay_z"]
     parts = {"vessel": (0.80, 0.12, 0.12, 1.0), "valve block": (0.25, 0.27, 0.30, 1.0), "tube": (0.75, 0.75, 0.78, 1.0),
-             "cartridge": (0.95, 0.70, 0.15, 1.0), "camera (chin window)": (0.15, 0.35, 0.85, 1.0)}
+             "cartridge": (0.95, 0.70, 0.15, 1.0), "camera (chin window)": (0.15, 0.35, 0.85, 1.0),
+             "magazine": (0.95, 0.45, 0.10, 1.0), "lifter": (0.30, 0.30, 0.32, 1.0)}
     import cadquery as cq
     meshes = []
     b = L["boxes"]
@@ -451,14 +484,16 @@ def views(path, title="Kestrel-4Q-2N - the net launcher in the pod: 1.3 L vessel
     solids = {"vessel": _cyl_x(r, x0 + r, x1 - r, z=bz).union(cq.Workplane("XY").sphere(r).translate((x0 + r, 0, bz))).union(cq.Workplane("XY").sphere(r).translate((x1 - r, 0, bz))),
               "valve block": cq.Workplane("XY").box(b["valve block"][1] - b["valve block"][0], b["valve block"][3] - b["valve block"][2], b["valve block"][5] - b["valve block"][4]).translate((0.5 * (b["valve block"][0] + b["valve block"][1]), 0, bz)),
               "camera (chin window)": cq.Workplane("XY").box(30, CAMERA["window_mm"], 24).translate((CAMERA["x_mm"], 0, CAMERA["z_mm"]))}
-    for i, dz in enumerate(tube_offsets(), 1):
-        solids[f"tube {i}"] = _cyl_x(ro, b[f"tube {i}"][0], b[f"tube {i}"][1], z=bz + dz)
-        solids[f"cartridge {i}"] = _cyl_x(NET["bore_mm"] / 2 + 0.5, b[f"cartridge {i}"][0] - 1, b[f"cartridge {i}"][1] + 1, z=bz + dz)
+    solids["tube"] = _cyl_x(ro, b["tube"][0], b["tube"][1], z=bz)
+    solids["cartridge"] = _cyl_x(NET["bore_mm"] / 2 + 0.5, b["cartridge"][0] - 1, b["cartridge"][1] + 1, z=bz)
+    mg, lf = b["magazine"], b["lifter"]
+    solids["magazine"] = cq.Workplane("XY").box(mg[1] - mg[0], mg[3] - mg[2], mg[5] - mg[4]).translate((0.5 * (mg[0] + mg[1]), 0, 0.5 * (mg[4] + mg[5])))
+    solids["lifter"] = cq.Workplane("XY").box(lf[1] - lf[0], lf[3] - lf[2], lf[5] - lf[4]).translate((0.5 * (lf[0] + lf[1]), 0, 0.5 * (lf[4] + lf[5])))
     for k, (xa, xb_) in ELECTRONICS_MM.items():
         bx = b[k]
         solids[k] = cq.Workplane("XY").box(bx[1] - bx[0], bx[3] - bx[2], bx[5] - bx[4]).translate((0.5 * (bx[0] + bx[1]), 0, 0.5 * (bx[4] + bx[5])))
     for k, s in solids.items():
-        col = parts.get(k.rstrip(" 12"), parts.get(k, (0.20, 0.65, 0.35, 0.9)))
+        col = parts.get(k, (0.20, 0.65, 0.35, 0.9))
         meshes.append((_tess(s, tol=1.5), col))
     light = np.array([0.4, -0.5, 0.8]) / np.linalg.norm([0.4, -0.5, 0.8])
     fig = plt.figure(figsize=(16, 10))

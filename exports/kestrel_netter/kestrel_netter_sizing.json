@@ -37,16 +37,17 @@
  "shot": {
   "cartridge_J": 120.0,
   "impulse_Ns": 6.0,
-  "recoil_m_s": 1.801814596173214,
-  "recoil_g_over_0_05_s": 3.6746791129962095,
+  "recoil_m_s": 1.824830641571913,
+  "recoil_g_over_0_05_s": 3.721618782299589,
   "gas_work_available_J": 1146.054149266972,
   "gas_work_needed_J": 480.0,
   "work_margin": 2.3876128109728585,
   "vessel_after_shot_bar_g": 22.236397652337693,
   "air_used_g": 11.869464941977979,
   "air_used_recoilless_g": 19.1,
-  "tubes": 2,
-  "shots_per_fill": 2,
+  "tubes": 1,
+  "cartridges": 3,
+  "shots_per_fill": 3,
   "shots": [
    {
     "shot": 1,
@@ -61,21 +62,31 @@
     "work_margin": 1.80153051251497,
     "full_speed": true,
     "air_used_g": 8.955892329748071
+   },
+   {
+    "shot": 3,
+    "vessel_before_bar_g": 16.52941687588114,
+    "work_margin": 1.359312604039862,
+    "full_speed": true,
+    "air_used_g": 6.757508262935579
    }
   ],
-  "note": "one cartridge per tube, 2 tubes: 2 full-speed shots a fill; no reloading in flight"
+  "note": "one tube, 2 spare cartridges in the magazine under it: 3 full-speed shots a fill"
  },
  "masses": {
   "launcher": {
-   "tube 0.30 m, 42.7 mm bore, 1 mm aluminium (x2)": 0.224,
-   "chamber and breech (closed, no venturi) (x2)": 0.12,
-   "25 mm fast valve with its pilot (x2)": 0.3,
-   "net cartridge (x2)": 0.3,
-   "mounts": 0.06,
+   "tube 0.30 m, 42.7 mm bore, 1 mm aluminium": 0.112,
+   "chamber and breech (closed, no venturi)": 0.06,
+   "25 mm fast valve with its pilot": 0.15,
+   "net cartridges (x3: one in the tube, 2 in the magazine)": 0.44999999999999996,
+   "mounts": 0.04,
+   "magazine box and port sleeve": 0.06,
+   "magazine spring and follower": 0.02,
+   "lifter servo and linkage": 0.07,
    "vessel \u00d890 \u00d7 260 mm, aluminium 6061-T6": 0.43018690534546056,
    "air, 1.3 L at 30 bar": 0.048354448904919654
   },
-  "launcher_kg": 1.4825413542503802,
+  "launcher_kg": 1.4405413542503802,
   "airframe_changes": {
    "pod stretch 140 mm (shell)": 0.03574468085106383,
    "2814 motors for 2216 (4x)": 0.15599999999999997,
@@ -84,23 +95,23 @@
   },
   "airframe_changes_kg": -0.18225531914893622
  },
- "mass_kg": 3.3299763542503804,
+ "mass_kg": 3.2879763542503797,
  "cg": {
-  "mass_kg": 3.3299763542503804,
-  "x_cg": 0.21400000000000002,
-  "z_cg": -0.0006302256335296463,
+  "mass_kg": 3.2879763542503797,
+  "x_cg": 0.2140000000000001,
+  "z_cg": 0.012414013806241414,
   "x_cg_target": 0.21400000000000002,
-  "battery_x": 0.19539179220676903,
-  "battery_x_for_target": 0.19539179220676903,
+  "battery_x": 0.12511956998454699,
+  "battery_x_for_target": 0.12511956998454699,
   "battery_travel": [
-   0.17,
-   0.44
+   0.125,
+   0.3
   ],
   "battery_clipped": false,
-  "cg_off_target_mm": 0.0,
-  "Ixx": 0.14439858568760075,
-  "Iyy": 0.07515288382395405,
-  "Izz": 0.17693850346968673
+  "cg_off_target_mm": 8.326672684688674e-14,
+  "Ixx": 0.14547996003695246,
+  "Iyy": 0.06820834373258984,
+  "Izz": 0.16891258902897086
  },
  "layout_mm": {
   "vessel": [
@@ -108,16 +119,16 @@
    510.0,
    -45.0,
    45.0,
-   -35.0,
-   55.0
+   -20.0,
+   70.0
   ],
   "valve block": [
    220.0,
    250.0,
    -28.35,
    28.35,
-   -44.35,
-   64.35
+   -3.3500000000000014,
+   53.35
   ],
   "camera (chin window)": [
    55.0,
@@ -127,69 +138,69 @@
    -70.0,
    -46.0
   ],
-  "tube 1": [
+  "tube": [
    -80.0,
    220.0,
    -22.35,
    22.35,
-   -38.35,
-   6.350000000000001
+   2.6499999999999986,
+   47.35
   ],
-  "cartridge 1": [
+  "cartridge": [
    -75.0,
    25.0,
    -21.35,
    21.35,
-   -37.35,
-   5.350000000000001
+   3.6499999999999986,
+   46.35
   ],
-  "tube 2": [
-   -80.0,
+  "magazine": [
+   110.0,
    220.0,
-   -22.35,
-   22.35,
-   13.649999999999999,
-   58.35
+   -26.35,
+   26.35,
+   -107.35,
+   2.6499999999999986
   ],
-  "cartridge 2": [
-   -75.0,
-   25.0,
-   -21.35,
-   21.35,
-   14.649999999999999,
-   57.35
+  "lifter": [
+   85.0,
+   110.0,
+   -14.0,
+   14.0,
+   -27.35,
+   2.6499999999999986
   ],
   "flight stack": [
    250.0,
    340.0,
    -30.0,
    30.0,
-   63.0,
-   93.0
+   78.0,
+   108.0
   ],
   "mission computer": [
    345.0,
    405.0,
    -30.0,
    30.0,
-   63.0,
-   93.0
+   78.0,
+   108.0
   ],
   "electronics spare": [
    410.0,
    505.0,
    -30.0,
    30.0,
-   63.0,
-   93.0
+   78.0,
+   108.0
   ],
   "battery": [
-   125.39179220676903,
-   265.391792206769,
+   55.119569984546985,
+   195.11956998454698,
    -22.0,
    22.0,
-   -96.0,
-   -64.0
+   55.0,
+   87.0
   ]
  },
  "pod_mm": {
@@ -284,8 +295,8 @@
    "battery": "4S 3.3 Ah",
    "bracing": "posts",
    "struts": "faired",
-   "mass [kg]": 3.3595234701365992,
-   "wing loading [N/m\u00b2]": 117.66311013719668,
+   "mass [kg]": 3.3175234701365994,
+   "wing loading [N/m\u00b2]": 116.1921126371967,
    "CG x [mm]": 218.9649991190292,
    "static margin [chords]": 0.06844340666571179,
    "Re (chord, cruise)": 153424.6575342466,
@@ -294,43 +305,43 @@
    "section cm0": 0.044327889208541915,
    "section confidence": 0.9590057691756344,
    "CL max (\u00d70.9)": 1.0353943067951863,
-   "stall speed [m/s]": 13.62116422301033,
-   "cruise / stall": 1.174642617770593,
+   "stall speed [m/s]": 13.535752080671942,
+   "cruise / stall": 1.1820547469133114,
    "Cd0": 0.025925050641330036,
    "k (induced)": 0.0663869393968173,
-   "cruise CL": 0.7504024881198768,
-   "L/D at cruise": 11.853240050831,
+   "cruise CL": 0.741021126512734,
+   "L/D at cruise": 11.87934855362045,
    "gap / span": 0.28400000000000003,
    "Prandtl \u03c3": 0.3867859862909367,
    "lift interference factor (lattice)": 0.8963803996817452,
    "induced drag vs equal monoplane (lattice)": 0.7053886397421039,
-   "hover thrust per rotor [N]": 8.236417709603769,
-   "hover rpm": 7591.129638258931,
-   "hover electrical [W]": 588.054642300562,
-   "hover current per motor [A]": 16.72692533895046,
+   "hover thrust per rotor [N]": 8.13344788460377,
+   "hover rpm": 7543.529107602614,
+   "hover electrical [W]": 577.27252440158,
+   "hover current per motor [A]": 16.527810532882825,
    "static thrust per rotor [N]": 20.27179212507017,
-   "hover T/W": 2.4612389560370405,
-   "cruise thrust per rotor [N]": 0.6948663550457949,
-   "cruise electrical [W]": 102.23859980881882,
+   "hover T/W": 2.4923983546318293,
+   "cruise thrust per rotor [N]": 0.6846712046448837,
+   "cruise electrical [W]": 101.34335943120566,
    "usable energy [Wh]": 39.072,
-   "endurance at cruise [min]": 22.92989149287807,
-   "range at cruise [km]": 22.01269583316295,
-   "hover time [min]": 3.986568307374724,
-   "V max, thrust-limited [m/s]": 43.612610100713724,
+   "endurance at cruise [min]": 23.132448077087695,
+   "range at cruise [km]": 22.207150154004186,
+   "hover time [min]": 4.06102819882204,
+   "V max, thrust-limited [m/s]": 43.61465774929811,
    "pitch speed [m/s]": 43.85733333333334,
    "spar": "carbon 10x8 tube",
-   "root moment, limit [N\u00b7m]": 6.991288489883023,
-   "spar stress, ultimate [MPa]": 180.92652386119605,
+   "root moment, limit [N\u00b7m]": 6.9038849878133846,
+   "spar stress, ultimate [MPa]": 178.6646215200699,
    "spar allowable [MPa]": 320.0,
-   "spar reserve (ultimate)": 1.7686737863017747,
-   "tip deflection, limit [mm]": 26.643629915712744,
-   "tip deflection / semi-span [%]": 5.328725983142549,
+   "spar reserve (ultimate)": 1.7910652779350247,
+   "tip deflection, limit [mm]": 26.310537301118085,
+   "tip deflection / semi-span [%]": 5.262107460223617,
    "spar mass, both wings [kg]": 0.08765043503515525,
    "first bending mode, one wing cantilever [Hz]": 10.534028293230778,
    "post length [m]": 0.284,
-   "post load, 75 % wing, limit [N]": 16.472835419207538,
+   "post load, 75 % wing, limit [N]": 16.26689576920754,
    "post Euler load [N]": 1345.4915738574862,
-   "post buckling margin": 54.452943876665614
+   "post buckling margin": 55.14232065527985
   },
   "Kestrel-4Q-2N, 1.2 m wing": {
    "candidate": "Kestrel-4Q-2N, 1.2 m wing",
@@ -347,8 +358,8 @@
    "battery": "4S 3.3 Ah",
    "bracing": "posts",
    "struts": "faired",
-   "mass [kg]": 3.45049355714363,
-   "wing loading [N/m\u00b2]": 88.11922563063172,
+   "mass [kg]": 3.4084935571436303,
+   "wing loading [N/m\u00b2]": 87.04662328688171,
    "CG x [mm]": 224.68367311145832,
    "static margin [chords]": 0.0590018765759804,
    "Re (chord, cruise)": 175342.46575342465,
@@ -357,45 +368,45 @@
    "section cm0": 0.04765739649721035,
    "section confidence": 0.9581277057906463,
    "CL max (\u00d70.9)": 1.0491289276903364,
-   "stall speed [m/s]": 11.710295613194278,
-   "cruise / stall": 1.3663190519266146,
+   "stall speed [m/s]": 11.638807541491891,
+   "cruise / stall": 1.3747112788797846,
    "Cd0": 0.02140941827876207,
    "k (induced)": 0.0655956187190802,
-   "cruise CL": 0.5619848573382125,
-   "L/D at cruise": 13.34048005694257,
+   "cruise CL": 0.5551442811663374,
+   "L/D at cruise": 13.336794621031498,
    "gap / span": 0.2366666666666667,
    "Prandtl \u03c3": 0.43818590964168247,
    "lift interference factor (lattice)": 0.881421949062262,
    "induced drag vs equal monoplane (lattice)": 0.7311316360497017,
-   "hover thrust per rotor [N]": 8.459445660540645,
-   "hover rpm": 7693.2204764722455,
-   "hover electrical [W]": 611.6641394949922,
-   "hover current per motor [A]": 17.15819893972095,
+   "hover thrust per rotor [N]": 8.356475835540644,
+   "hover rpm": 7646.2555222806,
+   "hover electrical [W]": 600.7204911556315,
+   "hover current per motor [A]": 16.959084133653317,
    "static thrust per rotor [N]": 20.27179212507017,
-   "hover T/W": 2.396349942837105,
-   "cruise thrust per rotor [N]": 0.6341185342980392,
-   "cruise electrical [W]": 96.92399638668047,
+   "hover T/W": 2.4258781481606038,
+   "cruise thrust per rotor [N]": 0.6265730314511161,
+   "cruise electrical [W]": 96.26718818331618,
    "usable energy [Wh]": 39.072,
-   "endurance at cruise [min]": 24.187199118856828,
-   "range at cruise [km]": 23.219711154102555,
-   "hover time [min]": 3.8326915845279723,
-   "V max, thrust-limited [m/s]": 43.22218450956481,
+   "endurance at cruise [min]": 24.35222264449901,
+   "range at cruise [km]": 23.378133738719054,
+   "hover time [min]": 3.902513788883965,
+   "V max, thrust-limited [m/s]": 43.22369831183348,
    "pitch speed [m/s]": 43.85733333333334,
    "spar": "carbon 10x8 tube",
-   "root moment, limit [N\u00b7m]": 8.616720593230895,
-   "spar stress, ultimate [MPa]": 222.99084156982534,
+   "root moment, limit [N\u00b7m]": 8.511836390747327,
+   "spar stress, ultimate [MPa]": 220.27655876047396,
    "spar allowable [MPa]": 320.0,
-   "spar reserve (ultimate)": 1.435036514267776,
-   "tip deflection, limit [mm]": 47.286881304315884,
-   "tip deflection / semi-span [%]": 7.881146884052647,
+   "spar reserve (ultimate)": 1.4527192625519636,
+   "tip deflection, limit [mm]": 46.71129726629631,
+   "tip deflection / semi-span [%]": 7.785216211049385,
    "spar mass, both wings [kg]": 0.1051805220421863,
    "first bending mode, one wing cantilever [Hz]": 7.8478253746360735,
    "post length [m]": 0.284,
-   "post load, 75 % wing, limit [N]": 16.91889132108129,
+   "post load, 75 % wing, limit [N]": 16.71295167108129,
    "post Euler load [N]": 1345.4915738574862,
-   "post buckling margin": 53.01732634537252,
-   "plane frame spar stress, limit [MPa]": 111.47992768014778,
-   "plane frame spar reserve": 3.588089877019462
+   "post buckling margin": 53.670614277174174,
+   "plane frame spar stress, limit [MPa]": 109.40030370325391,
+   "plane frame spar reserve": 3.656296979622578
   }
  }
 }
