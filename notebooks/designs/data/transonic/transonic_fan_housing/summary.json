@@ -1,0 +1,86 @@
+{
+  "kind": "dedalus.generate",
+  "status": "success",
+  "metrics": {
+    "units": "mm",
+    "valid": true,
+    "n_solids": 1,
+    "n_faces": 641,
+    "n_edges": 1822,
+    "bbox_min": [
+      -26.25,
+      -39.833333333333336,
+      -39.833333333333336
+    ],
+    "bbox_max": [
+      60.25845555058333,
+      39.833333333333336,
+      39.833333333333336
+    ],
+    "dimensions": [
+      86.50845555058334,
+      79.66666666666667,
+      79.66666666666667
+    ],
+    "surface_area": 51252.97081955743,
+    "volume": 76491.1182454237,
+    "center_of_mass": [
+      20.770125812604125,
+      -7.445940557312049e-14,
+      9.576625529377118e-13
+    ]
+  },
+  "artifacts": {
+    "step": "/tmp/claude-0/-home-user-vegeta/944887ba-e2df-53d1-9843-88f4a7d80082/scratchpad/tr/notebooks/designs/data/transonic/transonic_fan_housing/EDFHousing.step",
+    "stl": "/tmp/claude-0/-home-user-vegeta/944887ba-e2df-53d1-9843-88f4a7d80082/scratchpad/tr/notebooks/designs/data/transonic/transonic_fan_housing/EDFHousing.stl",
+    "summary": "/tmp/claude-0/-home-user-vegeta/944887ba-e2df-53d1-9843-88f4a7d80082/scratchpad/tr/notebooks/designs/data/transonic/transonic_fan_housing/summary.json"
+  },
+  "messages": [],
+  "duration_s": 0.8630853470001512,
+  "execution": [],
+  "metadata": {
+    "name": "EDFHousing",
+    "units": "mm",
+    "parameters": {
+      "diameter": 75.0,
+      "tip_clearance": 0.25,
+      "hub_diameter": 34.0,
+      "hub_height": 14.0,
+      "pitch": 115.0,
+      "chord_root": 12.0,
+      "chord_max": 13.0,
+      "chord_tip": 11.0,
+      "thickness": 0.05,
+      "camber": 0.03,
+      "stations": 6,
+      "axial_gap": 2.0,
+      "lip_length": 26.25,
+      "duct_length": 56.25,
+      "wall_thickness": 2.0833333333333335,
+      "lip_radius": 5.0,
+      "lip_nose_radius": 0.75,
+      "exit_area_ratio": 0.72,
+      "stator_vanes": 11,
+      "stator_chord": 12.0,
+      "stator_thickness": 0.07,
+      "stator_gap": 8.0,
+      "stagger_deg": 0.0,
+      "tail_gap": 4.0,
+      "tail_length": 30.0
+    },
+    "source": {
+      "design": "EDFHousing",
+      "module": "ducted_fan",
+      "qualname": "EDFHousing.build",
+      "source_file": "/tmp/claude-0/-home-user-vegeta/944887ba-e2df-53d1-9843-88f4a7d80082/scratchpad/tr/notebooks/designs/ducted_fan.py",
+      "source_sha256": "88385da26b124eb63ddd8f32e51dba2b73953c92dcb8c5fa8df38a3ce03130dd"
+    },
+    "origin": null,
+    "created_at": "2026-11-24T05:05:45+00:00",
+    "tool_versions": {
+      "cadquery": "2.8.0"
+    },
+    "stl_tolerance": 0.05,
+    "stl_angular_tolerance": 0.1
+  }
+}

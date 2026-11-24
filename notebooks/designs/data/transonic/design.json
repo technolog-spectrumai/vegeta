@@ -1,0 +1,200 @@
+{
+ "racer": {
+  "mass_kg": 3.5,
+  "cda_m2": 0.0035,
+  "wing_area_m2": 0.18,
+  "aspect_ratio": 6.0,
+  "oswald": 0.8
+ },
+ "material": {
+  "name": "CFRP, 60 % UD 0 / 40 % +-45 (equivalent isotropic)",
+  "E": 75000.0,
+  "nu": 0.3,
+  "rho": 1.55e-09,
+  "strength": 600.0,
+  "ilss": 50.0,
+  "fatigue_1e7": 300.0,
+  "damping": 0.008
+ },
+ "transonic_prop": {
+  "diameter_mm": 254.0,
+  "pitch_mm": 530.0,
+  "blades": 2,
+  "chord_root_mm": 20.0,
+  "chord_max_mm": 24.0,
+  "chord_tip_mm": 11.0,
+  "thickness": 0.06,
+  "camber": 0.02,
+  "skew_deg": 25.0,
+  "hub_diameter": 26.0,
+  "hub_height": 14.0,
+  "bore": 6.0
+ },
+ "transonic_fan": {
+  "diameter_mm": 75.0,
+  "blades": 14,
+  "hub_diameter_mm": 34.0,
+  "hub_height_mm": 14.0,
+  "pitch_mm": 115.0,
+  "chord_root_mm": 12.0,
+  "chord_max_mm": 13.0,
+  "chord_tip_mm": 11.0,
+  "thickness": 0.05,
+  "camber": 0.03,
+  "skew_deg": 15.0,
+  "tip_clearance_mm": 0.25,
+  "exit_area_ratio": 0.72,
+  "stator_vanes": 11,
+  "stator_chord_mm": 12.0,
+  "stator_thickness": 0.07,
+  "stator_gap_mm": 8.0,
+  "rpm": 90000.0,
+  "pressure_ratio": 1.3,
+  "eta_poly": 0.88
+ },
+ "old_prop": {
+  "diameter_mm": 254.0,
+  "pitch_mm": 152.4,
+  "blades": 2,
+  "chord_root_mm": 18.0,
+  "chord_max_mm": 26.0,
+  "chord_tip_mm": 10.0,
+  "thickness": 0.1,
+  "camber": 0.04,
+  "skew_deg": 0.0,
+  "hub_diameter": 20.0,
+  "hub_height": 10.0,
+  "bore": 5.0
+ },
+ "old_edf": {
+  "diameter_mm": 90.0,
+  "blades": 12,
+  "hub_diameter_mm": 40.0,
+  "hub_height_mm": 14.0,
+  "pitch_mm": 160.0,
+  "chord_root_mm": 14.0,
+  "chord_max_mm": 15.0,
+  "chord_tip_mm": 12.0,
+  "thickness": 0.08,
+  "camber": 0.04,
+  "skew_deg": 0.0,
+  "tip_clearance_mm": 0.8,
+  "exit_area_ratio": 0.9,
+  "stator_vanes": 7,
+  "stator_chord_mm": 16.0,
+  "stator_thickness": 0.08,
+  "stator_gap_mm": 14.0
+ },
+ "prop_sizing": [
+  {
+   "speed_m_s": 60.0,
+   "speed_kmh": 216,
+   "thrust_N": 7.91,
+   "rpm": 8218,
+   "shaft_kW": 0.54,
+   "efficiency": 0.874,
+   "tip_helical_mach": 0.366,
+   "torque_Nm": 0.631,
+   "advance_ratio": 1.725
+  },
+  {
+   "speed_m_s": 100.0,
+   "speed_kmh": 360,
+   "thrust_N": 21.51,
+   "rpm": 13473,
+   "shaft_kW": 2.46,
+   "efficiency": 0.874,
+   "tip_helical_mach": 0.603,
+   "torque_Nm": 1.744,
+   "advance_ratio": 1.753
+  },
+  {
+   "speed_m_s": 140.0,
+   "speed_kmh": 504,
+   "thrust_N": 42.05,
+   "rpm": 18482,
+   "shaft_kW": 6.78,
+   "efficiency": 0.869,
+   "tip_helical_mach": 0.831,
+   "torque_Nm": 3.501,
+   "advance_ratio": 1.789
+  },
+  {
+   "speed_m_s": 166.67,
+   "speed_kmh": 600,
+   "thrust_N": 59.57,
+   "rpm": 21895,
+   "shaft_kW": 12.23,
+   "efficiency": 0.812,
+   "tip_helical_mach": 0.986,
+   "torque_Nm": 5.333,
+   "advance_ratio": 1.798
+  }
+ ],
+ "fan_meanline": {
+  "static": {
+   "flight_m_s": 0.0,
+   "mass_flow_kg_s": 0.632,
+   "axial_m_s": 166.0,
+   "tip_speed_m_s": 353.4,
+   "tip_relative_mach": 1.176,
+   "mean_swirl_m_s": 100.3,
+   "work_kJ_kg": 25.75,
+   "shaft_kW": 16.27,
+   "nozzle_pressure_ratio": 1.261,
+   "jet_m_s": 201.1,
+   "jet_mach": 0.585,
+   "net_thrust_N": 127.1,
+   "propulsive_efficiency": null,
+   "note": "mean-line estimate (losses lumped); the CFD script is the check"
+  },
+  "600_kmh": {
+   "flight_m_s": 166.67,
+   "mass_flow_kg_s": 0.7273,
+   "axial_m_s": 170.0,
+   "tip_speed_m_s": 353.4,
+   "tip_relative_mach": 1.154,
+   "mean_swirl_m_s": 105.1,
+   "work_kJ_kg": 26.98,
+   "shaft_kW": 19.63,
+   "nozzle_pressure_ratio": 1.486,
+   "jet_m_s": 265.9,
+   "jet_mach": 0.774,
+   "net_thrust_N": 72.1,
+   "propulsive_efficiency": 0.613,
+   "note": "mean-line estimate (losses lumped); the CFD script is the check"
+  }
+ },
+ "files": {
+  "transonic_prop": {
+   "step": "transonic_prop/Propeller.step",
+   "stl": "transonic_prop/Propeller.stl",
+   "summary": "transonic_prop/summary.json"
+  },
+  "subsonic_prop_nb25": {
+   "step": "subsonic_prop_nb25/Propeller.step",
+   "stl": "subsonic_prop_nb25/Propeller.stl",
+   "summary": "subsonic_prop_nb25/summary.json"
+  },
+  "transonic_fan_rotor": {
+   "step": "transonic_fan_rotor/EDFRotor.step",
+   "stl": "transonic_fan_rotor/EDFRotor.stl",
+   "summary": "transonic_fan_rotor/summary.json"
+  },
+  "transonic_fan_housing": {
+   "step": "transonic_fan_housing/EDFHousing.step",
+   "stl": "transonic_fan_housing/EDFHousing.stl",
+   "summary": "transonic_fan_housing/summary.json"
+  },
+  "subsonic_edf_nb25_rotor": {
+   "step": "subsonic_edf_nb25_rotor/EDFRotor.step",
+   "stl": "subsonic_edf_nb25_rotor/EDFRotor.stl",
+   "summary": "subsonic_edf_nb25_rotor/summary.json"
+  },
+  "subsonic_edf_nb25_housing": {
+   "step": "subsonic_edf_nb25_housing/EDFHousing.step",
+   "stl": "subsonic_edf_nb25_housing/EDFHousing.stl",
+   "summary": "subsonic_edf_nb25_housing/summary.json"
+  }
+ }
+}

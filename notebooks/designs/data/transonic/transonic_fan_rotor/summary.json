@@ -1,0 +1,75 @@
+{
+  "kind": "dedalus.generate",
+  "status": "success",
+  "metrics": {
+    "units": "mm",
+    "valid": true,
+    "n_solids": 1,
+    "n_faces": 481,
+    "n_edges": 1424,
+    "bbox_min": [
+      -37.497329505375006,
+      -37.50000010000308,
+      -25.333333433333333
+    ],
+    "bbox_max": [
+      37.49732950537501,
+      37.50000010000308,
+      7.0000001
+    ],
+    "dimensions": [
+      74.99465901075001,
+      75.00000020000616,
+      32.33333353333333
+    ],
+    "surface_area": 11527.09627458617,
+    "volume": 25106.47522069408,
+    "center_of_mass": [
+      -1.2390560342179893e-06,
+      -3.1048587505091214e-09,
+      -6.099995568778408
+    ]
+  },
+  "artifacts": {
+    "step": "/tmp/claude-0/-home-user-vegeta/944887ba-e2df-53d1-9843-88f4a7d80082/scratchpad/tr/notebooks/designs/data/transonic/transonic_fan_rotor/EDFRotor.step",
+    "stl": "/tmp/claude-0/-home-user-vegeta/944887ba-e2df-53d1-9843-88f4a7d80082/scratchpad/tr/notebooks/designs/data/transonic/transonic_fan_rotor/EDFRotor.stl",
+    "summary": "/tmp/claude-0/-home-user-vegeta/944887ba-e2df-53d1-9843-88f4a7d80082/scratchpad/tr/notebooks/designs/data/transonic/transonic_fan_rotor/summary.json"
+  },
+  "messages": [],
+  "duration_s": 1.7431428580000556,
+  "execution": [],
+  "metadata": {
+    "name": "EDFRotor",
+    "units": "mm",
+    "parameters": {
+      "blades": 14,
+      "diameter": 75.0,
+      "hub_diameter": 34.0,
+      "hub_height": 14.0,
+      "pitch": 115.0,
+      "chord_root": 12.0,
+      "chord_max": 13.0,
+      "chord_tip": 11.0,
+      "thickness": 0.05,
+      "camber": 0.03,
+      "stations": 6,
+      "bore": 4.0,
+      "skew_deg": 15.0,
+      "spinner_length": 18.333333333333332
+    },
+    "source": {
+      "design": "EDFRotor",
+      "module": "ducted_fan",
+      "qualname": "EDFRotor.build",
+      "source_file": "/tmp/claude-0/-home-user-vegeta/944887ba-e2df-53d1-9843-88f4a7d80082/scratchpad/tr/notebooks/designs/ducted_fan.py",
+      "source_sha256": "e65f571c7e4bc40aaf1d41d0075c5002c7e304972eeeae8796defc3fb8d10cd0"
+    },
+    "origin": null,
+    "created_at": "2026-11-24T05:05:43+00:00",
+    "tool_versions": {
+      "cadquery": "2.8.0"
+    },
+    "stl_tolerance": 0.02,
+    "stl_angular_tolerance": 0.1
+  }
+}

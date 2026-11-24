@@ -1,0 +1,74 @@
+{
+  "kind": "dedalus.generate",
+  "status": "success",
+  "metrics": {
+    "units": "mm",
+    "valid": true,
+    "n_solids": 1,
+    "n_faces": 77,
+    "n_edges": 225,
+    "bbox_min": [
+      -127.00000010000014,
+      -16.025845481694954,
+      -5.082604332613511
+    ],
+    "bbox_max": [
+      127.00000010000014,
+      16.02584548169496,
+      11.52635707551313
+    ],
+    "dimensions": [
+      254.00000020000027,
+      32.051690963389916,
+      16.608961408126643
+    ],
+    "surface_area": 11034.306277302172,
+    "volume": 9932.286208638434,
+    "center_of_mass": [
+      7.956613873780318e-08,
+      4.5136848754794884e-08,
+      0.4030860520561984
+    ]
+  },
+  "artifacts": {
+    "step": "/tmp/claude-0/-home-user-vegeta/944887ba-e2df-53d1-9843-88f4a7d80082/scratchpad/tr/notebooks/designs/data/transonic/subsonic_prop_nb25/Propeller.step",
+    "stl": "/tmp/claude-0/-home-user-vegeta/944887ba-e2df-53d1-9843-88f4a7d80082/scratchpad/tr/notebooks/designs/data/transonic/subsonic_prop_nb25/Propeller.stl",
+    "summary": "/tmp/claude-0/-home-user-vegeta/944887ba-e2df-53d1-9843-88f4a7d80082/scratchpad/tr/notebooks/designs/data/transonic/subsonic_prop_nb25/summary.json"
+  },
+  "messages": [],
+  "duration_s": 1.1453979759999129,
+  "execution": [],
+  "metadata": {
+    "name": "Propeller",
+    "units": "mm",
+    "parameters": {
+      "diameter": 254.0,
+      "pitch": 152.4,
+      "blades": 2,
+      "hub_diameter": 20.0,
+      "hub_height": 10.0,
+      "bore": 5.0,
+      "chord_root": 18.0,
+      "chord_max": 26.0,
+      "chord_tip": 10.0,
+      "thickness": 0.1,
+      "camber": 0.04,
+      "stations": 10,
+      "skew_deg": 0.0
+    },
+    "source": {
+      "design": "Propeller",
+      "module": "vegeta.dedalus.examples",
+      "qualname": "Propeller.build",
+      "source_file": "/tmp/claude-0/-home-user-vegeta/944887ba-e2df-53d1-9843-88f4a7d80082/scratchpad/tr/vegeta-cli/src/vegeta/dedalus/examples.py",
+      "source_sha256": "99d1289c72eeb7c9c76fa037e1978d0a3af948424a33ca8e3a5aa0d9c518657e"
+    },
+    "origin": null,
+    "created_at": "2026-11-24T05:05:38+00:00",
+    "tool_versions": {
+      "cadquery": "2.8.0"
+    },
+    "stl_tolerance": 0.02,
+    "stl_angular_tolerance": 0.1
+  }
+}
