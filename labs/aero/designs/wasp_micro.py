@@ -77,8 +77,9 @@ HOVER_END_S = 30.0            # hover at each end of a delivery
 
 
 @contextlib.contextmanager
-def micro(payload_g: float = 10.0):
-    """``wasp.small()`` one size down, with ``payload_g`` aboard and its bay in the body."""
+def micro(payload_g: float = 10.0, constants: bool = True):
+    """``wasp.small()`` one size down, with ``payload_g`` aboard and its bay in the body. ``constants`` False keeps
+    ``wasp``'s own airframe constants and fixed parts (a WASP-1 build carrying a payload: ``wasp_family``)."""
     bay = payload_g * 1e-6 / (0.7 * math.pi * BAY_D ** 2 / 4)                        # 1 g/cm3, 70 % of the bore used
     keep = dict(SMALL=dict(wasp.SMALL), ARM_T_MIN=wasp.ARM_T_MIN, POD_WALL=wasp.POD_WALL, BUMPERS_G=wasp.BUMPERS_G, WIRING_G=wasp.WIRING_G,
                 FIXED=wasp.FIXED, mass_budget=wasp.mass_budget)
@@ -91,8 +92,12 @@ def micro(payload_g: float = 10.0):
             b.add(og_mass.Item("payload", payload_g / 1e3, (g["nose"] + 0.5 * bay, 0, 0), group="payload"))
         return b
 
-    wasp.SMALL.update(MICRO, STACK_BAY=0.028 + bay)
-    wasp.ARM_T_MIN, wasp.POD_WALL, wasp.BUMPERS_G, wasp.WIRING_G, wasp.FIXED, wasp.mass_budget = 0.004, 0.0008, 1.0, 4.0, FIXED, mass_budget
+    if constants:
+        wasp.SMALL.update(MICRO, STACK_BAY=0.028 + bay)
+        wasp.ARM_T_MIN, wasp.POD_WALL, wasp.BUMPERS_G, wasp.WIRING_G, wasp.FIXED = 0.004, 0.0008, 1.0, 4.0, FIXED
+    else:
+        wasp.SMALL.update(STACK_BAY=wasp.SMALL["STACK_BAY"] + bay)
+    wasp.mass_budget = mass_budget
     try:
         with wasp.small():
             yield
@@ -122,9 +127,9 @@ def cruise(c, V: float, mass: float) -> dict | None:
     return {"V": V, "throttle": hi, "electric_w": d["electric_w"], "thrust": d["thrust"], "rpm": d["rpm"], "current": d["current"]}
 
 
-def delivery(c, payload_g: float, kmh: float = CRUISE_KMH) -> dict:
+def delivery(c, payload_g: float, kmh: float = CRUISE_KMH, constants: bool = True) -> dict:
     """One build with a payload: the evaluation, the cruise point and the range (out, or out and back)."""
-    with micro(payload_g):
+    with micro(payload_g, constants):
         r = ef.evaluate(c)
         r.update(wasp.size(c))
         m = r["mass_g"] / 1e3
