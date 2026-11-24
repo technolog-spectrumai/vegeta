@@ -1,0 +1,330 @@
+targets:
+  stall_flaps_m_s:
+    rule: <= 15.5
+    why: a pass at 1.3 x stall closes on a 14 m/s quadcopter at 6 m/s or less (now 11-17 m/s)
+  static_thrust_over_weight:
+    rule: '>= 2.2'
+    why: a nose-high flare held on the propellers with a fifth of the thrust left for control (now 1.84)
+  radius_25_m:
+    rule: <= 30.0
+    why: inside a jinking quadcopter's ~30 m of swing (now 52 m)
+  g_at_50_m_s:
+    rule: '>= 8.0'
+    why: the structure, not the wing, sets the turn from 50 m/s (now 6.4 g)
+  top_speed_m_s:
+    rule: '>= 70.0'
+    why: a 50 m/s target is still overtaken with 20 m/s to spare
+  full_power_min:
+    rule: '>= 2.0'
+    why: three passes with their turns back at full power (now 1.2 min)
+  gust_to_stall_at_loiter_m_s:
+    rule: '>= 5.0'
+    why: the loiter survives a 5 m/s gust (now 2.7 m/s)
+propellers:
+  11x13 (library, pitched for the dash):
+    static: 1.0
+    fast: 1.0
+    source: propulsion library
+  11 in, pitched for slow flight (HAND):
+    static: 1.45
+    fast: 0.78
+    source: 'HAND: momentum theory at a figure of merit 0.6 gives 190 N static for two; the fast end by the pitch ratio 10/13'
+  13 in, pitched for slow flight (HAND):
+    static: 1.62
+    fast: 0.78
+    source: 'HAND: the same, x (13/11)^(2/3); needs the motors 30 mm further out'
+cases:
+  as it is:
+    wing_area_m2: 0.257
+    span_m: 1.37
+    nets: 3
+    pack: 12S 5000 mAh
+    propeller: 11x13 (library, pitched for the dash)
+    mass_kg: 6.92
+    wing_loading_kg_m2: 26.9
+    stall_m_s: 21.6
+    stall_flaps_m_s: 19.4
+    closing_on_8_and_14_m_s_quadcopters_m_s:
+    - 17.3
+    - 11.3
+    static_thrust_over_weight: 1.84
+    radius_25_m: 51.5
+    radius_30_m: 44.5
+    g_at_50_m_s: 6.4
+    top_speed_m_s: 90.5
+    full_power_min: 1.4
+    loiter_m_s: 28.1
+    endurance_min: 28.0
+    gust_to_stall_at_loiter_m_s: 3.2
+    short:
+    - stall_flaps_m_s
+    - static_thrust_over_weight
+    - radius_25_m
+    - g_at_50_m_s
+    - full_power_min
+    - gust_to_stall_at_loiter_m_s
+  wing +50 % by chord:
+    wing_area_m2: 0.385
+    span_m: 1.37
+    nets: 3
+    pack: 12S 5000 mAh
+    propeller: 11x13 (library, pitched for the dash)
+    mass_kg: 7.19
+    wing_loading_kg_m2: 18.7
+    stall_m_s: 18.0
+    stall_flaps_m_s: 16.2
+    closing_on_8_and_14_m_s_quadcopters_m_s:
+    - 13.0
+    - 7.0
+    static_thrust_over_weight: 1.77
+    radius_25_m: 30.8
+    radius_30_m: 29.1
+    g_at_50_m_s: 8.0
+    top_speed_m_s: 86.5
+    full_power_min: 1.4
+    loiter_m_s: 26.0
+    endurance_min: 23.0
+    gust_to_stall_at_loiter_m_s: 3.4
+    short:
+    - stall_flaps_m_s
+    - static_thrust_over_weight
+    - radius_25_m
+    - full_power_min
+    - gust_to_stall_at_loiter_m_s
+  'wing +50 %: span 1.69 m':
+    wing_area_m2: 0.385
+    span_m: 1.68
+    nets: 3
+    pack: 12S 5000 mAh
+    propeller: 11x13 (library, pitched for the dash)
+    mass_kg: 7.19
+    wing_loading_kg_m2: 18.7
+    stall_m_s: 18.0
+    stall_flaps_m_s: 16.2
+    closing_on_8_and_14_m_s_quadcopters_m_s:
+    - 13.0
+    - 7.0
+    static_thrust_over_weight: 1.77
+    radius_25_m: 30.8
+    radius_30_m: 29.1
+    g_at_50_m_s: 8.0
+    top_speed_m_s: 87.0
+    full_power_min: 1.4
+    loiter_m_s: 26.0
+    endurance_min: 28.0
+    gust_to_stall_at_loiter_m_s: 3.4
+    short:
+    - stall_flaps_m_s
+    - static_thrust_over_weight
+    - radius_25_m
+    - full_power_min
+    - gust_to_stall_at_loiter_m_s
+  'wing x2: span 1.95 m':
+    wing_area_m2: 0.514
+    span_m: 1.94
+    nets: 3
+    pack: 12S 5000 mAh
+    propeller: 11x13 (library, pitched for the dash)
+    mass_kg: 7.46
+    wing_loading_kg_m2: 14.5
+    stall_m_s: 15.9
+    stall_flaps_m_s: 14.3
+    closing_on_8_and_14_m_s_quadcopters_m_s:
+    - 10.5
+    - 4.5
+    static_thrust_over_weight: 1.71
+    radius_25_m: 22.9
+    radius_30_m: 22.2
+    g_at_50_m_s: 8.0
+    top_speed_m_s: 83.5
+    full_power_min: 1.4
+    loiter_m_s: 26.0
+    endurance_min: 28.0
+    gust_to_stall_at_loiter_m_s: 3.7
+    short:
+    - static_thrust_over_weight
+    - full_power_min
+    - gust_to_stall_at_loiter_m_s
+  as it is, slow-flight 11 in propellers:
+    wing_area_m2: 0.257
+    span_m: 1.37
+    nets: 3
+    pack: 12S 5000 mAh
+    propeller: 11 in, pitched for slow flight (HAND)
+    mass_kg: 6.92
+    wing_loading_kg_m2: 26.9
+    stall_m_s: 21.6
+    stall_flaps_m_s: 19.4
+    closing_on_8_and_14_m_s_quadcopters_m_s:
+    - 17.3
+    - 11.3
+    static_thrust_over_weight: 2.67
+    radius_25_m: 51.5
+    radius_30_m: 44.5
+    g_at_50_m_s: 6.4
+    top_speed_m_s: 83.0
+    full_power_min: 1.4
+    loiter_m_s: 28.1
+    endurance_min: 28.0
+    gust_to_stall_at_loiter_m_s: 3.2
+    short:
+    - stall_flaps_m_s
+    - radius_25_m
+    - g_at_50_m_s
+    - full_power_min
+    - gust_to_stall_at_loiter_m_s
+  wing +50 % span, slow 11 in propellers:
+    wing_area_m2: 0.385
+    span_m: 1.68
+    nets: 3
+    pack: 12S 5000 mAh
+    propeller: 11 in, pitched for slow flight (HAND)
+    mass_kg: 7.19
+    wing_loading_kg_m2: 18.7
+    stall_m_s: 18.0
+    stall_flaps_m_s: 16.2
+    closing_on_8_and_14_m_s_quadcopters_m_s:
+    - 13.0
+    - 7.0
+    static_thrust_over_weight: 2.57
+    radius_25_m: 30.8
+    radius_30_m: 29.1
+    g_at_50_m_s: 8.0
+    top_speed_m_s: 79.5
+    full_power_min: 1.4
+    loiter_m_s: 26.0
+    endurance_min: 28.0
+    gust_to_stall_at_loiter_m_s: 3.4
+    short:
+    - stall_flaps_m_s
+    - radius_25_m
+    - full_power_min
+    - gust_to_stall_at_loiter_m_s
+  wing +50 % span, slow 13 in propellers:
+    wing_area_m2: 0.385
+    span_m: 1.68
+    nets: 3
+    pack: 12S 5000 mAh
+    propeller: 13 in, pitched for slow flight (HAND)
+    mass_kg: 7.19
+    wing_loading_kg_m2: 18.7
+    stall_m_s: 18.0
+    stall_flaps_m_s: 16.2
+    closing_on_8_and_14_m_s_quadcopters_m_s:
+    - 13.0
+    - 7.0
+    static_thrust_over_weight: 2.87
+    radius_25_m: 30.8
+    radius_30_m: 29.1
+    g_at_50_m_s: 8.0
+    top_speed_m_s: 79.5
+    full_power_min: 1.4
+    loiter_m_s: 26.0
+    endurance_min: 28.0
+    gust_to_stall_at_loiter_m_s: 3.4
+    short:
+    - stall_flaps_m_s
+    - radius_25_m
+    - full_power_min
+    - gust_to_stall_at_loiter_m_s
+  wing +50 % span, slow 13 in, two nets:
+    wing_area_m2: 0.385
+    span_m: 1.68
+    nets: 2
+    pack: 12S 5000 mAh
+    propeller: 13 in, pitched for slow flight (HAND)
+    mass_kg: 6.95
+    wing_loading_kg_m2: 18.0
+    stall_m_s: 17.7
+    stall_flaps_m_s: 15.9
+    closing_on_8_and_14_m_s_quadcopters_m_s:
+    - 12.7
+    - 6.7
+    static_thrust_over_weight: 2.97
+    radius_25_m: 29.6
+    radius_30_m: 28.0
+    g_at_50_m_s: 8.0
+    top_speed_m_s: 79.5
+    full_power_min: 1.4
+    loiter_m_s: 26.0
+    endurance_min: 29.0
+    gust_to_stall_at_loiter_m_s: 3.4
+    short:
+    - stall_flaps_m_s
+    - full_power_min
+    - gust_to_stall_at_loiter_m_s
+  wing x2 span, slow 13 in, three nets:
+    wing_area_m2: 0.514
+    span_m: 1.94
+    nets: 3
+    pack: 12S 5000 mAh
+    propeller: 13 in, pitched for slow flight (HAND)
+    mass_kg: 7.46
+    wing_loading_kg_m2: 14.5
+    stall_m_s: 15.9
+    stall_flaps_m_s: 14.3
+    closing_on_8_and_14_m_s_quadcopters_m_s:
+    - 10.5
+    - 4.5
+    static_thrust_over_weight: 2.77
+    radius_25_m: 22.9
+    radius_30_m: 22.2
+    g_at_50_m_s: 8.0
+    top_speed_m_s: 76.5
+    full_power_min: 1.4
+    loiter_m_s: 26.0
+    endurance_min: 28.0
+    gust_to_stall_at_loiter_m_s: 3.7
+    short:
+    - full_power_min
+    - gust_to_stall_at_loiter_m_s
+  wing x2 span, slow 13 in, two nets:
+    wing_area_m2: 0.514
+    span_m: 1.94
+    nets: 2
+    pack: 12S 5000 mAh
+    propeller: 13 in, pitched for slow flight (HAND)
+    mass_kg: 7.22
+    wing_loading_kg_m2: 14.1
+    stall_m_s: 15.6
+    stall_flaps_m_s: 14.0
+    closing_on_8_and_14_m_s_quadcopters_m_s:
+    - 10.2
+    - 4.2
+    static_thrust_over_weight: 2.86
+    radius_25_m: 22.1
+    radius_30_m: 21.5
+    g_at_50_m_s: 8.0
+    top_speed_m_s: 76.5
+    full_power_min: 1.4
+    loiter_m_s: 26.0
+    endurance_min: 28.0
+    gust_to_stall_at_loiter_m_s: 3.7
+    short:
+    - full_power_min
+    - gust_to_stall_at_loiter_m_s
+  wing x2 span, slow 13 in, two nets, small pack:
+    wing_area_m2: 0.514
+    span_m: 1.94
+    nets: 2
+    pack: 12S 2500 mAh
+    propeller: 13 in, pitched for slow flight (HAND)
+    mass_kg: 6.46
+    wing_loading_kg_m2: 12.6
+    stall_m_s: 14.8
+    stall_flaps_m_s: 13.3
+    closing_on_8_and_14_m_s_quadcopters_m_s:
+    - 9.2
+    - 3.2
+    static_thrust_over_weight: 3.19
+    radius_25_m: 19.5
+    radius_30_m: 19.1
+    g_at_50_m_s: 8.0
+    top_speed_m_s: 76.5
+    full_power_min: 0.7
+    loiter_m_s: 26.0
+    endurance_min: 16.0
+    gust_to_stall_at_loiter_m_s: 3.8
+    short:
+    - full_power_min
+    - gust_to_stall_at_loiter_m_s
