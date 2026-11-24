@@ -264,9 +264,31 @@ def card(c) -> dict:
     return r
 
 
-def cad(c):
-    """The build as ``emerillon.Emerillon`` geometry (Dedalus): ÉMERILLON's CAD at WASP's size, the small fins."""
-    import emerillon
+def cad_parameters(c) -> dict:
+    """``emerillon.Emerillon``'s parameters [mm] for a WASP build: ÉMERILLON's CAD at WASP's size, the small fins,
+    skin and tail end."""
     with small():
         q = ef.cad_parameters(c)
-    return emerillon.Emerillon().generate(**q, fin_span=SMALL["FIN_SPAN"] * 1e3, fin_chord=SMALL["FIN_CHORD"] * 1e3)
+    return {**q, "fin_span": SMALL["FIN_SPAN"] * 1e3, "fin_chord": SMALL["FIN_CHORD"] * 1e3, "fin_thickness": SMALL["FIN_T"] * 1e3,
+            "wall": SMALL["WALL"] * 1e3, "tail_end_diameter": 7.0, "pad_thickness": 2.5}
+
+
+def cad(c, **over):
+    """The build as Dedalus geometry (``part``: aircraft, arm, nose; ``angle_of_attack_deg`` pitches it for the CFD)."""
+    import emerillon
+    return emerillon.Emerillon().generate(**cad_parameters(c), **over)
+
+
+def vehicle(c):
+    """What the solver scripts ask of a build: mass, CG and inertia (the budget), the geometry, the top speed and its
+    rpm, the static thrust of one motor, the motor unit's mass (inside ``small``)."""
+    from types import SimpleNamespace
+    with small():
+        b = ef.mass_budget(c)
+        pr = b.properties()
+        top = ef.top_speed(c, b.mass)
+        motor, prop = mk.part(c.motor), mk.part(c.propeller)
+        return SimpleNamespace(config=c, label=c.label(), mass=b.mass, x_cg=float(pr.com[0]) if hasattr(pr, "com") else float(pr.cg[0]),
+                               inertia=[float(pr.inertia[i][i]) for i in range(3)], geo=ef.geometry(c), V_top=float(top["V"]), rpm_top=float(top["rpm"]),
+                               thrust_top=float(top["thrust"]), static_thrust=float(ef.drive(c, 0.5)["thrust"]) / 4,
+                               motor_unit_kg=(motor.mass_g + prop.mass_g) / 1e3, budget=b)
