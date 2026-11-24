@@ -1,0 +1,58 @@
+aircraft: STERNA
+speed_m_s: 14.0
+quality: screening
+template: rans_ksst_external
+note: airframe without propeller; Cm about the design CG on the mean chord
+rows:
+- alpha_deg: -2.0
+  V: 14.0
+  Cl: 0.08785012409599999
+  Cd: 0.034367224814
+  Cm_cg: 0.02878387454222619
+  L_D: 2.556218157603838
+  x_cg_m: 0.4002
+  status: success
+  cells: 160828
+  iterations: 121
+  converged: true
+  Cl_std_last50: 4.0440019222310286e-05
+  Cd_std_last50: 1.115505475380661e-06
+- alpha_deg: 1.0
+  V: 14.0
+  Cl: 0.37373282326
+  Cd: 0.038619699396000004
+  Cm_cg: -0.008611046337603078
+  L_D: 9.677258733368314
+  x_cg_m: 0.4002
+  status: success
+  cells: 150724
+  iterations: 107
+  converged: true
+  Cl_std_last50: 2.148296708074632e-05
+  Cd_std_last50: 1.2672004272299899e-05
+- alpha_deg: 4.0
+  V: 14.0
+  Cl: 0.6189217065
+  Cd: 0.060774315192
+  Cm_cg: -0.07116717610675559
+  L_D: 10.183935508687911
+  x_cg_m: 0.4002
+  status: success
+  cells: 151223
+  iterations: 103
+  converged: true
+  Cl_std_last50: 9.234682819333469e-05
+  Cd_std_last50: 2.214018794358189e-05
+- alpha_deg: 8.0
+  V: 14.0
+  Cl: 0.7901429655000001
+  Cd: 0.11491945608
+  Cm_cg: -0.19200690643012527
+  L_D: 6.875623958313466
+  x_cg_m: 0.4002
+  status: success
+  cells: 144515
+  iterations: 146
+  converged: true
+  Cl_std_last50: 0.0004950019564597773
+  Cd_std_last50: 3.375997636897271e-05
