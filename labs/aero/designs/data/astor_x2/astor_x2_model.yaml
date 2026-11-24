@@ -1,0 +1,82 @@
+aircraft: ASTOR-X2
+mass_kg: 8.6
+wing:
+  span_m: 1.2
+  area_m2: 0.513
+  aspect_ratio: 2.81
+  root_chord_mm: 560
+  tip_chord_mm: 295
+  mean_chord_mm: 441
+  leading_edge_sweep_deg: 35.0
+  half_chord_sweep_deg: 25.6
+  mean_quarter_chord_from_the_nose_mm: 373
+  lift_slope_per_rad_helmbold: 3.09
+  lift_slope_source: 'Helmbold''s formula with the half-chord sweep (HAND: not the lattice, not CFD)'
+balance:
+  neutral_point_mm: 453.8
+  mean_chord_mm: 441
+  margin: 0.08
+  cg_mm: 418.6
+  wing_mean_quarter_chord_mm: 373
+  source: vortex lattice on the drawn wing and tail (no body)
+static_margin: 0.0764
+CLa_per_rad: 3.7568
+CL0: 0.1727
+CL_MAX: 0.8944
+alpha_stall_deg: 18.0
+CD0: 0.0381
+k: 0.181
+stall_m_s: 17.4
+top_speed_m_s: 76.6
+Cnb: 0.0335
+Clb: -0.0464
+Cmq: -1.5574
+Clp: -0.3978
+Cnr: -0.0078
+Cmde_per_deg: -0.0094
+Clda_per_deg:
+  ailerons: 0.0021
+  tail: 0.0026
+linear_modes_bare_airframe_at_30_m_s:
+  short_period:
+    real: -2.686
+    imag: 6.204
+    omega_n: 6.76
+    zeta: 0.397
+    period_s: 1.013
+    t_half_or_double_s: 0.258
+    stable: true
+  phugoid:
+    real: -0.066
+    imag: 0.426
+    omega_n: 0.431
+    zeta: 0.152
+    period_s: 14.757
+    t_half_or_double_s: 10.553
+    stable: true
+  roll_subsidence:
+    real: -4.198
+    imag: 0.0
+    omega_n: 4.198
+    zeta: 1.0
+    period_s: null
+    t_half_or_double_s: 0.165
+    stable: true
+  spiral:
+    real: 0.038
+    imag: 0.0
+    omega_n: 0.038
+    zeta: -1.0
+    period_s: null
+    t_half_or_double_s: 18.129
+    stable: false
+  dutch_roll:
+    real: -0.044
+    imag: 3.324
+    omega_n: 3.324
+    zeta: 0.013
+    period_s: 1.89
+    t_half_or_double_s: 15.893
+    stable: true
+aero_source: 'model: lattice on the swept wing and tail; ASTOR-TWIN''s drag area + struts, induced factor by aspect ratio, ASTOR-TWIN''s maximum lift (HAND):
+  no CFD of its own yet'

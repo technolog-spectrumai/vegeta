@@ -24,7 +24,7 @@ x_tail:
   elevons:
     chord_share: 0.35
     area_m2_all_four: 0.076
-    inside_the_propellers_wash_cm3: 405.5
+    inside_the_propellers_wash_cm3: 506.9
 standing:
   height_mm: 1160
   feet_square_side_mm: 522

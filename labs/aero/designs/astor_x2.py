@@ -26,13 +26,14 @@ from vegeta.dedalus import Parameter
 import astor_v as V
 import astor_x as AX
 
-FIN = dict(radius=380.0, root_chord=260.0, tip_chord=160.0, root_le_x=800.0, tip_le_x=950.0, thickness=0.08, elevon_chord=0.35, elevon_from=85.0, elevon_to=355.0,
+FIN = dict(radius=380.0, root_chord=260.0, tip_chord=160.0, root_le_x=800.0, tip_le_x=950.0, thickness=0.10, elevon_chord=0.35, elevon_from=85.0, elevon_to=355.0,
            foot_len=50.0, foot_d=22.0)
 _NEW = [Parameter("fin_radius", FIN["radius"], "mm", min=150.0, description="each X fin, from the axis to its tip (the foot)"),
         Parameter("xfin_root_chord", FIN["root_chord"], "mm", min=60.0), Parameter("xfin_tip_chord", FIN["tip_chord"], "mm", min=40.0),
         Parameter("xfin_root_le_x", FIN["root_le_x"], "mm"), Parameter("xfin_tip_le_x", FIN["tip_le_x"], "mm"),
         Parameter("xfin_thickness", FIN["thickness"], "", min=0.04, max=0.2), Parameter("elevon_chord", FIN["elevon_chord"], "", min=0.0, max=0.5),
         Parameter("elevon_deg", 0.0, "deg", min=-35.0, max=35.0, description="the four elevons, trailing edge turned the same way round (a roll command), for the drawing"),
+        Parameter("elevon_pitch_deg", 0.0, "deg", min=-35.0, max=35.0, description="the four elevons together in pitch: positive is trailing edges down (nose down)"),
         Parameter("foot_len", FIN["foot_len"], "mm", min=10.0), Parameter("foot_d", FIN["foot_d"], "mm", min=8.0)]
 
 
@@ -50,22 +51,29 @@ class AstorX2(AX.AstorX):
     def _fin_chord(self, p, r):
         return p["xfin_root_chord"] + (p["xfin_tip_chord"] - p["xfin_root_chord"]) * r / p["fin_radius"]
 
-    def _fin_one(self, p, part):
-        """One fin along +y in its own plane (fixed part, or its elevon)."""
+    def _fin_one(self, p, part, deg=0.0):
+        """One fin along +y in its own plane (fixed part, or its elevon turned ``deg``)."""
         cr, ct, b = p["xfin_root_chord"], p["xfin_tip_chord"], p["fin_radius"]
         pan = V._panel(cr, ct, b, self._fin_sweep(p), p["xfin_thickness"])
         f, tan = 1.0 - p["elevon_chord"], math.tan(math.radians(self._fin_sweep(p)))
         hinge = lambda y: y * tan + f * (cr + (ct - cr) * y / b)
         y0, y1 = FIN["elevon_from"], FIN["elevon_to"]
         blk = cq.Workplane("XY").polyline([(hinge(y0), y0), (hinge(y1), y1), (hinge(y1) + cr, y1), (hinge(y0) + cr, y0)]).close().extrude(80.0).translate((0, 0, -40.0))
-        out = self._hinged(pan, blk, (hinge(y0), y0, 0.0), (hinge(y1), y1, 0.0), p["elevon_deg"]) if part == "elevon" else pan.cut(blk)
+        out = self._hinged(pan, blk, (hinge(y0), y0, 0.0), (hinge(y1), y1, 0.0), deg) if part == "elevon" else pan.cut(blk)
         return out.translate((p["xfin_root_le_x"], 0, 0))
 
     def _tail(self, p):
         return self._each(self._fin_one(p, "fixed"))
 
     def _elevons(self, p):
-        return self._each(self._fin_one(p, "elevon"))
+        """The four elevons: ``elevon_deg`` the same way round (roll) plus ``elevon_pitch_deg`` with every trailing edge
+        down (the fins on the left are the right ones turned over, so their own angle is reversed)."""
+        out = None
+        for a in AX.ANGLES:
+            sign = 1.0 if math.cos(math.radians(a)) > 0 else -1.0
+            s = self._fin_one(p, "elevon", p["elevon_deg"] + sign * p["elevon_pitch_deg"]).rotate((0, 0, 0), (1, 0, 0), a)
+            out = s if out is None else out.union(s)
+        return out
 
     def _foot_x(self, p):
         return p["xfin_tip_le_x"] + p["xfin_tip_chord"] + p["foot_len"]

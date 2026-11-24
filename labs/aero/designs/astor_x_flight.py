@@ -32,14 +32,37 @@ import astor_v_model as VM
 import astor_x as AX
 
 MASS_KG = 8.55                     # ASTOR-TWIN's 8.25 with three nets + 0.30 for the struts, pods and two more controllers (astor_big: HAND)
+MASS = {"x": MASS_KG, "x2": 8.60}  # ASTOR-X2 (the tail-sitter, designs/astor_x2): the X fins and feet for the tail, fin and struts (HAND: +0.4 -0.35)
+NAMES = {"x": "ASTOR-X", "x2": "ASTOR-X2"}
+TAU_ELEVON = 0.57                  # a 35 % chord elevon's effectiveness (thin aerofoil 0.71 x 0.8; HAND +-0.1)
 MARGIN = 0.08                      # the static margin the CG is set for, on the mean chord
 STRUT_CDA = 0.0019                 # four struts and pods [m2] (astor_big.astor_x_short: HAND)
 TAU_FLAP = 0.60                    # a 30 % chord plain flap's effectiveness (thin aerofoil 0.66 x 0.9; HAND +-0.1)
 SWEEP = 12.0                       # the "sweep" key astor_v_flight and the CFD file use for a fixed wing's one state
 
 
-def params() -> dict:
+def params(name="x") -> dict:
+    if name == "x2":
+        import astor_x2 as AX2
+        return AX2.resolve()
     return AX.resolve()
+
+
+def _fin_quads(p) -> tuple:
+    """ASTOR-X2's four fins at 45 degrees as lattice strips, and which strips carry an elevon."""
+    sweep = math.degrees(math.atan((p["xfin_tip_le_x"] - p["xfin_root_le_x"]) / p["fin_radius"]))
+    P = VM._outline(p["xfin_root_chord"], p["xfin_tip_chord"], p["fin_radius"], sweep, 0.0, 0.0, p["xfin_root_le_x"], 0.0, 1)
+    flat = VM._strips(P, 1, 0.0, n=6)
+    import astor_x2 as AX2
+    quads, on = [], []
+    for a in AX.ANGLES:
+        c, s = math.cos(math.radians(a)), math.sin(math.radians(a))
+        for q in flat:
+            r = float(q[:, 1].mean()) * 1000.0
+            g = np.column_stack([q[:, 0], q[:, 1] * c, q[:, 1] * s])
+            quads.append(g if c > 0 else g[[1, 0, 3, 2]])
+            on.append(AX2.FIN["elevon_from"] <= r <= AX2.FIN["elevon_to"])
+    return quads, on
 
 
 def lattice(p=None, alpha=0.0, tail_inc=0.0, aileron=0.0, flap=0.0) -> dict:
@@ -59,11 +82,16 @@ def lattice(p=None, alpha=0.0, tail_inc=0.0, aileron=0.0, flap=0.0) -> dict:
             a_on = AX.WING["aileron"][0] <= eta <= AX.WING["aileron"][1]
             f_on = max(AX.WING["flap"][0], p["fuselage_diameter"] / 2 / b) <= eta <= AX.WING["flap"][1]
             inc.append(VM.ALPHA0_DEG_PER_CAMBER * cam - side * aileron * VM.TAU_AILERON * a_on + flap * TAU_FLAP * f_on)
-    for side in (1, -1):
-        P = VM._outline(p["tail_panel_root"], p["tail_panel_tip"], p["tail_panel_span"], 35.0, 0.25, 0.0, p["tail_pivot_x"], p["tail_pivot_y"], side)
-        q = VM._strips(P, side, p.get("tail_z", 6.0), n=5)
-        quads += q
-        inc += [tail_inc] * len(q)
+    if "fin_radius" in p:                                              # ASTOR-X2: the X tail; ``tail_inc`` is its elevons' angle, every trailing edge down
+        fq, on = _fin_quads(p)
+        quads += fq
+        inc += [tail_inc * TAU_ELEVON * o for o in on]
+    else:
+        for side in (1, -1):
+            P = VM._outline(p["tail_panel_root"], p["tail_panel_tip"], p["tail_panel_span"], 35.0, 0.25, 0.0, p["tail_pivot_x"], p["tail_pivot_y"], side)
+            q = VM._strips(P, side, p.get("tail_z", 6.0), n=5)
+            quads += q
+            inc += [tail_inc] * len(q)
     r = dict(vlm(quads, alpha_deg=alpha, incidence_deg=inc, S_ref=VM.S_REF, c_ref=VM.C_REF, x_ref=0.0, n_span=2))
     if cam > 0:                                                        # the camber's couple (the lattice has only its lift)
         w = AX.planform(p)
@@ -71,9 +99,9 @@ def lattice(p=None, alpha=0.0, tail_inc=0.0, aileron=0.0, flap=0.0) -> dict:
     return r
 
 
-def balance(p=None) -> dict:
+def balance(p=None, name="x") -> dict:
     """The lattice's neutral point and the CG put MARGIN of the mean chord ahead of it."""
-    p = p or params()
+    p = p or params(name)
     r0, r4 = lattice(p), lattice(p, alpha=4.0)
     x_np = -(r4["Cm"] - r0["Cm"]) / (r4["CL"] - r0["CL"]) * VM.C_REF * 1000.0
     mac = AX.planform(p)["mean_chord_mm"]
@@ -90,31 +118,44 @@ def _roll_per_deg(p) -> float:
 _CACHE: dict = {}
 
 
-def coefficients() -> dict:
-    if "C" in _CACHE:
-        return _CACHE["C"]
+def coefficients(name="x") -> dict:
+    if name in _CACHE:
+        return _CACHE[name]
     import astor_v_flight as VF
-    p = params()
+    p = params(name)
+    x2 = name == "x2"
+    mass = MASS[name]
     w = AX.planform(p)
-    bal = balance(p)
+    bal = balance(p, name)
     cg = bal["cg_mm"]
     twin = VF.get("twin")
     lam = p["sw_tip_chord"] / p["sw_root_chord"]
+    tail = dict(span=2 * (p["tail_pivot_y"] + p["tail_panel_span"] * math.cos(math.radians(35.0))), root=p["tail_panel_root"], taper=p["tail_panel_tip"] / p["tail_panel_root"],
+                sweep=35.0, z=p.get("tail_z", 6.0), le_x=p["tail_pivot_x"] - 0.25 * p["tail_panel_root"],
+                fin=dict(fin_height=p["fin_height"], fin_root_chord=p["fin_root_chord"], fin_taper=p["fin_taper"], fin_sweep_deg=p["fin_sweep_deg"]))
+    if x2:
+        # the X tail for the hand lateral and damping formulas: a flat tail of the fins' projected span, and one upright
+        # fin of their side force (their rise high, all four fins' area x sin^2 45: astor_twin.vtail_fin_equivalent's rule).
+        # HAND: a real X is symmetric about the axis, an upright fin is not: its roll due to sideslip is overstated.
+        R_, c45 = p["fin_radius"], math.cos(math.radians(45.0))
+        lf = p["xfin_tip_chord"] / p["xfin_root_chord"]
+        sw = math.degrees(math.atan((p["xfin_tip_le_x"] - p["xfin_root_le_x"]) / R_))
+        S4 = 4 * 0.5 * (p["xfin_root_chord"] + p["xfin_tip_chord"]) * R_
+        tail = dict(span=2 * R_ * c45, root=p["xfin_root_chord"], taper=lf, sweep=sw, z=0.0, le_x=p["xfin_root_le_x"],
+                    fin=dict(fin_height=R_ * c45, fin_root_chord=2 * S4 * 0.5 / ((1 + lf) * R_ * c45), fin_taper=lf, fin_sweep_deg=sw))
     q = A.variant(span=2 * p["sw_half_span"], root_chord=p["sw_root_chord"], taper=lam, le_sweep_deg=p["sw_sweep_deg"], dihedral_deg=0.0,
                   wing_x=p["sw_le_x"], cg_x=cg, propulsion="tractor_lowcam",
                   fuselage_length=p["fuselage_length"], tail_cone=p["tail_cone"], tail_end_diameter=p["tail_end_diameter"],
-                  htail_span=2 * (p["tail_pivot_y"] + p["tail_panel_span"] * math.cos(math.radians(35.0))), htail_root_chord=p["tail_panel_root"],
-                  htail_taper=p["tail_panel_tip"] / p["tail_panel_root"], htail_sweep_deg=35.0, htail_z=p.get("tail_z", 6.0),
-                  fin_height=p["fin_height"], fin_root_chord=p["fin_root_chord"], fin_taper=p["fin_taper"], fin_sweep_deg=p["fin_sweep_deg"],
-                  lowcam_drop=p["lowcam_drop"])
-    q["tail_le_x"] = p["tail_pivot_x"] - 0.25 * p["tail_panel_root"]
+                  htail_span=tail["span"], htail_root_chord=tail["root"], htail_taper=tail["taper"], htail_sweep_deg=tail["sweep"], htail_z=tail["z"],
+                  **tail["fin"], lowcam_drop=p["lowcam_drop"])
+    q["tail_le_x"] = tail["le_x"]
     pe = A.resolve(q)
     L = A.Astor.layout(pe)
     S0 = L["S_mm2"] / 1e6
     cda = twin["CD0"] * twin["S"] + STRUT_CDA
-    thrust = {**twin["thrust"], "propulsor": {**twin["thrust"]["propulsor"], "units": 4, "power_w_per_unit": 2000.0, "layout": "pusher",
-                                              "entry": "four 9.2 in pushers: ASTOR-TWIN's table, the same power on the same total disc area (HAND)"}}
-    C = am.build(q, pe, L, "astor_x", "tractor_lowcam", mass=MASS_KG, CD0=cda / S0, thrust=thrust)
+    thrust = {**twin["thrust"], "propulsor": {**twin["thrust"]["propulsor"], "units": 4, "power_w_per_unit": 2000.0, "layout": "tractor" if x2 else "pusher",
+                                              "entry": "four 9.2 in propellers: ASTOR-TWIN's table, the same power on the same total disc area (HAND)"}}
+    C = am.build(q, pe, L, f"astor_{name}", "tractor_lowcam", mass=mass, CD0=cda / S0, thrust=thrust)
     Se, ce = C["S"], C["c"]
     kL, kM = VM.S_REF / Se, VM.S_REF * VM.C_REF / (Se * ce)
     xc = cg / 1000.0 / VM.C_REF
@@ -125,14 +166,19 @@ def coefficients() -> dict:
     CLde = (re["CL"] - r0["CL"]) * kL
     lt = p["tail_panel_tip"] / p["tail_panel_root"]
     tail_y = (p["tail_pivot_y"] + p["tail_panel_span"] * (1 + 2 * lt) / (3 * (1 + lt))) / 1000.0
+    if x2:
+        # the elevons in roll: the four turned the same way round push tangentially at their mean radius; one degree of
+        # pitch command gives CLde of lift from four fins at 45 deg, so each fin's own force is CLde / (4 cos 45)
+        import astor_x2 as AX2
+        tail_y = 0.5 * (AX2.FIN["elevon_from"] + AX2.FIN["elevon_to"]) / 1000.0 / math.cos(math.radians(45.0))
     ar = w["aspect_ratio"]
     k_ind = twin["k"] + (1 / ar - twin["S"] / twin["b"] ** 2) / (math.pi * 0.85)
     CL_MAX = twin["CL_MAX"] * twin["S"] / Se
     g, wh, amps, src = A.PACKS["12S 5000 mAh LiPo"]
-    mb = {"total_g": MASS_KG * 1000.0, "empty_g": MASS_KG * 1000.0 - g, "without_nets_g": MASS_KG * 1000.0 - 450.0,
+    mb = {"total_g": mass * 1000.0, "empty_g": mass * 1000.0 - g, "without_nets_g": mass * 1000.0 - 450.0,
           "pack": {"name": "12S 5000 mAh LiPo", "g": g, "Wh_nominal": wh, "max_A": amps, "source": src},
-          "items": [{"item": "ASTOR-X with one launcher and three nets, less the pack", "g": round(MASS_KG * 1000.0 - g), "source": "ASTOR-TWIN's + 0.30 kg (astor_big: HAND)"}]}
-    C.update({"aircraft": "ASTOR-X", "design": "x", "sweep_deg": SWEEP, "tail_fan": 1.0,
+          "items": [{"item": NAMES[name] + " with one launcher and three nets, less the pack", "g": round(mass * 1000.0 - g), "source": "ASTOR-TWIN's + HAND (astor_x_flight.MASS)"}]}
+    C.update({"aircraft": NAMES[name], "design": name, "sweep_deg": SWEEP, "tail_fan": 1.0,
               "CL0": r0["CL"] * kL, "CLa": CLa, "Cm0": cm(r0) * kM, "Cma": Cma, "CLde": CLde, "Cmde": (cm(re) - cm(r0)) * kM,
               "x_cg_m": cg / 1000.0, "x_np_m": bal["neutral_point_mm"] / 1000.0, "static_margin": -Cma / CLa, "k_model": C["k"], "k": k_ind,
               "CL_MAX": CL_MAX, "alpha_stall": (CL_MAX - r0["CL"] * kL) / CLa,
@@ -140,7 +186,11 @@ def coefficients() -> dict:
               "mass_budget": mb, "pack_kind": "astor", "balance": bal,
               "equipment": {"product": "astor", "launch": "rail", "recovery": "parachute", "turning_station": True, "kits": [], "pack": mb["pack"]["name"], "nets": 0},
               "aero_source": "model: lattice on the swept wing and tail; ASTOR-TWIN's drag area + struts, induced factor by aspect ratio, ASTOR-TWIN's maximum lift (HAND): no CFD of its own yet"})
-    if p.get("tail_flap_chord", 0.0) > 0.0:                              # the tail halves' flaps, geared 1:1 (astor_v_flight's rule)
+    if x2:                                                                # an X tail's yaw power is its pitch power (the same fins, the same arm)
+        sgn = -1.0 if C["Cndr"] < 0 else 1.0
+        C["Cndr"], C["CYdr"] = sgn * abs(C["Cmde"]) * C["c"] / C["b"], math.copysign(abs(C["CLde"]), C["CYdr"])
+        C["x_tail"] = {"elevon_effectiveness": TAU_ELEVON, "source": "lattice on four fins at 45 deg; the lateral set from an equivalent upright fin (HAND)"}
+    if p.get("tail_flap_chord", 0.0) > 0.0 and not x2:                    # the tail halves' flaps, geared 1:1 (astor_v_flight's rule)
         th = math.acos(2 * p["tail_flap_chord"] - 1)
         gain = 1.0 + (1 - (th - math.sin(th)) / math.pi) * 0.65 * VF.TAIL_FLAP_GEAR
         for key in ("CLde", "Cmde", "Clda_tail"):
@@ -153,7 +203,7 @@ def coefficients() -> dict:
     C["powered"] = {"prop_m": p["x_prop_diameter"] / 1000.0, "disc_m2": 2 * math.pi * (p["x_prop_diameter"] / 2000.0) ** 2, "chord_m": 0.0,
                     "motor_y_m": p["x_radius"] * math.cos(math.radians(45.0)) / 1000.0, "brake_cda_m2": 0.0,
                     "source": "differential thrust in yaw only (HAND); the wing is not blown; no crow brake modelled"}
-    cfg, cfgf = VF.cfd_config("x", SWEEP), VF.cfd_config("x_flap", SWEEP)
+    cfg, cfgf = VF.cfd_config(name, SWEEP), VF.cfd_config(name + "_flap", SWEEP)
     enough = lambda c: bool(c) and sum(r.get("status") == "solved" for r in c.get("rows", [])) >= 4
     C_pre = {k: (v.copy() if isinstance(v, (dict, np.ndarray)) else v) for k, v in C.items()}
     dx = (cg - V.CG_MM) / 1000.0                                         # the CFD turned about astor_v.CG_MM
@@ -164,30 +214,30 @@ def coefficients() -> dict:
         Cx["static_margin"] = -Cx["Cma"] / Cx["CLa"]
     if enough(cfg):
         VF.apply_cfd(C, cfg)
-        VF.lift_table(C, "x", SWEEP, cfg)
+        VF.lift_table(C, name, SWEEP, cfg)
         to_cg(C)
         C["balance"] = {**bal, "static_margin_with_the_cfd": round(C["static_margin"], 3),
                         "note": "the CG is still the lattice's choice: if this margin is not near %.2f, move astor_x_flight's CG rule to the CFD's neutral point" % MARGIN}
         if enough(cfgf):
             Cf = C_pre
             VF.apply_cfd(Cf, cfgf)
-            VF.lift_table(Cf, "x", SWEEP, cfgf)
+            VF.lift_table(Cf, name, SWEEP, cfgf)
             to_cg(Cf)
             C["flap"] = {"deg": VF.FLAP_DEG, "cfd": Cf["cfd"], "CL_MAX": Cf["CL_MAX"], "alpha_stall": Cf["alpha_stall"], "Cm0": Cf["Cm0"], "alpha_margin_deg": 0.0,
                          "source": "cfd (screening RANS) with the ailerons and inboard flaps down"}
     else:
-        VF.lift_table(C, "x", SWEEP, None)
-    _CACHE["C"] = C
+        VF.lift_table(C, name, SWEEP, None)
+    _CACHE[name] = C
     return C
 
 
-def summary() -> dict:
+def summary(name="x") -> dict:
     """What the model says before any CFD: for reading, and for ``hawk``-style documents."""
     import astor_model as AM
     import astor_v_flight as VF
-    C = coefficients()
+    C = coefficients(name)
     f = lambda v: round(float(v), 4)
-    return {"aircraft": "ASTOR-X", "mass_kg": C["mass"], "wing": AX.planform(), "balance": C["balance"], "static_margin": f(C["static_margin"]),
+    return {"aircraft": NAMES[name], "mass_kg": C["mass"], "wing": AX.planform(), "balance": C["balance"], "static_margin": f(C["static_margin"]),
             "CLa_per_rad": f(C["CLa"]), "CL0": f(C["CL0"]), "CL_MAX": f(C["CL_MAX"]), "alpha_stall_deg": round(math.degrees(C["alpha_stall"]), 1),
             "CD0": f(C["CD0"]), "k": f(C["k"]), "stall_m_s": round(VF.stall(C), 1), "top_speed_m_s": round(AM.top_speed(C), 1),
             "Cnb": f(C["Cnb"]), "Clb": f(C["Clb"]), "Cmq": f(C["Cmq"]), "Clp": f(C["Clp"]), "Cnr": f(C["Cnr"]),
@@ -198,7 +248,9 @@ def summary() -> dict:
 
 if __name__ == "__main__":
     import yaml
-    out = summary()
-    (am.DATA / "astor_x").mkdir(parents=True, exist_ok=True)
-    (am.DATA / "astor_x" / "astor_x_model.yaml").write_text(yaml.safe_dump(out, sort_keys=False, allow_unicode=True, width=150))
-    print(yaml.safe_dump(out, sort_keys=False, allow_unicode=True, width=150))
+    import sys
+    for name in (sys.argv[1:] or ["x", "x2"]):
+        out = summary(name)
+        (am.DATA / f"astor_{name}").mkdir(parents=True, exist_ok=True)
+        (am.DATA / f"astor_{name}" / f"astor_{name}_model.yaml").write_text(yaml.safe_dump(out, sort_keys=False, allow_unicode=True, width=150))
+        print(yaml.safe_dump(out, sort_keys=False, allow_unicode=True, width=150))

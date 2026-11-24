@@ -11,7 +11,9 @@ its predecessors, kept for comparison (``--design t | v | boost``).
     labs/aero/sims/astor.sh -j 12 --launch-only       # ASTOR-T out of its tube: 216 launches (exit speed x elevation x wind x late wings or motor)
     labs/aero/sims/astor.sh -j 12 --design twin       # ASTOR-TWIN (two wing motors, the net launcher; designs/astor_twin): CFD, stability, net-shot sorties
     labs/aero/sims/astor.sh -j 12 --design twin --cfd-only | --stability-only ;  --netshot-only (ASTOR-TWIN's sorties alone)
-    labs/aero/sims/astor.sh -j 12 --design x          # ASTOR-X (swept wing, four pushers on an X; designs/astor_x): CFD (37 cases), then stability as an aeroplane
+    labs/aero/sims/astor_x.sh -j 12                   # ASTOR-X (swept wing, four pushers on an X; designs/astor_x): CFD (37), stability (8), FEA (3) under one bar
+    labs/aero/sims/astor_x2.sh -j 12                  # ASTOR-X2 (the tail-sitter; designs/astor_x2): CFD (37), stability (8), FEA (4) under one bar
+                                                      #   both: --cfd-only | --stability-only | --fea-only | --skip-cfd | --skip-fea | --dry-run | --fresh
     labs/aero/sims/astor.sh --dry-run                 # list what would run, and stop
 
 ``-j N`` is the CPU cores for every phase: OpenFOAM's MPI processes in the CFD (used as given); worker processes in
@@ -56,17 +58,18 @@ R.GLOBS_ACTIVE = ["arigo*.py", "astor*.py", "raptors*.py"]
 DATA = DESIGNS / "data" / "astor_v_cfd_screening.yaml"
 STATES = ((12.0, 25.0), (35.0, 40.0), (60.0, 60.0))                  # (sweep deg, test speed m/s)
 STATES_BY_DESIGN = {"twin": ((12.0, 24.0), (12.0, 45.0), (12.0, 60.0)), "goshawk": ((12.0, 14.0), (12.0, 20.0), (12.0, 30.0)),
-                    "x": ((12.0, 24.0), (12.0, 45.0), (12.0, 60.0))}   # ASTOR-TWIN: the wing fixed at 12 deg, three speeds (it stalls at 23 m/s with its three nets)
+                    "x": ((12.0, 24.0), (12.0, 45.0), (12.0, 60.0)), "x2": ((12.0, 24.0), (12.0, 45.0), (12.0, 60.0))}   # ASTOR-TWIN: the wing fixed at 12 deg, three speeds (it stalls at 23 m/s with its three nets)
 
 
 CFD_STATES = {"twin": ["twin2", "twin2_flap", "twin2_reflex", "twin2_crow", "twin2_swept", "twin2_tail_up", "twin2_tail_lift"],
-              "goshawk": ["goshawk", "goshawk_flap", "goshawk_flap35", "goshawk_tucked"], "x": ["x", "x_flap", "x_tail_up", "x_reflex"]}       # HAWK 2 (astor_v_cfd.HAWK2_STATES)             # what "--design twin" means to the CFD phase (astor_v_cfd.DESIGNS)
-FLAP_STATES = {"twin": ((12.0, 19.0),), "goshawk": ((12.0, 10.5),), "x": ((12.0, 20.0),)}                              # stability with every flap down: (sweep, speed)
+              "goshawk": ["goshawk", "goshawk_flap", "goshawk_flap35", "goshawk_tucked"], "x": ["x", "x_flap", "x_tail_up", "x_reflex"],
+              "x2": ["x2", "x2_flap", "x2_pitch_up", "x2_reflex"]}       # HAWK 2 (astor_v_cfd.HAWK2_STATES)             # what "--design twin" means to the CFD phase (astor_v_cfd.DESIGNS)
+FLAP_STATES = {"twin": ((12.0, 19.0),), "goshawk": ((12.0, 10.5),), "x": ((12.0, 20.0),), "x2": ((12.0, 20.0),)}                              # stability with every flap down: (sweep, speed)
 
 
 def states(design):
     return STATES_BY_DESIGN.get(design, STATES)
-NAMES = {"x": "ASTOR-X", "x_flap": "X flaps 20", "x_tail_up": "X tail up", "x_reflex": "X reflex", "v": "ASTOR-V", "boost": "ASTOR-BOOST", "t": "ASTOR-T", "twin": "ASTOR-TWIN", "twin_stowed": "TWIN tube 0", "twin_agile": "TWIN 12%/4%", "twin_agile_flap": "TWIN flaps 20", "twin_c2": "TWIN 12%/2%", "twin_c2_flap": "TWIN 2% flaps", "twin_agile_reflex": "TWIN reflex -6", "twin2": "HAWK2 clean", "twin2_flap": "HAWK2 flaps 20", "twin2_reflex": "HAWK2 reflex",
+NAMES = {"x2": "ASTOR-X2", "x2_flap": "X2 flaps 20", "x2_pitch_up": "X2 pitch up", "x2_reflex": "X2 reflex", "x": "ASTOR-X", "x_flap": "X flaps 20", "x_tail_up": "X tail up", "x_reflex": "X reflex", "v": "ASTOR-V", "boost": "ASTOR-BOOST", "t": "ASTOR-T", "twin": "ASTOR-TWIN", "twin_stowed": "TWIN tube 0", "twin_agile": "TWIN 12%/4%", "twin_agile_flap": "TWIN flaps 20", "twin_c2": "TWIN 12%/2%", "twin_c2_flap": "TWIN 2% flaps", "twin_agile_reflex": "TWIN reflex -6", "twin2": "HAWK2 clean", "twin2_flap": "HAWK2 flaps 20", "twin2_reflex": "HAWK2 reflex",
          "twin2_crow": "HAWK2 crow", "twin2_swept": "HAWK2 swept 60", "twin2_tail_up": "HAWK2 tail up", "twin2_tail_lift": "HAWK2 tail lift", "goshawk": "GOSHAWK", "goshawk_flap": "GOSHAWK flap20",
          "goshawk_flap35": "GOSHAWK flap35", "goshawk_tucked": "GOSHAWK tucked"}
 
@@ -349,10 +352,54 @@ def phase_netshot(a) -> int:
     return 0
 
 
+# ------------------------------------------------------------------------------------------------ FEA (ASTOR-X, ASTOR-X2)
+FEA_CASES = {"x": 3, "x2": 4}
+FEA_MODULE = {"x": "astor_x_fea", "x2": "astor_x2_fea"}
+
+
+def phase_fea(a) -> int:
+    """The design's FEA cases (designs/astor_x_fea, astor_x2_fea) in Talos / CalculiX, one after another with -j threads.
+    Solved cases stay in _runs/astor_<design>_fea and are read back on a restart (--fresh deletes them)."""
+    import importlib
+    import shutil
+    d = a.designs[0]
+    FE = importlib.import_module(FEA_MODULE[d])
+    ref = FE.reference()
+    workdir = HERE.parent / "_runs" / f"astor_{d}_fea"
+    if a.dry_run:
+        for name, kind, text in FE.CASE_LIST:
+            print(f"fea  {name:20s} {kind:7s} {text}")
+        print(len(FE.CASE_LIST), "cases")
+        return 0
+    if a.fresh and workdir.exists():
+        shutil.rmtree(workdir)
+    bar = R._bar(FEA_CASES[d], 0, f"astor-{d} fea", unit="case")
+    rows, t0 = {}, time.time()
+    try:
+        cases = FE.cases(workdir, element_size=a.fea_element)
+    except Exception as exc:                                         # noqa: BLE001  (no Talos here: the beam reference alone)
+        cases, rows = [], {"error": f"the FEA cases could not be built ({type(exc).__name__}: {exc})"[:300]}
+        print(rows["error"])
+    for c in cases:
+        t = time.time()
+        r = FE.solve_one(c, workdir, run=True, threads=a.cpu)
+        rows[c.name] = {**FE.row(c, r), "seconds": round(time.time() - t, 1)}
+        msg = f"{c.name}: {rows[c.name]['status']}" + (f"  margin {rows[c.name].get('margin')}" if rows[c.name].get("margin") is not None else "")
+        print("  " + msg)
+        if bar:
+            bar.set_postfix_str(msg[:60]); bar.update(1)
+    if bar:
+        bar.close()
+    run = R._write("fea", {"run": {**_meta("fea", a), "aircraft": NAMES[d], "element_mm": a.fea_element, "seconds": round(time.time() - t0, 1)},
+                           "beam_reference": ref, "cases": rows}, f"astor_{d}")
+    print("->", run)
+    return 0 if cases and all(v.get("status") == "solved" for v in rows.values()) else 1
+
+
 def counts(a) -> dict:
     """How many units each phase has: CFD cases, stability jobs, net-drop sorties."""
     import astor_v_cfd as cf
-    return {"netshot": a.sorties * 3, "cfd": sum(len(cf.alphas(d, s)) for d0 in a.designs for d in CFD_STATES.get(d0, [d0]) for s in cf.sweeps(d)), "stability": sum(len(states(d)) * 2 + 1 + len(FLAP_STATES.get(d, ())) for d in a.designs),
+    return {"fea": FEA_CASES.get(a.designs[0], 0), "netshot": a.sorties * 3, "cfd": sum(len(cf.alphas(d, s)) for d0 in a.designs for d in CFD_STATES.get(d0, [d0]) for s in cf.sweeps(d)), "stability": sum(len(states(d)) * 2 + 1 + len(FLAP_STATES.get(d, ())) for d in a.designs),
             "netdrop": len(a.designs) * 2 * len(a.bandits) * a.sorties, "launch": len(_launch_jobs(a))}
 
 
@@ -364,11 +411,12 @@ def main(argv=None) -> int:
     g = ap.add_mutually_exclusive_group()
     g.add_argument("--cfd-only", action="store_true", help="only the CFD")
     g.add_argument("--stability-only", action="store_true", help="only stability and performance")
+    g.add_argument("--fea-only", action="store_true", help="--design x / x2: only the FEA (CalculiX and Gmsh needed; -j is CalculiX's threads)")
     g.add_argument("--netdrop-only", action="store_true", help="only the net drop")
     g.add_argument("--launch-only", action="store_true", help="only ASTOR-T's tube launch (exit speed x elevation x wind x late wings or motor)")
     g.add_argument("--netshot-only", action="store_true", help="only ASTOR-TWIN's net-launcher sorties (3 x --sorties)")
     g.add_argument("--skip-cfd", action="store_true", help="stability and the net drop, no CFD")
-    ap.add_argument("--design", choices=("v", "boost", "t", "twin", "goshawk", "x"), action="append", help="twin (ASTOR-TWIN: the ASTOR product, the default), or the earlier t (ASTOR-T), v (ASTOR-V), boost (ASTOR-BOOST)")
+    ap.add_argument("--design", choices=("v", "boost", "t", "twin", "goshawk", "x", "x2"), action="append", help="twin (ASTOR-TWIN: the ASTOR product, the default), or the earlier t (ASTOR-T), v (ASTOR-V), boost (ASTOR-BOOST)")
     ap.add_argument("--fresh", action="store_true", help="forget the saved progress of the phases that run")
     ap.add_argument("--dry-run", action="store_true", help="list the cases and jobs and stop")
     ap.add_argument("--quality", default="screening", help="cfd: mesh quality")
@@ -383,10 +431,12 @@ def main(argv=None) -> int:
     ap.add_argument("--noise", type=float, default=0.3, help="netdrop: the camera's position noise [m]")
     ap.add_argument("--tube-stowed", action="store_true", help="cfd only: ASTOR-TWIN with the launch tube level along the belly (0 deg) instead of 15 deg down; "
                     "8 cases, stored beside the 15 deg ones (twin_stowed_sweep12), the flight model untouched")
-    ap.add_argument("--agility-cfd", action="store_true", help="cfd only: ASTOR-TWIN with the agility study's 12 % thick, 4 % cambered section, clean and with the "
+    ap.add_argument("--agility-cfd", action="store_true", help="cfd only: ASTOR-TWIN with the agility study's 12 %% thick, 4 %% cambered section, clean and with the "
                     "flaperons and inboard flaps down 20 deg (tube level); 16 cases, stored beside the others, the flight model untouched")
-    ap.add_argument("--section-cfd", action="store_true", help="cfd only: the section question (astor_v_cfd.SECTION_STATES): the 12 % wing with 2 % camber, flaps up and "
-                    "down, and the 4 % wing with every flap reflexed 6 deg up at the fast-flight angles; 24 cases, the flight model untouched")
+    ap.add_argument("--section-cfd", action="store_true", help="cfd only: the section question (astor_v_cfd.SECTION_STATES): the 12 %% wing with 2 %% camber, flaps up and "
+                    "down, and the 4 %% wing with every flap reflexed 6 deg up at the fast-flight angles; 24 cases, the flight model untouched")
+    ap.add_argument("--skip-fea", action="store_true", help="--design x / x2: no FEA phase")
+    ap.add_argument("--fea-element", type=float, default=3.0, help="--design x / x2: the FEA mesh's element size [mm] (default 3)")
     a = ap.parse_args(argv)
     a.designs = a.design or ["twin"]
     if a.section_cfd:
@@ -409,17 +459,19 @@ def main(argv=None) -> int:
         phases = [ph for ph in phases if ph not in ("netdrop", "launch")]
         if not (a.cfd_only or a.stability_only):
             phases.append("netshot")
-    if "x" in a.designs:                                                 # ASTOR-X (designs/astor_x): its CFD and its stability as an aeroplane
+    if set(a.designs) & {"x", "x2"}:                                     # ASTOR-X / ASTOR-X2: CFD, stability as an aeroplane, then the FEA (sims/astor_x.sh, astor_x2.sh)
         if len(a.designs) > 1:
-            ap.error("--design x is run on its own")
-        phases = [ph for ph in phases if ph in ("cfd", "stability")]
+            ap.error("--design x / x2 is run on its own")
+        phases = ["fea"] if a.fea_only else [ph for ph in phases if ph in ("cfd", "stability")] + ([] if (a.cfd_only or a.stability_only or a.skip_fea) else ["fea"])
+    elif a.fea_only:
+        ap.error("--fea-only is for --design x or x2 (ASTOR-TWIN's FEA is sims/astor_fea.sh)")
     if "goshawk" in a.designs:                                           # GOSHAWK: its CFD and stability (its hunt in the wood is not written)
         if len(a.designs) > 1:
             ap.error("--design goshawk is run on its own")
         phases = [ph for ph in phases if ph in ("cfd", "stability")]
     if a.netshot_only:
         a.designs, phases = ["twin"], ["netshot"]
-    fns = {"cfd": phase_cfd, "stability": phase_stability, "netdrop": phase_netdrop, "launch": phase_launch, "netshot": phase_netshot}
+    fns = {"fea": phase_fea, "cfd": phase_cfd, "stability": phase_stability, "netdrop": phase_netdrop, "launch": phase_launch, "netshot": phase_netshot}
     n = counts(a)
     if a.dry_run:
         for ph in phases:

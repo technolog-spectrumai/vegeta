@@ -48,7 +48,7 @@ def spar_sweep_deg(p=None) -> float:
     return math.degrees(math.atan(math.tan(math.radians(p["sw_sweep_deg"])) - SPAR["chord_line"] * (p["sw_root_chord"] - p["sw_tip_chord"]) / p["sw_half_span"]))
 
 
-def loads(p=None, n=N_G) -> dict:
+def loads(p=None, n=N_G, mass=None) -> dict:
     """The half wing's lift at ``n`` g, ultimate, on STATIONS equal lengths ALONG THE SPAR from the body's side to
     the tip (an elliptic distribution over the half span); positions are distances along the spar from the centre."""
     p = p or params()
@@ -56,10 +56,11 @@ def loads(p=None, n=N_G) -> dict:
     y0 = p["fuselage_diameter"] / 2
     edges = np.linspace(y0, half, STATIONS + 1)
     ell = lambda y: (y / half * math.sqrt(max(1 - (y / half) ** 2, 0.0)) + math.asin(min(y / half, 1.0))) / (math.pi / 2)
-    L_half = ULTIMATE * n * XF.MASS_KG * G / 2
+    mass = mass or XF.MASS_KG
+    L_half = ULTIMATE * n * mass * G / 2
     F = [L_half * (ell(b) - ell(a)) for a, b in zip(edges[:-1], edges[1:])]
     F[0] += L_half * ell(y0)
-    return {"n": n, "mass_kg": XF.MASS_KG, "half_span_mm": half, "spar_length_factor": k, "root_s_mm": float(y0 * k), "tip_s_mm": float(half * k),
+    return {"n": n, "mass_kg": mass, "half_span_mm": half, "spar_length_factor": k, "root_s_mm": float(y0 * k), "tip_s_mm": float(half * k),
             "step_s_mm": float(SPAR["step_at"] * half * k), "edges_s_mm": [float(e * k) for e in edges], "lift_N": [float(f) for f in F], "half_wing_lift_ultimate_N": L_half}
 
 
@@ -74,11 +75,10 @@ def _I(od, i):
     return math.pi / 64 * (od ** 4 - i ** 4)
 
 
-def reference(p=None) -> dict:
-    p = p or params()
-    ld, st = loads(p), strut_loads(p)
-    allow = CARBON_TUBE["strength"] * KNOCKDOWN
-    E = CARBON_TUBE["E"]
+def wing_reference(p, mass=None) -> dict:
+    """The swept wing's spar as a cantilever of its own length (closed form)."""
+    ld = loads(p, mass=mass)
+    allow, E = CARBON_TUBE["strength"] * KNOCKDOWN, CARBON_TUBE["E"]
     mids = [(a + b) / 2 for a, b in zip(ld["edges_s_mm"][:-1], ld["edges_s_mm"][1:])]
     moment = lambda s: sum(f * (sm - s) for f, sm in zip(ld["lift_N"], mids) if sm > s)
     Ii, Io = _I(SPAR["inner_od"], SPAR["inner_id"]), _I(SPAR["outer_od"], SPAR["outer_id"])
@@ -91,19 +91,27 @@ def reference(p=None) -> dict:
     area = lambda od, i: math.pi / 4 * (od ** 2 - i ** 2)
     g_spar = (area(SPAR["inner_od"], SPAR["inner_id"]) * 2 * sp + area(SPAR["outer_od"], SPAR["outer_id"]) * 2 * (s1 - sp)) * 1.55e-3
     cl = lambda eta: p["sw_root_chord"] + (p["sw_tip_chord"] - p["sw_root_chord"]) * eta
+    return {**SPAR, "sweep_deg": round(spar_sweep_deg(p), 1), "length_each_side_mm": round(s1), "mass_both_wings_g": round(g_spar),
+            "half_wing_lift_ultimate_N": round(ld["half_wing_lift_ultimate_N"]),
+            "fits": {"wing_depth_at_the_root_mm": round(0.12 * cl(0.0)), "at_the_step_mm": round(0.12 * cl(SPAR["step_at"])), "at_the_tip_mm": round(0.12 * cl(1.0))},
+            "root": {"moment_Nm": round(moment(s0) / 1000.0, 1), "stress_MPa": round(sr), "margin": round(allow / sr - 1, 2)},
+            "step": {"moment_Nm": round(moment(sp) / 1000.0, 1), "stress_MPa": round(ss), "margin": round(allow / ss - 1, 2)},
+            "tip_deflection_ultimate_mm": round(defl), "tip_deflection_share_of_the_spar": round(defl / s1, 3),
+            "note": "a straight cantilever of the swept spar's own length; the root twist of a swept wing is not in it"}
+
+
+def reference(p=None) -> dict:
+    p = p or params()
+    st = strut_loads(p)
+    allow, E = CARBON_TUBE["strength"] * KNOCKDOWN, CARBON_TUBE["E"]
+    area = lambda od, i: math.pi / 4 * (od ** 2 - i ** 2)
     # the strut: the thrust (along the body axis) and the motor's weight at n g (across it) bend the tube about two axes
     Is, Ls = _I(STRUT["od"], STRUT["id"]), st["length_mm"]
     f_res = math.hypot(st["thrust_ultimate_N"], st["inertia_ultimate_N"])
     s_strut = f_res * Ls * STRUT["od"] / 2 / Is
     f1 = math.sqrt(3 * E * Is / Ls ** 3 / (MOTOR_KG * 1e-3)) / (2 * math.pi)
     return {"load_factor": N_G, "ultimate_factor": ULTIMATE, "mass_kg": XF.MASS_KG, "allowable_MPa": allow, "material": CARBON_TUBE["name"],
-            "wing_spar": {**SPAR, "sweep_deg": round(spar_sweep_deg(p), 1), "length_each_side_mm": round(s1), "mass_both_wings_g": round(g_spar),
-                          "half_wing_lift_ultimate_N": round(ld["half_wing_lift_ultimate_N"]),
-                          "fits": {"wing_depth_at_the_root_mm": round(0.12 * cl(0.0)), "at_the_step_mm": round(0.12 * cl(SPAR["step_at"])), "at_the_tip_mm": round(0.12 * cl(1.0))},
-                          "root": {"moment_Nm": round(moment(s0) / 1000.0, 1), "stress_MPa": round(sr), "margin": round(allow / sr - 1, 2)},
-                          "step": {"moment_Nm": round(moment(sp) / 1000.0, 1), "stress_MPa": round(ss), "margin": round(allow / ss - 1, 2)},
-                          "tip_deflection_ultimate_mm": round(defl), "tip_deflection_share_of_the_spar": round(defl / s1, 3),
-                          "note": "a straight cantilever of the swept spar's own length; the root twist of a swept wing is not in it"},
+            "wing_spar": wing_reference(p),
             "strut": {**STRUT, "length_mm": round(Ls), "motor_kg": round(MOTOR_KG, 3), "thrust_ultimate_N": round(st["thrust_ultimate_N"], 1),
                       "motor_weight_at_8g_ultimate_N": round(st["inertia_ultimate_N"], 1), "root_moment_Nm": round(f_res * Ls / 1000.0, 2),
                       "stress_MPa": round(s_strut), "margin": round(allow / s_strut - 1, 2), "tip_deflection_mm": round(f_res * Ls ** 3 / (3 * E * Is), 2),
@@ -211,6 +219,8 @@ def row(case, r) -> dict:
 
 
 AIRCRAFT, PREFIX, BAR = "ASTOR-X", "astor_x", "astor-x fea"
+CASE_LIST = [("wing_spar_8g", "static", "the half wing's lift at 8 g, ultimate, on the swept spar"), ("strut_8g", "static", "one strut: full thrust and the motor's weight at 8 g, ultimate"),
+             ("strut_modes", "modes", "the strut with the motor as a point mass")]
 
 if __name__ == "__main__":
     import yaml

@@ -39,7 +39,7 @@ TWINS = ("twin", "twin1", "goshawk")        # + GOSHAWK (designs/goshawk: the sa
 _TW = ("twin", "twin1")                   # ASTOR-TWIN: HAWK 2 (the doubled wing, the design) and HAWK1 (the aircraft before it)
 TAIL_FLAP_GEAR = 1.0                        # the tail flaps move this many degrees per degree of the tail half's own angle
 VP_STATIC, VP_BLEND_M_S = 1.62, 60.0        # HAND: HAWK 2's variable-pitch propellers (see coefficients)
-FIXED_WING = TWINS + ("x",)                      # designs whose wing does not swing in flight: held at SWEEPS[0] (ASTOR-TWIN since 2026-11-22)
+FIXED_WING = TWINS + ("x", "x2")                      # designs whose wing does not swing in flight: held at SWEEPS[0] (ASTOR-TWIN since 2026-11-22)
 SWEEPS = (12.0, 35.0, 60.0)                 # the states the model is built at; between them it is interpolated
 BODY_CDA = 0.0030                           # HAND: fuselage, shoulder carriage, fin, tail fan, camera blister [m2] (+-0.0008)
 WING_CD = 0.010                             # HAND: the wing panels' zero-lift drag on their exposed area
@@ -86,9 +86,9 @@ def cfd_config(name: str, sweep: float):
 
 @lru_cache(maxsize=None)
 def coefficients(name: str = "twin", sweep: float = 12.0) -> dict:
-    if name == "x":                                                          # ASTOR-X: its own set (astor_x_flight), one wing state
+    if name in ("x", "x2"):                                                  # ASTOR-X and ASTOR-X2: their own sets (astor_x_flight), one wing state
         import astor_x_flight as XF
-        return XF.coefficients()
+        return XF.coefficients(name)
     import arigo_propulsion as ap
     p, mb = design(name)
     m = mb["total_g"] / 1000.0
@@ -494,7 +494,9 @@ LIMIT_K, LIMIT_KQ = 6.0, 0.10               # deg of elevator per deg over the l
 SAS = {"twin": {"yaw_k": 0.25, "yaw_washout_s": 1.0,     # rudder [deg] per deg/s of yaw rate, the steady turn's rate washed out
                 "pitch_k": 0.06, "pitch_v_ref": 30.0,    # elevator [deg] per deg/s of pitch rate at 30 m/s, less with speed (x 30 / V)
                 "g_max": 8.0},
-       "x": {"yaw_k": 0.25, "yaw_washout_s": 1.0, "pitch_k": 0.06, "pitch_v_ref": 30.0, "g_max": 8.0},      # ASTOR-X: ASTOR-TWIN's gains to begin with
+       "x": {"yaw_k": 0.25, "yaw_washout_s": 1.0, "pitch_k": 0.06, "pitch_v_ref": 30.0, "g_max": 8.0},
+       "x2": {"yaw_k": 0.05, "yaw_washout_s": 1.0, "pitch_k": 0.20, "pitch_v_ref": 30.0, "g_max": 8.0},     # ASTOR-X2's X tail: ~6 x the rudder power and ~0.3 x the
+                                                                                                           # elevator power of ASTOR-X (lattice): the gains scaled to give the same damping moments (HAND)      # ASTOR-X: ASTOR-TWIN's gains to begin with
        "goshawk": {"yaw_k": 0.25, "yaw_washout_s": 1.0, "pitch_k": 0.06, "pitch_v_ref": 12.0, "g_max": 6.0,
                    "alpha_k": 0.0, "alpha_washout_s": 3.0}}        # the angle-of-attack augmentation OFF: balanced stable (5 %) it is not needed, and in
                                                                    # the forest flights it held the nose down for seconds when a turn asked for load factor      # PROTOHAWK's gains at GOSHAWK's speeds: NOT tuned                           # the client's choice (2026-11-23); the airframe must be built to it (astor_twin's budget: +100 g, HAND)
