@@ -57,14 +57,14 @@ STATES = ((12.0, 25.0), (35.0, 40.0), (60.0, 60.0))                  # (sweep de
 STATES_BY_DESIGN = {"twin": ((12.0, 24.0), (12.0, 45.0), (12.0, 60.0))}   # ASTOR-TWIN: the wing fixed at 12 deg, three speeds (it stalls at 23 m/s with its three nets)
 
 
-CFD_STATES = {"twin": ["twin2", "twin2_flap", "twin2_reflex", "twin2_crow", "twin2_swept"]}       # HAWK 2 (astor_v_cfd.HAWK2_STATES)             # what "--design twin" means to the CFD phase (astor_v_cfd.DESIGNS)
+CFD_STATES = {"twin": ["twin2", "twin2_flap", "twin2_reflex", "twin2_crow", "twin2_swept", "twin2_tail_up", "twin2_tail_lift"]}       # HAWK 2 (astor_v_cfd.HAWK2_STATES)             # what "--design twin" means to the CFD phase (astor_v_cfd.DESIGNS)
 FLAP_STATES = {"twin": ((12.0, 19.0),)}                              # stability with every flap down: (sweep, speed)
 
 
 def states(design):
     return STATES_BY_DESIGN.get(design, STATES)
 NAMES = {"v": "ASTOR-V", "boost": "ASTOR-BOOST", "t": "ASTOR-T", "twin": "ASTOR-TWIN", "twin_stowed": "TWIN tube 0", "twin_agile": "TWIN 12%/4%", "twin_agile_flap": "TWIN flaps 20", "twin_c2": "TWIN 12%/2%", "twin_c2_flap": "TWIN 2% flaps", "twin_agile_reflex": "TWIN reflex -6", "twin2": "HAWK2 clean", "twin2_flap": "HAWK2 flaps 20", "twin2_reflex": "HAWK2 reflex",
-         "twin2_crow": "HAWK2 crow", "twin2_swept": "HAWK2 swept 60"}
+         "twin2_crow": "HAWK2 crow", "twin2_swept": "HAWK2 swept 60", "twin2_tail_up": "HAWK2 tail up", "twin2_tail_lift": "HAWK2 tail lift"}
 
 
 def _inputs() -> str:

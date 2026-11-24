@@ -36,6 +36,7 @@ import astor_v as V
 import astor_v_model as VM
 
 TWINS = ("twin", "twin1")                   # ASTOR-TWIN: HAWK 2 (the doubled wing, the design) and HAWK1 (the aircraft before it)
+TAIL_FLAP_GEAR = 1.0                        # the tail flaps move this many degrees per degree of the tail half's own angle
 VP_STATIC, VP_BLEND_M_S = 1.62, 60.0        # HAND: HAWK 2's variable-pitch propellers (see coefficients)
 FIXED_WING = TWINS                      # designs whose wing does not swing in flight: held at SWEEPS[0] (ASTOR-TWIN since 2026-11-22)
 SWEEPS = (12.0, 35.0, 60.0)                 # the states the model is built at; between them it is interpolated
@@ -162,6 +163,14 @@ def coefficients(name: str = "twin", sweep: float = 12.0) -> dict:
         C["Cnb_tail"] = CLde * 57.3 * td2 * (p["tail_pivot_x"] / 1000.0 + 0.05 - C["x_cg_m"]) / C["b"]
         C["Cnb"] += C["Cnb_tail"]
         C["Cnr"] *= 1.0 + C["Cnb_tail"] / max(abs(C["Cnb"] - C["Cnb_tail"]) + 0.03, 0.03)     # HAND: its yaw damping in proportion
+    if p.get("tail_flap_chord", 0.0) > 0.0 and name in TWINS:
+        # the tail halves' flaps, geared 1:1 to the all-moving angle: thin-aerofoil effectiveness for their chord x 0.65 (the
+        # plain-flap efficiency used for the wing's, HAND +-0.1) more lift per degree of tail command
+        th = math.acos(2 * p["tail_flap_chord"] - 1)
+        gain = 1.0 + (1 - (th - math.sin(th)) / math.pi) * 0.65 * TAIL_FLAP_GEAR
+        for key in ("CLde", "Cmde", "Clda_tail"):
+            C[key] *= gain
+        C["tail_flaps"] = {"chord": p["tail_flap_chord"], "gear": TAIL_FLAP_GEAR, "control_gain": round(gain, 2), "source": "HAND: thin-aerofoil flap effectiveness x 0.65"}
     C["Clda"] = C["Clda_tail"] + C["Clda_aileron"]                           # one roll command moves both
     C["Cnda"] = -0.1 * C["Clda_aileron"]                                     # HAND: the ailerons' adverse yaw (arigo1_model's rule)
     if name == "boost":
@@ -236,7 +245,10 @@ def coefficients(name: str = "twin", sweep: float = 12.0) -> dict:
 
 # ASTOR-TWIN's CFD with the 12 % wing and the tube level gave a static margin of 23 % at the 365 mm CG the CFD turned
 # about: more than it needs, and it costs elevator at high lift. The pack sits 20 mm further aft (CG 385 mm): ~13 %.
-CG_AFT_MM = {"twin": 20.0, "twin1": 20.0}
+# HAWK 2 with its long tail: the neutral point is at ~456 mm (lattice + HAWK1's CFD correction). The CG is put at 435 mm
+# (static margin ~7.5 %): the tail then carries ~9 % of the lift in trim at 8 deg (tail_share); at 385 mm it carried
+# none (margin 25 %), at the neutral point 13 %. Less margin than this leans on the pitch damper and on carried-over data.
+CG_AFT_MM = {"twin": 70.0, "twin1": 20.0}
 CFD_REFLEX_KEY = {"twin": "twin2_reflex", "twin1": "twin_agile_reflex"}
 REFLEX_DEG, REFLEX_FULL_BELOW_DEG, REFLEX_NONE_ABOVE_DEG = -6.0, 2.0, 4.0
 
@@ -287,9 +299,17 @@ def carry_hawk1(C, C1) -> None:
 
     def table(t):
         return {"alpha_deg": A_, "CL": t["CL"] * r, "CD": t["CD"] + dcd, "Cm": t["Cm"] + (cm0 - C1["Cm0"]) + (cma - C1["Cma"]) * ar}
+    # HAWK 2's CG is further aft than HAWK1's (its long tail moves the neutral point aft: CG_AFT_MM): the moment gains the lift x the shift
+    dx = (CG_AFT_MM["twin"] - CG_AFT_MM["twin1"]) / 1000.0 / C["c"]
+    cm0, cma = cm0 + C1["CL0"] * r * dx, cma + C1["CLa"] * r * dx
+    t0 = table
+
+    def table(t):
+        out = t0(t)
+        return {**out, "Cm": out["Cm"] + out["CL"] * dx}
     C.update({"cfd": table(C1["cfd"]), "CL0": C1["CL0"] * r, "CLa": C1["CLa"] * r, "Cm0": cm0, "Cma": cma, "static_margin": -cma / (C1["CLa"] * r),
               "CL_MAX": C1["CL_MAX"] * r, "alpha_stall": C1["alpha_stall"], "CD0": C1["CD0"] + dcd, "k_model": C["k"], "k": C1["k"],
-              "x_cg_m": C1["x_cg_m"], "lift_curve_source": "HAWK1's CFD table, by area",
+              "x_cg_m": V.CG_MM / 1000.0 + CG_AFT_MM["twin"] / 1000.0, "lift_curve_source": "HAWK1's CFD table, by area",
               "aero_source": "carried over from HAWK1's CFD by area (HAND): the same section, flaps and aspect ratio at 1.414 x; no CFD of its own yet"})
     if "flap" in C1:
         F = C1["flap"]
@@ -590,6 +610,19 @@ def blended(name: str, sweep: float) -> dict:
         C["cfd"] = {k: (lo["cfd"][k] if k == "alpha_deg" else lo["cfd"][k] + f * (hi["cfd"][k] - lo["cfd"][k])) for k in lo["cfd"]}
     C["sweep_deg"] = s
     return C
+
+
+def tail_share(name="twin", alpha_deg=8.0) -> dict:
+    """How much of the lift the tail carries, in trim at this angle of attack with the CG where the flight model has it
+    (the lattice: the lift with the tail set for zero moment, less the wing's alone)."""
+    p, _ = design(name)
+    xc = (V.CG_MM + CG_AFT_MM.get(name, 0.0)) / 1000.0 / VM.C_REF
+    cm = lambda r: r["Cm"] + r["CL"] * xc
+    a, b = VM.lattice(12.0, alpha=alpha_deg, p=p), VM.lattice(12.0, alpha=alpha_deg, tail_inc=1.0, p=p)
+    inc = -cm(a) / (cm(b) - cm(a))                                     # the tail angle for zero moment [deg]
+    total = a["CL"] + inc * (b["CL"] - a["CL"])
+    wing = VM.lattice(12.0, alpha=alpha_deg, p={**p, "tail_panel_span": 1.0, "tail_panel_root": 2.0, "tail_panel_tip": 1.0})["CL"]
+    return {"alpha_deg": alpha_deg, "tail_angle_for_trim_deg": round(inc, 2), "tail_share_of_lift": round((total - wing) / total, 3), "note": "lattice: no flaps, no CFD moment correction"}
 
 
 def stall(C) -> float:

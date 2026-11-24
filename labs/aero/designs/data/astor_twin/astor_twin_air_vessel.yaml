@@ -1,6 +1,6 @@
 where: inside the fuselage, shaped to the tail cone (the dropped nets' tube was there); its front end above the breech
-from_x_mm: 535
-to_x_mm: 915
+from_x_mm: 685
+to_x_mm: 1065
 length_mm: 380
 largest_diameter_mm: 64.0
 aft_diameter_mm: 54.9
@@ -14,11 +14,11 @@ clear_of_the_skin_mm: 1.5
 feed_to_the_valve_mm: 41
 balance:
   vessel_g_with_margin: 312
-  centre_moves_aft_mm: 424
-  aircraft_cg_moves_aft_mm: 16.5
-  pack_moves_forward_to_hold_it_mm: 87
+  centre_moves_aft_mm: 574
+  aircraft_cg_moves_aft_mm: 21.7
+  pack_moves_forward_to_hold_it_mm: 118
   air_used_per_shot_g: 19.1
-  cg_shift_per_shot_mm: -0.84
+  cg_shift_per_shot_mm: -1.16
 drag:
   removed_cm2: 8.0
   source: gavilan_flight.NET_CDA's 0.0008 m2 for the vessel under the belly (HAND)
@@ -29,5 +29,5 @@ displaced:
 - 'the two motor controllers: in the nacelles behind the motors (HAND: no room was ledgered for them in the body)'
 not_checked:
 - 'a stationed balance of ASTOR-TWIN (none exists yet: the flight model holds the CG at 365 mm)'
-- 'the tail halves'' spigot at station 805 crosses the body low, where the vessel is: the vessel must be notched or shortened there (HAND)'
+- 'the tail halves'' spigot at station 930 crosses the body low, where the vessel is: the vessel must be notched or shortened there (HAND)'
 - the pack's own fit in the 70 mm body

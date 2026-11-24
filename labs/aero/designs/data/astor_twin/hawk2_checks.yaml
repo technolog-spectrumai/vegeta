@@ -45,9 +45,12 @@ mass:
   - item: two swing-back pivots with their locks and fold servos
     g: 160
     source: 'HAND (+-50): 2 x (bearing and pin 30 g, lock 15 g, servo and linkage 35 g)'
-  - item: body 150 mm longer
-    g: 45
+  - item: body longer than ASTOR-T's 790 mm
+    g: 90
     source: geometry x 0.3 kg/m
+  - item: 'tail flaps: 2 servos, hinges and linkages'
+    g: 44
+    source: 'HAND (+-15): 2 x 17 g servos + 10 g'
   - item: two 13-inch variable-pitch hubs in place of fixed folding propellers
     g: 140
     source: 'HAND (+-50): 2 x 70 g of hub, pitch servo and linkage'
@@ -61,8 +64,8 @@ mass:
     g: 10
     source: 'HAND (+-12): -40 g (astor_v.budget''s item) + 2 x 17 g servos + 16 g spigots and bearings'
   - item: tail and fin area against ASTOR-T's
-    g: 81
-    source: geometry 0.1473 m2 against 0.0704 m2 x 1.05 kg/m2
+    g: 176
+    source: geometry 0.2382 m2 against 0.0704 m2 x 1.05 kg/m2
   - item: 'ailerons along the whole outer wing piece: 2 larger servos'
     g: 16
     source: 'HAND (+-8): 2 x 20 g in place of 2 x 12 g'
@@ -70,17 +73,17 @@ mass:
     g: 220
     source: 'HAND (+-80) until astor_twin_fea is run: its beam reference sizes 25 x 22 mm (inner) and 16 x 13 mm (outer) carbon tubes, 262 g'
   - item: growth margin 10 % of the additions
-    g: 267
+    g: 285
     source: HAND
-  total_kg: 6.53
+  total_kg: 6.74
 tail:
   kind: two all-moving halves (pitch together, roll against each other) and one fin
   each_half_mm:
-    span: 365.0
-    root: 182.0
-    tip: 95.0
-  halves_m2: 0.1011
-  tail_span_mm: 790
+    span: 400.0
+    root: 330.0
+    tip: 150.0
+  halves_m2: 0.192
+  tail_span_mm: 860
   fin_mm:
     height: 236.0
     root: 270.0
@@ -92,7 +95,7 @@ ailerons:
   - 0.96
   chord_fraction: 0.3
 stall_spread_m_s:
-  value: 15.2
+  value: 15.4
   note: CL max 0.87 carried over from ASTOR-V's CFD (HAND for this wing)
-wing_loading_kg_m2: 12.5
+wing_loading_kg_m2: 12.9
 current_A_at_8_kW: 190

@@ -56,7 +56,12 @@ _tan = math.tan(math.radians(V.SPREAD_DEG))
 # THE TAIL: two ALL-MOVING flat halves (together pitch, against each other roll: "tailerons") and ONE upright fin on
 # the body's back (a V-tail was tried: it cannot help roll).
 TAIL1 = dict(span=270.0, root=135.0, tip=70.0, root_y=30.0, z=6.0, fin_height=175.0, fin_root=200.0, fin_taper=0.45, fin_sweep_deg=40.0)   # span: each half
-TAIL = dict(span=365.0, root=182.0, tip=95.0, root_y=30.0, z=-15.0, fin_height=236.0, fin_root=270.0, fin_taper=0.45, fin_sweep_deg=40.0)
+# A GOSHAWK'S TAIL (2026-11-24, second step): long and broad, a LIFTING surface, not a trim tab. Each half is 330 mm at
+# the root and 400 mm out (it was 182 x 365): 0.19 m2, 37 % of the wing (it was 20 %), on a body 150 mm longer again.
+# With it the neutral point moves aft, and the CG is put aft with it (astor_v_flight.CG_AFT_MM): the tail then CARRIES
+# part of the weight in a turn instead of pushing down. Each half has a trailing-edge FLAP (30 % of its chord) geared
+# to its own all-moving angle: more camber where the tail works hardest, and more control for the same travel.
+TAIL = dict(span=400.0, root=330.0, tip=150.0, root_y=30.0, z=-15.0, fin_height=236.0, fin_root=270.0, fin_taper=0.45, fin_sweep_deg=40.0)
 STOW_DEG = 90.0                    # ``wing_sweep_deg`` with the outer pieces swung back along the body (the box)
 MASS1_KG = 6.92                    # HAWK1 with one launcher, three nets and its pack (astor_twin.checks at commit 54e1468)
 
@@ -72,16 +77,19 @@ def plan(wing, tail, **extra) -> dict:
             "fin_height": tail["fin_height"], "fin_root_chord": tail["fin_root"], "fin_taper": tail["fin_taper"], "fin_sweep_deg": tail["fin_sweep_deg"], **extra}
 
 
-HAWK1 = plan(WING1, TAIL1, motor_y=190.0, prop_diameter=279.4, fuselage_length=790.0, tail_pivot_x=655.0)
+HAWK1 = plan(WING1, TAIL1, motor_y=190.0, prop_diameter=279.4, fuselage_length=790.0, tail_pivot_x=655.0, tail_flap_chord=0.0)
 _DEFAULTS = {**T._DEFAULTS, "propulsion": "pusher", "tail_anhedral_deg": 0.0, "dash_tail_fan": 1.0,          # no motor on the nose
              "panel_aileron_from": 0.05, "panel_aileron_to": 0.96, "panel_aileron_chord": 0.30, "pivot_slides": False,
              "panel_thickness": 0.12, "panel_camber": 0.04, "talon_hinge_x": 380.0, "parachute_x": 265.0,
-             **plan(WING, TAIL, motor_y=225.0, prop_diameter=330.2, fuselage_length=940.0, tail_pivot_x=805.0)}
+             **plan(WING, TAIL, motor_y=225.0, prop_diameter=330.2, fuselage_length=1090.0, tail_pivot_x=930.0)}
 _NEW = [
     Parameter("glove_span", 2 * WING["joint_y"], "mm", min=200.0, description="the fixed inner wing, tip to tip"),
     Parameter("glove_root_chord", WING["root_chord"], "mm", min=120.0), Parameter("glove_taper", 0.76, "", min=0.3, max=1.0),
     Parameter("glove_sweep_deg", V.SPREAD_DEG, "deg", min=0.0, max=50.0), Parameter("glove_le_x", WING["le_x"], "mm", min=100.0, description="its leading edge at the centre plane"),
     Parameter("tail_z", TAIL["z"], "mm", description="the tail halves' plane from the fuselage axis (negative: low on the body's sides)"),
+    Parameter("tail_incidence_deg", 0.0, "deg", min=-25.0, max=25.0, description="the all-moving tail halves' angle, leading edge up (drawing and CFD states)"),
+    Parameter("tail_flap_chord", 0.30, "", min=0.0, max=0.4, description="each tail half's trailing-edge flap, as a share of its chord (0: none)"),
+    Parameter("tail_flap_deg", 0.0, "deg", min=-30.0, max=30.0, description="the tail flaps' angle, trailing edge down"),
     Parameter("glove_z", 20.0, "mm", description="its plane above the fuselage axis"),
     Parameter("motor_y", 225.0, "mm", min=80.0, description="each wing motor from the centre plane"),
     Parameter("nacelle_d", 54.0, "mm", min=30.0), Parameter("nacelle_len", 130.0, "mm", min=60.0),
@@ -168,25 +176,48 @@ class AstorTwin(T.AstorT):
     def _wing(self, p):
         return super()._wing(p).union(self._glove(p))
 
+    def _tail_half(self, p, side, part):
+        """One tail half: its fixed part or its flap (``tail_flap_chord``), at the all-moving angle ``tail_incidence_deg``."""
+        cr, ct, b = p["tail_panel_root"], p["tail_panel_tip"], p["tail_panel_span"]
+        pan = V._panel(cr, ct, b, 35.0, 0.08)
+        f = 1.0 - p["tail_flap_chord"]
+        if p["tail_flap_chord"] > 0.0:
+            t35 = math.tan(math.radians(35.0))
+            hinge = lambda y: y * t35 + f * (cr + (ct - cr) * y / b)
+            y0, y1 = 0.04 * b, 0.97 * b
+            blk = cq.Workplane("XY").polyline([(hinge(y0), y0), (hinge(y1), y1), (hinge(y1) + cr, y1), (hinge(y0) + cr, y0)]).close().extrude(80.0).translate((0, 0, -40.0))
+            pan = self._hinged(pan, blk, (hinge(y0), y0, 0.0), (hinge(y1), y1, 0.0), p["tail_flap_deg"]) if part == "flap" else pan.cut(blk)
+        elif part == "flap":
+            return None
+        pan = pan.translate((-0.25 * cr, 0, 0))
+        if abs(p["tail_incidence_deg"]) > 1e-6:
+            pan = pan.rotate((0, 0, 0), (0, 1, 0), p["tail_incidence_deg"])
+        if side < 0:
+            pan = pan.mirror("XZ")
+        return pan.translate((p["tail_pivot_x"], side * 14.0, p["tail_z"]))
+
+    def _tail_flaps(self, p):
+        a, b = self._tail_half(p, 1, "flap"), self._tail_half(p, -1, "flap")
+        return None if a is None else a.union(b)
+
     def _tail(self, p):
-        """Two all-moving flat tail halves on the body's sides and one fin on its back (or, ``vtail_dihedral_deg`` > 0,
+        """Two all-moving tail halves low on the body's sides and one fin on its back (or, ``vtail_dihedral_deg`` > 0,
         a V-tail). Nothing folds."""
         v = p["vtail_dihedral_deg"]
-        out = None
-        for s in (1, -1):
-            pan = V._panel(p["tail_panel_root"], p["tail_panel_tip"], p["tail_panel_span"], 35.0, 0.08)
-            pan = pan.translate((-0.25 * p["tail_panel_root"], 0, 0))
-            if v > 0:
-                pan = pan.rotate((0, 0, 0), (1, 0, 0), v)
-            if s < 0:
-                pan = pan.mirror("XZ")
-            pan = pan.translate((p["tail_pivot_x"], s * (p["tail_pivot_y"] if v > 0 else 14.0), p["vtail_z"] if v > 0 else p["tail_z"]))
-            out = pan if out is None else out.union(pan)
         if v <= 0:
+            out = self._tail_half(p, 1, "fixed").union(self._tail_half(p, -1, "fixed"))
             R = self.fuselage_radius(p, p["fuselage_length"] - 20.0 - 0.5 * p["fin_root_chord"])
             fin = self._surface(p["fuselage_length"] - 20.0 - p["fin_root_chord"], p["fin_root_chord"], p["fin_taper"], p["fin_height"], p["fin_sweep_deg"],
                                 p["tail_thickness"], "z", z0=R - 6.0)
-            out = out.union(fin)
+            return out.union(fin)
+        out = None
+        for s in (1, -1):
+            pan = V._panel(p["tail_panel_root"], p["tail_panel_tip"], p["tail_panel_span"], 35.0, 0.08)
+            pan = pan.translate((-0.25 * p["tail_panel_root"], 0, 0)).rotate((0, 0, 0), (1, 0, 0), v)
+            if s < 0:
+                pan = pan.mirror("XZ")
+            pan = pan.translate((p["tail_pivot_x"], s * p["tail_pivot_y"], p["vtail_z"]))
+            out = pan if out is None else out.union(pan)
         return out
 
     def _shoulder(self, p):
@@ -298,6 +329,8 @@ class AstorTwin(T.AstorT):
         out = super().parts(p)
         if p["inboard_flap_chord"] > 0.0:
             out["flaps"] = self._inner(p, "flap")
+        if p["tail_flap_chord"] > 0.0 and p["vtail_dihedral_deg"] <= 0:
+            out["tail_flaps"] = self._tail_flaps(p)
         if int(p["net_launchers"]) > 0:
             out.pop("talons", None)
             out["launcher"] = self._launchers(p)
@@ -451,7 +484,8 @@ def checks() -> dict:
              ("wing fixed at 12 deg: the two sweep servos and linkages off", -60.0, "astor_v.budget's item"),
              ("outer wing pieces against ASTOR-T's panels", 1000 * A.WING_KG_M2 * (S_pan - 0.186), f"geometry {S_pan:.3f} m2 against 0.186 m2 x {A.WING_KG_M2} kg/m2"),
              ("two swing-back pivots with their locks and fold servos", 160.0, "HAND (+-50): 2 x (bearing and pin 30 g, lock 15 g, servo and linkage 35 g)"),
-             ("body 150 mm longer", 1000 * A.FUSE_KG_M * (p["fuselage_length"] - 790.0) / 1000.0, f"geometry x {A.FUSE_KG_M} kg/m"),
+             ("body longer than ASTOR-T's 790 mm", 1000 * A.FUSE_KG_M * (p["fuselage_length"] - 790.0) / 1000.0, f"geometry x {A.FUSE_KG_M} kg/m"),
+             ("tail flaps: 2 servos, hinges and linkages", 44.0, "HAND (+-15): 2 x 17 g servos + 10 g"),
              ("two 13-inch variable-pitch hubs in place of fixed folding propellers", 140.0, "HAND (+-50): 2 x 70 g of hub, pitch servo and linkage"),
              ("launcher mount: pan and 45 deg of tilt", 90.0, "HAND (+-30): two servos, a yoke and bearings (it was not in the budget)"),
              ("tail: ASTOR-T's two fin hinges, springs and locks off", -18.0, "astor_t.budget's item"),

@@ -34,7 +34,8 @@ THIN = {"panel_thickness": 0.08, "panel_camber": 0.02, "inboard_flap_chord": 0.0
 C2 = {"panel_thickness": 0.12, "panel_camber": 0.02, "inboard_flap_chord": 0.30}
 SECTION_STATES = {"twin_c2": C2, "twin_c2_flap": {**C2, "flaperon_deg": 20.0, "inboard_flap_deg": 20.0},
                   "twin_agile_reflex": {**AGILE, "flaperon_deg": -6.0, "inboard_flap_deg": -6.0}}
-ONLY_ALPHA = {"twin_agile_reflex": (-4.0, -2.0, 0.0, 2.0), "twin2_reflex": (-4.0, -2.0, 0.0, 2.0), "twin2_crow": (0.0, 4.0, 8.0), "twin2_swept": (-2.0, 0.0, 2.0)}
+ONLY_ALPHA = {"twin_agile_reflex": (-4.0, -2.0, 0.0, 2.0), "twin2_reflex": (-4.0, -2.0, 0.0, 2.0), "twin2_crow": (0.0, 4.0, 8.0), "twin2_swept": (-2.0, 0.0, 2.0),
+              "twin2_tail_up": (0.0, 8.0, 14.0), "twin2_tail_lift": (4.0, 8.0, 14.0)}
 # HAWK 2 (2026-11-24: the wing doubled, astor_twin's default geometry; the tube level). Every older "twin..." name
 # above is HAWK1 (astor_twin.variant1) and stays what it was.
 #   twin2         flaps up, to 60 deg (the high angles are for the nose-high flare)
@@ -42,8 +43,12 @@ ONLY_ALPHA = {"twin_agile_reflex": (-4.0, -2.0, 0.0, 2.0), "twin2_reflex": (-4.0
 #   twin2_reflex  every flap 6 deg up, at the fast-flight angles
 #   twin2_crow    the speed brake: flaperons 20 deg up, inboard flaps 40 deg down
 #   twin2_swept   the outer pieces swung back to 60 deg, flaps reflexed: does sweeping the big wing help the dash?
+#   twin2_tail_up    the tail halves 8 deg leading edge down with their flaps 8 deg up: the tail's pitch-up power
+#   twin2_tail_lift  flaps down 20 deg, the tail halves 6 deg leading edge up with their flaps 6 deg down: the tail lifting
 HAWK2_STATES = {"twin2": {}, "twin2_flap": {"flaperon_deg": 20.0, "inboard_flap_deg": 20.0}, "twin2_reflex": {"flaperon_deg": -6.0, "inboard_flap_deg": -6.0},
-                "twin2_crow": {"flaperon_deg": -20.0, "inboard_flap_deg": 40.0}, "twin2_swept": {"flaperon_deg": -6.0, "inboard_flap_deg": -6.0, "wing_sweep_deg": 60.0}}
+                "twin2_crow": {"flaperon_deg": -20.0, "inboard_flap_deg": 40.0}, "twin2_swept": {"flaperon_deg": -6.0, "inboard_flap_deg": -6.0, "wing_sweep_deg": 60.0},
+                "twin2_tail_up": {"tail_incidence_deg": -8.0, "tail_flap_deg": -8.0},
+                "twin2_tail_lift": {"flaperon_deg": 20.0, "inboard_flap_deg": 20.0, "tail_incidence_deg": 6.0, "tail_flap_deg": 6.0}}
 DESIGNS = ("v", "boost", "t", "twin", "twin_stowed", "twin_agile", "twin_agile_flap", "twin_c2", "twin_c2_flap", "twin_agile_reflex") + tuple(HAWK2_STATES)      # twin_stowed: ASTOR-TWIN with the launch tube level along the belly (0 deg), for its drag
 
 

@@ -1,7 +1,7 @@
 load_factor: 8.0
 ultimate_factor: 1.5
-mass_kg: 8.04
-half_wing_lift_ultimate_N: 473
+mass_kg: 8.25
+half_wing_lift_ultimate_N: 485
 spar:
   inner_od: 25.0
   inner_id: 22.0
@@ -16,14 +16,14 @@ spar:
     at_the_pivot_mm: 34
     at_the_tip_mm: 20
 root:
-  moment_Nm: 166.0
-  stress_MPa: 270
-  margin: 0.48
+  moment_Nm: 170.8
+  stress_MPa: 278
+  margin: 0.44
 pivot:
-  moment_Nm: 50.6
-  stress_MPa: 223
-  margin: 0.79
-tip_deflection_ultimate_mm: 87
-tip_deflection_share_of_the_half_span: 0.089
+  moment_Nm: 51.9
+  stress_MPa: 229
+  margin: 0.75
+tip_deflection_ultimate_mm: 89
+tip_deflection_share_of_the_half_span: 0.091
 first_bending_with_the_motor_Hz: 89.1
 note: no relief from the wing's own weight (conservative); the lift over the body is put in at the root station

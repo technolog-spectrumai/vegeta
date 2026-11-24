@@ -30,14 +30,15 @@ Those are prepared for the user to run (section 11).
 
 | | HAWK 2 | HAWK1, for comparison |
 |---|---|---|
-| Mass, ready to fly | 8.04 kg (HAND budget) | 6.92 kg |
-| Span / length / height | 1.95 m / 1.11 m / 0.36 m | 1.38 m / 0.88 m |
+| Mass, ready to fly | 8.25 kg (HAND budget) | 6.92 kg |
+| Span / length / height | 1.95 m / 1.27 m / 0.36 m | 1.38 m / 0.88 m |
 | Stowed span | 1.32 m | — |
 | Wing area | 0.513 m² | 0.257 m² |
-| Wing loading | 15.7 kg/m² | 26.9 kg/m² |
+| Wing loading | 16.1 kg/m² | 26.9 kg/m² |
+| Tail area, share of the wing | 0.19 m², 37 % | 0.06 m², 22 % |
 | Power | 2 × 4 kW, 13-inch variable-pitch propellers (HAND) | 2 × 4 kW, 11-inch fixed |
-| Static thrust / weight | 2.56 (HAND) | 1.84 |
-| Stall, flaps up / down | 16.5 / 14.8 m/s | 21.6 / 19.4 m/s |
+| Static thrust / weight | 2.50 (HAND) | 1.84 |
+| Stall, flaps up / down | 16.4 / 14.7 m/s | 21.6 / 19.4 m/s |
 | g limit | 8 | 8 |
 | Nets | 3 | 3 |
 
@@ -74,12 +75,22 @@ to 165 mm at the tip, half span 977 mm. Section 12 % thick with 4 % camber.
 **Motors.** Two nacelles on the inner wing, 225 mm either side of the centre. Disc
 clearances: 25 mm to the fuselage, 120 mm between the discs, 30 mm inside the pivot.
 
-**Fuselage.** 940 mm long (150 mm longer than HAWK1, added at the tail), 70 mm diameter.
+**Fuselage.** 1090 mm long (300 mm longer than HAWK1, added at the tail), 70 mm diameter.
 
-**Tail.** Two all-moving halves (365 mm each, 182 → 95 mm chord), mounted **low** on the
-body's sides, plus one upright fin (236 mm high) with a rudder. The halves move together
-for pitch and against each other for roll. Low, they sit in the propeller wash, below the
-wing's wake at high angles, and under the swung-back wing.
+**Tail: long, broad and lifting, like a goshawk's.** Two all-moving halves, each 400 mm
+out and 330 mm long at the root (150 mm at the tip), mounted low on the body's sides, plus
+one upright fin (236 mm) with a rudder.
+
+- **It carries lift.** The balance point is at 435 mm from the nose, close behind the
+  wing. In trim the tail carries about 10 % of the lift (8–11 % between 4° and 12°),
+  instead of pushing down. Static margin is 7.4 %.
+- **Tail flaps.** Each half has a trailing-edge flap (30 % of its chord) geared 1:1 to
+  the half's own angle. That adds camber where the tail works hardest and gives about
+  1.4 times the control for the same travel (HAND).
+- **Control.** The halves move together for pitch and against each other for roll.
+  Pitch control power is 2.7 times HAWK 2's first, smaller tail.
+- **Position.** Low, it sits in the propeller wash, below the wing's wake at high
+  angles, and under the swung-back wing.
 
 ## 4. Net launcher
 
@@ -90,7 +101,7 @@ GAVILAN's recoilless launcher (`gavilan_flight.NET`): one tube, three cartridges
 | Net | 2.4 m square, 150 g, leaves at 40 m/s, 2.95 m across open |
 | Effective range | 4–10 m (its own test: 22 of 24 at a hovering quadcopter) |
 | Tube travel | level to **45° down** (was 15°); the mount also pans ±35° (HAND) |
-| Air vessel | 1.0 L at 30 bar inside the tail cone, stations 535–915 mm |
+| Air vessel | 1.0 L at 30 bar inside the tail cone, stations 685–1065 mm |
 | Mass | 2.04 kg with three nets, plus 90 g for the pan-tilt mount (both HAND) |
 
 ## 5. Flight controller
@@ -110,7 +121,8 @@ GAVILAN's recoilless launcher (`gavilan_flight.NET`): one tube, three cartridges
 |---|---|
 | Lift, drag, moment, flaps up and down | HAWK1's CFD, carried over by area |
 | Lift slope and moments | HAWK 2's own lattice plus HAWK1's CFD-to-lattice difference |
-| Static margin | 11 % |
+| Static margin | 7.4 %, balance point at 435 mm |
+| Tail flaps' control gain 1.43 | HAND |
 | Thrust: 202 N static, 142 N at 30 m/s, 84 N at 60 m/s | HAND for the low-speed end |
 | Propeller-wash lift on the inner wing | HAND (momentum theory × 0.8) |
 | Crow brake drag, differential thrust | HAND |
@@ -125,9 +137,9 @@ The 8 g limit had nothing sized behind it. The wing spar now has a closed-form s
 | | Root | Pivot |
 |---|---|---|
 | Tube | 25 × 22 mm carbon | 16 × 13 mm carbon |
-| Bending moment at 8 g × 1.5 | 166 N·m | 51 N·m |
-| Stress against 400 MPa allowable | 270 MPa | 223 MPa |
-| Margin | +0.48 | +0.79 |
+| Bending moment at 8 g × 1.5 | 171 N·m | 52 N·m |
+| Stress against 400 MPa allowable | 278 MPa | 229 MPa |
+| Margin | +0.44 | +0.75 |
 
 Tip deflection at ultimate load is 87 mm (9 % of the half span). Spars weigh 262 g for
 both wings. Not covered: the pivot's lugs and lock, skin and ribs, the tail spigot, the
@@ -169,7 +181,7 @@ Three debug sorties are a smoke test, not a rate. The target is 80 %.
   still stands. Because the pivots now exist, one CFD case with the outer pieces swept
   to 60° is included to measure it on the big wing rather than assume.
 - **The pack now has room.** HAWK1 left 215 mm of body ahead of the air vessel, which a
-  12S 5000 mAh pack did not fit. The longer tail moves the vessel aft: 365 mm.
+  12S 5000 mAh pack did not fit. The longer tail moves the vessel aft: over 500 mm.
 - **The launcher mount is in the mass budget.** It was not.
 - **The tube can now follow a target in a turn or flare** (45° of travel, was 15°).
 - **Flight model drag was overstated** for the cambered wing by about 20 % (corrected).
@@ -183,7 +195,11 @@ Three debug sorties are a smoke test, not a rate. The target is 80 %.
 - **The braking flare** (flying nose-high at the target's speed) is not implemented.
   The model has no measured aerodynamics above 24°. The high-angle CFD cases and the
   propeller-wash model are the groundwork for it.
-- **Mass** is 8.04 kg on HAND estimates, 0.6 kg more than the sizing study assumed.
+- **Mass** is 8.25 kg on HAND estimates, 0.8 kg more than the sizing study assumed.
+- **The 7.4 % static margin** rests on carried-over data. If HAWK 2's own CFD moves the
+  neutral point forward by 20 mm the aircraft is neutral. It relies on the pitch damper.
+- **Tail lift share** is from the lattice, with no flaps and no CFD correction.
+- **The tail spar and spigot** are not sized for the larger tail's loads.
 - **Tail spigot** crosses the body low, where the air vessel sits. The vessel must be
   notched or shortened there. Not drawn.
 - **Full power lasts 1.4 minutes.**
@@ -204,7 +220,8 @@ git checkout -- labs/aero/designs/data/astor_v_cfd_screening.yaml
 git pull origin dev_astor_hawk
 ```
 
-CFD of HAWK 2, 38 cases: clean and flaps-down to 60°, reflexed, crow brake, swept 60°.
+CFD of HAWK 2, 44 cases: clean and flaps-down to 60°, reflexed, crow brake, swept 60°,
+and two tail states (pitching up; lifting with flaps down).
 
 ```bash
 bash labs/aero/sims/astor.sh -j 14 --cfd-only
