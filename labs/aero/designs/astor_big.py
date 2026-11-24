@@ -68,6 +68,23 @@ def astor_x(base: GFm.Machine) -> GFm.Machine:
                                notes={**base.notes, "x_area_m2": sx, "added_kg": mass - base.mass, "added_cda_m2": cda})
 
 
+def astor_x_short(base: GFm.Machine) -> GFm.Machine:
+    """ASTOR-X as ``astor_x`` draws it now: four pushers on a short X of struts, a swept wing of 1.2 m span and the
+    twin's area. HAND: Helmbold's lift slope; the induced factor raised by the change of 1 / (pi AR 0.85); the
+    twin's zero-lift drag and maximum lift kept (a swept wing of aspect ratio 2.8 stalls later and softer: not
+    credited); +0.30 kg for the struts, pods and two more controllers, less the nacelles and pivots."""
+    import astor_x as AX
+    w = AX.planform()
+    p, ar0 = base.polar, base.span ** 2 / base.S
+    k = p.k + (1 / w["aspect_ratio"] - 1 / ar0) / (math.pi * 0.85)
+    pol = GFm.Polar(cl_alpha=w["lift_slope_per_rad_helmbold"], cd0=p.cd0, k=k, cl_max=p.cl_max, cd90=GFm.viterna_cd90(w["aspect_ratio"]),
+                    source="ASTOR-TWIN's drag and maximum lift; Helmbold's slope and an induced factor for aspect ratio 2.8 (HAND)")
+    struts = 4 * 2.2 * 0.060 * 0.135 * GFm.cf_turbulent(25.0 * 0.06 / GFm.NU) * 1.4 + 0.0010
+    return dataclasses.replace(base, name="ASTOR-X: short X of pushers, swept wing of 1.2 m", kind="tailsitter", mass=base.mass + 0.30, span=w["span_m"], S=w["area_m2"],
+                               polar=pol, cda0=struts, roll_rate=math.radians(450.0), plan_body=0.11 * 1.09 * 0.8,
+                               notes={**base.notes, "wing": w, "added_kg": 0.30, "added_cda_m2": struts})
+
+
 def machines() -> dict:
     twin = dataclasses.replace(HC.machines()["astor_twin"], power=power)
     x = astor_x(twin)
@@ -75,6 +92,7 @@ def machines() -> dict:
             "twin_2x_w": scaled(twin, 2.0, 4.0, "ASTOR-TWIN x 2, mass x 4 (wing loading kept)"),
             "twin_2x_c": scaled(twin, 2.0, 8.0, "ASTOR-TWIN x 2, mass x 8 (square-cube)"),
             "x": x,
+            "x_short": astor_x_short(twin),
             "x_2x_w": scaled(x, 2.0, 4.0, "ASTOR-X x 2, mass x 4"),
             "gavilan_x": GFm.gavilan_x()}
 

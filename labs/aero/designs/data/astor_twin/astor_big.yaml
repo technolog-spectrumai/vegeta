@@ -154,6 +154,45 @@ x:
   pack [Wh]: 222.0
   roll rate [deg/s]: 307.56
   span / radius inst @15: 0.21
+x_short:
+  aircraft: 'ASTOR-X: short X of pushers, swept wing of 1.2 m'
+  mass [kg]: 8.55
+  payload [kg]: 2.04
+  span [m]: 1.2
+  hovers: true
+  gun: fixed
+  static thrust / weight: 2.41
+  wing stall [m/s]: 17.2
+  min speed [m/s]: 0.0
+  top speed [m/s]: 75.0
+  climb [m/s]: 43.18
+  radius inst @10 [m]: 4.61
+  radius inst @15 [m]: 9.88
+  radius inst @25 [m]: 21.0
+  rate inst @10 [deg/s]: 124.29
+  rate inst @15 [deg/s]: 86.98
+  rate inst @25 [deg/s]: 68.21
+  n inst @25: 3.2
+  stops: true
+  brake distance [m]: 24.44
+  brake ends at [m/s]: 0.3
+  to 25 m/s [s]: 1.41
+  reverse at 15 m/s [s]: 2.07
+  reverse space [m]: 19.76
+  reverse how: turn
+  hover [min]: 4.56
+  cruise [min]: 24.03
+  cruise at [m/s]: 18.0
+  pass speed, hovering bandit [m/s]: 20.64
+  firing window [s]: 1.21
+  re-attack [s]: 6.38
+  source: astor_v_flight (twin)
+  wing area [m2]: 0.51
+  wing loading [kg/m2]: 16.67
+  full power asked of the drive [kW]: 8.72
+  pack [Wh]: 222.0
+  roll rate [deg/s]: 450.0
+  span / radius inst @15: 0.12
 x_2x_w:
   aircraft: ASTOR-X x 2, mass x 4
   mass [kg]: 35.57
