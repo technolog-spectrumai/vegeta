@@ -1,0 +1,37 @@
+what: 'ASTOR-X, a first drawing: clearances measured from the solids; every size is a HAND choice'
+x_panels:
+  each_from_the_axis_mm: 450.0
+  root_chord_mm: 170.0
+  tip_chord_mm: 130.0
+  exposed_area_m2_all_four: 0.249
+  quarter_chord_from_the_nose_mm: 435.0
+  motor_y_and_z_mm: 318.2
+propellers:
+  count: 4
+  diameter_mm: 233.5
+  diameter_in: 9.2
+  disc_plane_from_the_nose_mm: 318
+  between_neighbouring_discs_mm: 403
+  disc_edge_from_the_fuselage_side_mm: 298
+  disc_edge_above_or_below_the_wing_plane_mm: 181
+the_propellers_wash_straight_back:
+  wing_inside_the_four_stream_tubes_cm3: 0.0
+  tail_inside_cm3: 0.0
+  launcher_inside_cm3: 0.0
+  note: '0 for the wing: the wash passes above and below it, so the wing''s flaps are no longer blown'
+overlaps_cm3:
+  x_panels_with_the_wing: 145.7
+  x_panels_with_the_launcher: 0.0
+  note: the panels' roots cross the wing's root inside the body's fairing; a real joint is not drawn
+box_of_the_x_with_its_propellers_mm:
+  y: 870
+  z: 870
+span_mm: 1954
+length_mm: 1090.0
+not_done:
+- 'balance and mass ledger (astor_big: +0.65 kg, HAND)'
+- stability and control with four rotors
+- structure of the X and its joint to the wing
+- CFD
+- 'how it stands, launches and lands (it would sit on its tail or hang from a rail: not drawn)'
+- 'stowing: the X does not fold'
