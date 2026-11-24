@@ -371,7 +371,7 @@ def build(width, height, cache: Path):
         G(world, type="box", size="0.005 0.0115 0.008",
           pos=f"{gx} {AISLE_Y + (HOLE_R + 0.009) * math.cos(a_):.4f} {Z_IN + (HOLE_R + 0.009) * math.sin(a_):.4f}",
           euler=f"{a_ + math.pi / 2:.4f} 0 0", rgba="0.75 0.76 0.78 1")
-    for k in range(-5, 6):                                                # the slats, across the circle
+    for k in range(-4, 5):                                                # the slats, across the circle's middle
         z = 0.022 * k
         w = math.sqrt(max(HOLE_R ** 2 - z * z, 0.0))
         if w > 0.03:                                                      # cut free at both ends, they drop
@@ -708,6 +708,23 @@ def simulate(model, info, render=None):
         z = pipe_zone(foot)
         return duct_hit(seg_pose(lg[0])[0]) is not None or (z is not None and z[2] < R_DUCT)
 
+    def in_bore(x):
+        z = pipe_zone(x)
+        return z is not None and z[2] < R_DUCT
+
+    def end_via(a, b):
+        """For a step between outside and inside the duct at one of its open ends: a point just outside the opening,
+        in line with the inside foothold (the swing goes in through the opening, never across the rim)."""
+        if in_bore(a) == in_bore(b):
+            return None
+        inside = b if in_bore(b) else a
+        for c_end, out in ((C[0], -Ctan[0]), (C[-1], Ctan[-1])):
+            if np.linalg.norm(inside - c_end) < R_DUCT + 0.12:
+                r_ = inside - c_end
+                r_ = r_ - (r_ @ out) * out
+                return c_end + out * 0.03 + 0.7 * r_
+        return None
+
     def reachable_wall(lg, target):
         """In the duct: the point on the pipe's wall nearest ``target`` that leg lg reaches within its joints' ranges
         (``target`` itself if it does) — a foot is never left where its leg can't follow, pushed through the wall."""
@@ -731,13 +748,30 @@ def simulate(model, info, render=None):
                         best = (dd, q_)
         return target if best is None else best[1]
 
+    def safe_foot(lg, target):
+        """A target leg lg really reaches: the target itself, else the nearest reachable wall point, else the reachable
+        point nearest it on the line from the hip (inside the bore: both ends are) — a leg in the duct is never sent
+        where it can't follow, its foot pushed out through the wall by clamped joints."""
+        if in_reach(lg, target):
+            return target
+        rw = reachable_wall(lg, target)
+        if in_reach(lg, rw):
+            return rw
+        ps, Rs = seg_pose(lg[0])
+        hp_ = ps + Rs @ hip[lg[1]]
+        for a_ in np.linspace(0.97, 0.15, 42):
+            q_ = hp_ + a_ * (target - hp_)
+            if leg_angles(lg, q_)[1] < 0.002 and knee_ok(lg, q_):
+                return q_
+        return target
+
     def leg_ik(lg, foot_w):
         for adr, val in zip(jadr[lg], leg_angles(lg, foot_w)[0]):
             data.qpos[adr] = val
 
     st = {"t": 0.0, "sc": s_start, "usb": "held", "copy": 0.0, "snips": {},
           "arm": {"g": (ARM_TUCK["g"].copy(), 0.0), "c": (ARM_TUCK["c"].copy(), 0.3)}, "grip": None, "seat": 0.0,
-          "usb_port": None, "gift": "carried", "gift_pos": None, "gift_t0": None, "t_boom": None, "blast": None}
+          "usb_port": None, "arm_q": {"g": None, "c": None}, "q_last": {}, "gift": "carried", "gift_pos": None, "gift_t0": None, "t_boom": None, "blast": None}
     F, N = {}, {}
     place_body(st["sc"])
     for lg in legs:
@@ -901,11 +935,15 @@ def simulate(model, info, render=None):
         for arm in ("g", "c"):
             tip_h, opening = st["arm"][arm]
             q, _, _, tip, d = arm_pose(arm, tip_h)
+            if st["arm_q"][arm] is not None:                              # moving in joint space
+                q = list(st["arm_q"][arm])
+                tip, d = arm_fk(arm, q)
             w = float(np.clip(np.linalg.norm(np.asarray(tip_h) - ARM_TUCK[arm]) / 0.04, 0.0, 1.0))
             if w < 1.0:                                                   # near the fold: the robot's folded pose
                 qt = [mr.ARM_TUCK["shoulder_yaw"], mr.ARM_TUCK["shoulder_pitch"], mr.ARM_TUCK["elbow"]]
                 q = [(1 - w) * a_ + w * b_ for a_, b_ in zip(qt, q)]
                 tip, d = arm_fk(arm, q)
+            st["q_last"][arm] = list(q)
             jaw = float(np.clip(0.04 + 0.55 * opening, *mr.ARM_RANGES["jaw"]))
             for adr, val in zip(arm_q[arm], [*q, jaw, jaw]):                # the robot's arm joints
                 data.qpos[adr] = val
@@ -998,7 +1036,11 @@ def simulate(model, info, render=None):
                     bad = [lg for lg in planted if not on_right_side(lg, F[lg])]
                     print(f"    t {st['t']:.1f} sc {sc:.3f} ok {ok} swing {sorted(swing)} wrong side {bad} "
                           f"{[np.round(F[lg], 3).tolist() for lg in bad]}", flush=True)
-                if wall_ok and (ok or blocked > 0.4):
+                stranded = any(in_duct_foot(lg, F[lg]) and not in_reach(lg, F[lg])
+                               and not in_reach(lg, reachable_wall(lg, F[lg])) for lg in planted) or any(
+                    in_duct_foot(lg, swing[lg][2]) and not in_reach(lg, swing[lg][2])
+                    and not in_reach(lg, reachable_wall(lg, swing[lg][2])) for lg in swing)   # nor a step's landing
+                if wall_ok and not stranded and (ok or blocked > 0.4):     # never strand a foot in the duct
                     st["sc"], blocked = s_try, 0.0
                 else:
                     blocked += step
@@ -1014,13 +1056,33 @@ def simulate(model, info, render=None):
                     n = na + nb
                     n /= np.linalg.norm(n) + 1e-9
                     lift = 0.055 if nb[2] > 0.9 else 0.012                # over cables; just off the pipe's wall
-                    feet[lg] = a + sm(u) * (b - a) + n * lift * math.sin(math.pi * u)
+                    via = end_via(a, b)
+                    if via is None:
+                        feet[lg] = a + sm(u) * (b - a) + n * lift * math.sin(math.pi * u)
+                    else:                                                 # in or out through the duct's open end
+                        feet[lg] = (a + sm(u / 0.5) * (via - a) if u < 0.5 else
+                                    via + sm((u - 0.5) / 0.5) * (b - via))
                     if u >= 1.0:
                         F[lg], N[lg] = b, nb
+                        if in_duct_foot(lg, b) and not in_reach(lg, b):  # the body moved on mid-step: land reachably
+                            F[lg] = reachable_wall(lg, b)
+                        feet[lg] = F[lg]
                         del swing[lg]
                 else:
                     feet[lg] = F[lg]
+            if os.environ.get("CM_PROBE") and abs(st["t"] - float(os.environ["CM_PROBE"])) < 0.35:
+                for lg in legs:
+                    e_ = leg_angles(lg, feet[lg])[1]
+                    if e_ > 0.002:
+                        rw = reachable_wall(lg, feet[lg])
+                        print(f"    probe t {st['t']:.2f} {lg} err {e_ * 1000:.0f} mm swing {lg in swing} "
+                              f"in_duct {in_duct_foot(lg, feet[lg])} knee_ok {knee_ok(lg, feet[lg])} "
+                              f"rw moved {np.linalg.norm(rw - feet[lg]) * 1000:.0f} rw reach {in_reach(lg, rw)}", flush=True)
             for lg in legs:
+                if in_duct_foot(lg, feet[lg]):
+                    feet[lg] = safe_foot(lg, feet[lg])
+                    if lg not in swing:
+                        F[lg] = feet[lg]
                 leg_ik(lg, feet[lg])
             st["feet_target"], st["swing"], st["planted"] = feet, swing, F
             st["t"] += step
@@ -1067,9 +1129,25 @@ def simulate(model, info, render=None):
     s_cut = float(S[np.argmin(np.abs(P[:, 0] - (X_END + 0.07)) + 10 * (P[:, 2] < Z_IN - 0.05))])
     freegait("riser", "ALONG THE WALL AND THROUGH IT", s_cut, v=0.11, speed=4.0)
 
+    def move_arm_q(arm, phase, caption, dur, target_h, opening=None, speed=1.0):
+        """The arm to a pincer target moving each joint smoothly (joint space: no sudden yaw flips mid-way)."""
+        props()
+        q0 = np.array(st["q_last"][arm])
+        q1 = np.array(arm_pose(arm, target_h)[0])
+        o0 = st["arm"][arm][1]
+        o1 = o0 if opening is None else opening
+
+        def fn(u):
+            w_ = sm(u)
+            st["arm_q"][arm] = q0 + w_ * (q1 - q0)
+            st["arm"][arm] = (np.asarray(target_h, float), o0 + w_ * (o1 - o0))
+        hold(phase, caption, dur * speed, fn, speed=speed)
+        st["arm_q"][arm] = None
+        st["arm"][arm] = (np.asarray(target_h, float), o1)
+
     # ---- the cut: the cutter snips each slat where the hole's edge crosses it, left end then right end; a slat cut
     # at both ends drops onto the desk. Top to bottom, so a falling slat clears the ones below
-    gxc = X_END - 0.001                                                   # at the grille, just past the pipe's end
+    gxc = X_END - 0.006                                                   # in the grille's plane, past the pipe's end
     cap = "THE CUTTER SNIPS THE GRILLE'S SLATS, ONE BY ONE"
     st["c_carry"] = False
     move_arm("c", "cut", cap, 0.8, head_frame(np.array([gxc - 0.03, AISLE_Y, Z_IN])), opening=0.2, lift=0.0)  # the middle
@@ -1077,11 +1155,14 @@ def simulate(model, info, render=None):
         _, w, z0 = slats[k]
         speed = 1.0 if n < 3 else 3.0
         for side, sy in enumerate((1.0, -1.0)):
+            if side == 1:                                                 # across via the hole's middle
+                move_arm_q("c", "cut", cap, 0.3, head_frame(np.array([gxc - 0.03, AISLE_Y, Z_IN])), speed=speed)
             pt = head_frame(np.array([gxc, AISLE_Y + sy * (w - 0.003), z0]))
-            move_arm("c", "cut", cap, 0.45, pt + [0.012, 0, 0], opening=0.22, lift=0.0, speed=speed)   # open, reach
-            move_arm("c", "cut", cap, 0.15, pt, lift=0.0, speed=speed)                                # in round it
-            move_arm("c", "cut", cap, 0.12, pt, opening=0.0, lift=0.0, speed=speed)                   # snip
+            move_arm_q("c", "cut", cap, 0.45, pt + [0.012, 0, 0], opening=0.22, speed=speed)       # open, reach
+            move_arm_q("c", "cut", cap, 0.15, pt, speed=speed)                                    # in round it
+            move_arm_q("c", "cut", cap, 0.12, pt, opening=0.0, speed=speed)                       # snip
             st["snips"][k] = (side + 1, st["t"] if side == 1 else None)
+    move_arm("c", "cut", cap, 0.6, head_frame(np.array([gxc - 0.03, AISLE_Y, Z_IN])), opening=0.2, lift=0.0)  # middle
     hold("cut", "THE SLATS DROP TO THE FLOOR", 0.8)
     move_arm("c", "cut", "THE SLATS DROP TO THE FLOOR", 0.8, carry_target(), opening=0.1, lift=0.0)
     st["c_carry"] = True
