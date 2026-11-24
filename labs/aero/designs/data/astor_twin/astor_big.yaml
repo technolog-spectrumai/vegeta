@@ -1,0 +1,234 @@
+twin:
+  aircraft: 'ASTOR-TWIN (PROTOHAWK): net launcher, three nets'
+  mass [kg]: 8.25
+  payload [kg]: 2.04
+  span [m]: 1.95
+  hovers: false
+  gun: fixed
+  static thrust / weight: 2.5
+  wing stall [m/s]: 17.42
+  min speed [m/s]: 17.42
+  top speed [m/s]: 77.5
+  climb [m/s]: 51.6
+  radius inst @10 [m]: null
+  radius inst @15 [m]: 31.82
+  radius inst @25 [m]: 28.03
+  rate inst @10 [deg/s]: 0.0
+  rate inst @15 [deg/s]: 27.01
+  rate inst @25 [deg/s]: 51.11
+  n inst @25: 2.48
+  stops: false
+  brake distance [m]: 80.18
+  brake ends at [m/s]: 20.9
+  to 25 m/s [s]: 0.24
+  reverse at 15 m/s [s]: 6.66
+  reverse space [m]: 63.64
+  reverse how: turn
+  hover [min]: null
+  cruise [min]: 36.57
+  cruise at [m/s]: 18.0
+  pass speed, hovering bandit [m/s]: 20.9
+  firing window [s]: 1.2
+  re-attack [s]: 8.01
+  source: astor_v_flight (twin)
+  wing area [m2]: 0.51
+  wing loading [kg/m2]: 16.08
+  full power asked of the drive [kW]: 8.72
+  pack [Wh]: 222.0
+  roll rate [deg/s]: 450.0
+  span / radius inst @15: 0.06
+twin_2x_w:
+  aircraft: ASTOR-TWIN x 2, mass x 4 (wing loading kept)
+  mass [kg]: 33.0
+  payload [kg]: 8.16
+  span [m]: 3.89
+  hovers: false
+  gun: fixed
+  static thrust / weight: 2.5
+  wing stall [m/s]: 17.42
+  min speed [m/s]: 17.42
+  top speed [m/s]: 77.5
+  climb [m/s]: 51.6
+  radius inst @10 [m]: null
+  radius inst @15 [m]: 31.82
+  radius inst @25 [m]: 28.03
+  rate inst @10 [deg/s]: 0.0
+  rate inst @15 [deg/s]: 27.01
+  rate inst @25 [deg/s]: 51.11
+  n inst @25: 2.48
+  stops: false
+  brake distance [m]: 80.18
+  brake ends at [m/s]: 20.9
+  to 25 m/s [s]: 0.24
+  reverse at 15 m/s [s]: 6.66
+  reverse space [m]: 63.64
+  reverse how: turn
+  hover [min]: null
+  cruise [min]: 36.57
+  cruise at [m/s]: 18.0
+  pass speed, hovering bandit [m/s]: 20.9
+  firing window [s]: 1.2
+  re-attack [s]: 8.01
+  source: astor_v_flight (twin)
+  wing area [m2]: 2.05
+  wing loading [kg/m2]: 16.08
+  full power asked of the drive [kW]: 34.9
+  pack [Wh]: 888.0
+  roll rate [deg/s]: 225.0
+  span / radius inst @15: 0.12
+twin_2x_c:
+  aircraft: ASTOR-TWIN x 2, mass x 8 (square-cube)
+  mass [kg]: 66.0
+  payload [kg]: 16.32
+  span [m]: 3.89
+  hovers: false
+  gun: fixed
+  static thrust / weight: 2.5
+  wing stall [m/s]: 24.63
+  min speed [m/s]: 24.63
+  top speed [m/s]: 105.0
+  climb [m/s]: 55.78
+  radius inst @10 [m]: null
+  radius inst @15 [m]: null
+  radius inst @25 [m]: 59.89
+  rate inst @10 [deg/s]: 0.0
+  rate inst @15 [deg/s]: 0.0
+  rate inst @25 [deg/s]: 23.92
+  n inst @25: 1.46
+  stops: false
+  brake distance [m]: 0.0
+  brake ends at [m/s]: 29.56
+  to 25 m/s [s]: 0.0
+  reverse at 15 m/s [s]: null
+  reverse space [m]: null
+  reverse how: turn
+  hover [min]: null
+  cruise [min]: 26.18
+  cruise at [m/s]: 26.0
+  pass speed, hovering bandit [m/s]: 29.56
+  firing window [s]: 0.85
+  re-attack [s]: 8.83
+  source: astor_v_flight (twin)
+  wing area [m2]: 2.05
+  wing loading [kg/m2]: 32.16
+  full power asked of the drive [kW]: 69.8
+  pack [Wh]: 1776.0
+  roll rate [deg/s]: 225.0
+  span / radius inst @15: 0.0
+x:
+  aircraft: 'ASTOR-X: wing, tail and four rotors on an X'
+  mass [kg]: 8.89
+  payload [kg]: 2.04
+  span [m]: 1.95
+  hovers: true
+  gun: fixed
+  static thrust / weight: 2.32
+  wing stall [m/s]: 15.79
+  min speed [m/s]: 0.0
+  top speed [m/s]: 72.5
+  climb [m/s]: 41.15
+  radius inst @10 [m]: 4.73
+  radius inst @15 [m]: 9.48
+  radius inst @25 [m]: 17.28
+  rate inst @10 [deg/s]: 121.07
+  rate inst @15 [deg/s]: 90.69
+  rate inst @25 [deg/s]: 82.91
+  n inst @25: 3.82
+  stops: true
+  brake distance [m]: 20.46
+  brake ends at [m/s]: 0.3
+  to 25 m/s [s]: 1.46
+  reverse at 15 m/s [s]: 1.98
+  reverse space [m]: 18.95
+  reverse how: turn
+  hover [min]: 4.3
+  cruise [min]: 40.44
+  cruise at [m/s]: 16.0
+  pass speed, hovering bandit [m/s]: 18.95
+  firing window [s]: 1.32
+  re-attack [s]: 6.38
+  source: astor_v_flight (twin)
+  wing area [m2]: 0.78
+  wing loading [kg/m2]: 11.36
+  full power asked of the drive [kW]: 8.72
+  pack [Wh]: 222.0
+  roll rate [deg/s]: 307.56
+  span / radius inst @15: 0.21
+x_2x_w:
+  aircraft: ASTOR-X x 2, mass x 4
+  mass [kg]: 35.57
+  payload [kg]: 8.16
+  span [m]: 3.89
+  hovers: true
+  gun: fixed
+  static thrust / weight: 2.32
+  wing stall [m/s]: 15.79
+  min speed [m/s]: 0.0
+  top speed [m/s]: 72.5
+  climb [m/s]: 41.15
+  radius inst @10 [m]: 4.73
+  radius inst @15 [m]: 9.48
+  radius inst @25 [m]: 17.28
+  rate inst @10 [deg/s]: 121.07
+  rate inst @15 [deg/s]: 90.69
+  rate inst @25 [deg/s]: 82.91
+  n inst @25: 3.82
+  stops: true
+  brake distance [m]: 20.46
+  brake ends at [m/s]: 0.3
+  to 25 m/s [s]: 1.46
+  reverse at 15 m/s [s]: 1.98
+  reverse space [m]: 18.95
+  reverse how: turn
+  hover [min]: 4.3
+  cruise [min]: 40.44
+  cruise at [m/s]: 16.0
+  pass speed, hovering bandit [m/s]: 18.95
+  firing window [s]: 1.32
+  re-attack [s]: 6.38
+  source: astor_v_flight (twin)
+  wing area [m2]: 3.13
+  wing loading [kg/m2]: 11.36
+  full power asked of the drive [kW]: 34.9
+  pack [Wh]: 888.0
+  roll rate [deg/s]: 153.78
+  span / radius inst @15: 0.41
+gavilan_x:
+  aircraft: 'Gavilan-X (the hunt on an X-wing: four identical panels)'
+  mass [kg]: 1.49
+  payload [kg]: 0.14
+  span [m]: 0.48
+  hovers: true
+  gun: talons
+  static thrust / weight: 6.67
+  wing stall [m/s]: 15.56
+  min speed [m/s]: 0.0
+  top speed [m/s]: 47.5
+  climb [m/s]: 43.55
+  radius inst @10 [m]: 1.55
+  radius inst @15 [m]: 3.46
+  radius inst @25 [m]: 8.83
+  rate inst @10 [deg/s]: 370.42
+  rate inst @15 [deg/s]: 248.7
+  rate inst @25 [deg/s]: 162.28
+  n inst @25: 7.29
+  stops: true
+  brake distance [m]: 12.89
+  brake ends at [m/s]: 0.3
+  to 25 m/s [s]: 0.57
+  reverse at 15 m/s [s]: 0.72
+  reverse space [m]: 6.91
+  reverse how: turn
+  hover [min]: 7.34
+  cruise [min]: 13.96
+  cruise at [m/s]: 15.0
+  pass speed, hovering bandit [m/s]: 18.67
+  firing window [s]: 1.34
+  re-attack [s]: 5.17
+  source: gavilan_flight (gavilan.GavilanX, ÉMERILLON's drive and catalogue)
+  wing area [m2]: 0.2
+  wing loading [kg/m2]: 7.52
+  full power asked of the drive [kW]: null
+  pack [Wh]: 37.74
+  roll rate [deg/s]: 600.0
+  span / radius inst @15: 0.14
