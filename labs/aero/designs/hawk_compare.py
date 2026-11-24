@@ -41,7 +41,7 @@ def machines() -> dict:
     import goshawk as GH
     return {"astor_twin": astor_machine("twin", "ASTOR-TWIN (PROTOHAWK): net launcher, three nets", 8000.0, 450.0, W.one_launcher(3)["launcher_kg"], "fixed", 1.27),
             "goshawk": astor_machine("goshawk", "GOSHAWK: two legs", 2 * GH.MOTOR_W, 240.0, 0.11, "talons", 1.32),
-            "gavilan_x": GFm.gavilan_x(), "gavilan_x_net": GFm.gavilan_x_net(), "gavilan": GFm.gavilan_chosen()}
+            "gavilan_x": GFm.gavilan_x(), "gavilan_x_net": GFm.gavilan_x_net(), "gavilan": GFm.gavilan_chosen(), "emerillon": GFm.emerillon()}
 
 
 KEEP = ("aircraft", "mass [kg]", "payload [kg]", "span [m]", "hovers", "gun", "static thrust / weight", "wing stall [m/s]", "min speed [m/s]", "top speed [m/s]",
