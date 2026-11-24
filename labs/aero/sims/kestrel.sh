@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # Kestrel-4Q-2N (the net launcher in the pod, labs/aero/designs/kestrel_netter.py): every simulation from one script.
 #
-#   labs/aero/sims/kestrel.sh                      # stability, then FEA, then CFD (stall, sweep, cruise, transitions)
+#   labs/aero/sims/kestrel.sh -j 8                 # stability, then FEA, then CFD (stall, sweep, cruise, transitions) on 8 cores
 #   labs/aero/sims/kestrel.sh --stability          # the reduced-order checks only (no solver, ~5 min)
 #   labs/aero/sims/kestrel.sh --fea                # the frame and the spar–post joint (CalculiX)        ~1 h on 4 threads
-#   labs/aero/sims/kestrel.sh --cfd                # the airframe campaigns (OpenFOAM)                  screening: hours
+#   labs/aero/sims/kestrel.sh --cfd -j 8           # the airframe campaigns (OpenFOAM)                  screening: hours
 #   labs/aero/sims/kestrel.sh --cfd --quality fine # the fine meshes (a day)
 #   labs/aero/sims/kestrel.sh --dry-run            # print the commands, run nothing
 #   labs/aero/sims/kestrel.sh --help
 #
-# Options: -n N      MPI ranks per CFD case (default 4)       --threads N   CalculiX threads (default 4)
+# Options: -j N      cores: MPI ranks per CFD case and CalculiX threads (default 4); -n N / --threads N override one of them
 #          --quality screening|fine (CFD, default screening)  --campaigns "stall sweep cruise transitions" (CFD, in order)
 #          --matrix  the stability phase also flies the back transition's remedy matrix (~15 min)
 #          --variant 4Q-2N (default) | 4Q-2 | 4Q-3 | 4Q-1     --python PATH   the interpreter (default .venv/bin/python)
@@ -25,7 +25,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
 SIDE="$ROOT/labs/aero/campaigns/side_labs"
 PY="${VEGETA_PYTHON:-}"
-VARIANT="4Q-2N"; QUALITY="screening"; PROCS=4; THREADS=4; DRY=0; MATRIX=0
+VARIANT="4Q-2N"; QUALITY="screening"; JOBS=4; PROCS=""; THREADS=""; DRY=0; MATRIX=0
 CAMPAIGNS="stall sweep cruise transitions"
 DO_STAB=0; DO_FEA=0; DO_CFD=0
 while [ $# -gt 0 ]; do
@@ -39,6 +39,7 @@ while [ $# -gt 0 ]; do
     --campaigns) CAMPAIGNS="$2"; shift 2 ;;
     --variant) VARIANT="$2"; shift 2 ;;
     --python) PY="$2"; shift 2 ;;
+    -j|--jobs|--cores) JOBS="$2"; shift 2 ;;
     -n|--processors) PROCS="$2"; shift 2 ;;
     --threads) THREADS="$2"; shift 2 ;;
     -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
@@ -46,6 +47,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 if [ $DO_STAB -eq 0 ] && [ $DO_FEA -eq 0 ] && [ $DO_CFD -eq 0 ]; then DO_STAB=1; DO_FEA=1; DO_CFD=1; fi
+PROCS="${PROCS:-$JOBS}"; THREADS="${THREADS:-$JOBS}"
 if [ -z "$PY" ]; then
   if [ -x "$ROOT/.venv/bin/python" ]; then PY="$ROOT/.venv/bin/python"; else PY="$(command -v python3)"; fi
 fi
@@ -68,7 +70,7 @@ run() {                                   # run <name> <command...>: timed, logg
   fi
 }
 RESULTS=(); FAILED=0
-echo "Kestrel-$VARIANT — stability $DO_STAB, FEA $DO_FEA, CFD $DO_CFD ($QUALITY: $CAMPAIGNS); python $PY"
+echo "Kestrel-$VARIANT — stability $DO_STAB, FEA $DO_FEA, CFD $DO_CFD ($QUALITY: $CAMPAIGNS); $PROCS MPI ranks per CFD case, $THREADS CalculiX threads; python $PY"
 cd "$ROOT"
 
 # 1. the reduced-order checks: no solver; the drive table is built with Boreas on the first run (~40 s)
