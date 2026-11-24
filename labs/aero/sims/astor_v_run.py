@@ -11,9 +11,10 @@ its predecessors, kept for comparison (``--design t | v | boost``).
     labs/aero/sims/astor.sh -j 12 --launch-only       # ASTOR-T out of its tube: 216 launches (exit speed x elevation x wind x late wings or motor)
     labs/aero/sims/astor.sh -j 12 --design twin       # ASTOR-TWIN (two wing motors, the net launcher; designs/astor_twin): CFD, stability, net-shot sorties
     labs/aero/sims/astor.sh -j 12 --design twin --cfd-only | --stability-only ;  --netshot-only (ASTOR-TWIN's sorties alone)
-    labs/aero/sims/astor_x.sh -j 12                   # ASTOR-X (swept wing, four pushers on an X; designs/astor_x): CFD (37), stability (8), FEA (3) under one bar
-    labs/aero/sims/astor_x2.sh -j 12                  # ASTOR-X2 (the tail-sitter; designs/astor_x2): CFD (37), stability (8), FEA (4) under one bar
-                                                      #   both: --cfd-only | --stability-only | --fea-only | --skip-cfd | --skip-fea | --dry-run | --fresh
+    labs/aero/sims/astor_x.sh -j 12 -m 1              # ASTOR-X (swept wing, four pushers on an X; designs/astor_x): CFD (37), stability (8), FEA (3) under one bar
+    labs/aero/sims/astor_x.sh -j 12 -m 2              # ASTOR-X2 (the tail-sitter; designs/astor_x2): CFD (37), stability (8), FEA (4) under one bar
+    labs/aero/sims/astor_x.sh -j 12 -m all            # both (the default of astor_x.sh): 97 units under one bar
+                                                      #   also: --cfd-only | --stability-only | --fea-only | --skip-cfd | --skip-fea | --dry-run | --fresh
     labs/aero/sims/astor.sh --dry-run                 # list what would run, and stop
 
 ``-j N`` is the CPU cores for every phase: OpenFOAM's MPI processes in the CFD (used as given); worker processes in
@@ -358,11 +359,15 @@ FEA_MODULE = {"x": "astor_x_fea", "x2": "astor_x2_fea"}
 
 
 def phase_fea(a) -> int:
+    rcs = [_fea_one(a, d) for d in a.designs if d in FEA_MODULE]
+    return max(rcs) if rcs else 0
+
+
+def _fea_one(a, d) -> int:
     """The design's FEA cases (designs/astor_x_fea, astor_x2_fea) in Talos / CalculiX, one after another with -j threads.
     Solved cases stay in _runs/astor_<design>_fea and are read back on a restart (--fresh deletes them)."""
     import importlib
     import shutil
-    d = a.designs[0]
     FE = importlib.import_module(FEA_MODULE[d])
     ref = FE.reference()
     workdir = HERE.parent / "_runs" / f"astor_{d}_fea"
@@ -399,7 +404,7 @@ def phase_fea(a) -> int:
 def counts(a) -> dict:
     """How many units each phase has: CFD cases, stability jobs, net-drop sorties."""
     import astor_v_cfd as cf
-    return {"fea": FEA_CASES.get(a.designs[0], 0), "netshot": a.sorties * 3, "cfd": sum(len(cf.alphas(d, s)) for d0 in a.designs for d in CFD_STATES.get(d0, [d0]) for s in cf.sweeps(d)), "stability": sum(len(states(d)) * 2 + 1 + len(FLAP_STATES.get(d, ())) for d in a.designs),
+    return {"fea": sum(FEA_CASES.get(d, 0) for d in a.designs), "netshot": a.sorties * 3, "cfd": sum(len(cf.alphas(d, s)) for d0 in a.designs for d in CFD_STATES.get(d0, [d0]) for s in cf.sweeps(d)), "stability": sum(len(states(d)) * 2 + 1 + len(FLAP_STATES.get(d, ())) for d in a.designs),
             "netdrop": len(a.designs) * 2 * len(a.bandits) * a.sorties, "launch": len(_launch_jobs(a))}
 
 
@@ -437,7 +442,10 @@ def main(argv=None) -> int:
                     "down, and the 4 %% wing with every flap reflexed 6 deg up at the fast-flight angles; 24 cases, the flight model untouched")
     ap.add_argument("--skip-fea", action="store_true", help="--design x / x2: no FEA phase")
     ap.add_argument("--fea-element", type=float, default=3.0, help="--design x / x2: the FEA mesh's element size [mm] (default 3)")
+    ap.add_argument("-m", "--model", choices=("1", "2", "all"), help="sims/astor_x.sh: 1 (ASTOR-X), 2 (ASTOR-X2, the tail-sitter) or all (both, one after the other in each phase)")
     a = ap.parse_args(argv)
+    if a.model:
+        a.design = {"1": ["x"], "2": ["x2"], "all": ["x", "x2"]}[a.model]
     a.designs = a.design or ["twin"]
     if a.section_cfd:
         a.designs, a.cfd_only, a.stability_only, a.netshot_only, a.tube_stowed, a.agility_cfd = ["twin_c2", "twin_c2_flap", "twin_agile_reflex"], True, False, False, False, False
@@ -460,8 +468,8 @@ def main(argv=None) -> int:
         if not (a.cfd_only or a.stability_only):
             phases.append("netshot")
     if set(a.designs) & {"x", "x2"}:                                     # ASTOR-X / ASTOR-X2: CFD, stability as an aeroplane, then the FEA (sims/astor_x.sh, astor_x2.sh)
-        if len(a.designs) > 1:
-            ap.error("--design x / x2 is run on its own")
+        if set(a.designs) - {"x", "x2"}:
+            ap.error("ASTOR-X / ASTOR-X2 are not run together with the other designs")
         phases = ["fea"] if a.fea_only else [ph for ph in phases if ph in ("cfd", "stability")] + ([] if (a.cfd_only or a.stability_only or a.skip_fea) else ["fea"])
     elif a.fea_only:
         ap.error("--fea-only is for --design x or x2 (ASTOR-TWIN's FEA is sims/astor_fea.sh)")
