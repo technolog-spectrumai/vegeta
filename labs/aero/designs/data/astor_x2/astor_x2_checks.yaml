@@ -1,0 +1,62 @@
+what: 'ASTOR-X2, a tail-sitter: a drawing; measured from the solids; every size is a HAND choice'
+wing:
+  span_m: 1.2
+  area_m2: 0.513
+  aspect_ratio: 2.81
+  root_chord_mm: 560
+  tip_chord_mm: 295
+  mean_chord_mm: 441
+  leading_edge_sweep_deg: 35.0
+  half_chord_sweep_deg: 25.6
+  mean_quarter_chord_from_the_nose_mm: 373
+  lift_slope_per_rad_helmbold: 3.09
+  lift_slope_source: 'Helmbold''s formula with the half-chord sweep (HAND: not the lattice, not CFD)'
+x_tail:
+  fins: 4
+  each_from_the_axis_mm: 380.0
+  root_chord_mm: 260.0
+  tip_chord_mm: 160.0
+  leading_edge_sweep_deg: 21.5
+  exposed_area_m2_all_four: 0.284
+  worth_as_a_flat_tail_m2: 0.142
+  worth_as_an_upright_fin_m2: 0.142
+  note: an X at 45 deg gives half its area in pitch and half in yaw (cos^2 45); ASTOR-X's flat tail was about 0.19 m2
+  elevons:
+    chord_share: 0.35
+    area_m2_all_four: 0.076
+    inside_the_propellers_wash_cm3: 405.5
+standing:
+  height_mm: 1160
+  feet_square_side_mm: 522
+  cg_from_the_nose_mm: 396.2
+  cg_source: 'ASTOR-X''s (astor_x_flight: lattice); this tail will move it'
+  cg_above_the_ground_mm: 764
+  tips_over_beyond_deg: 18.9
+  tips_over_beyond_deg_across_a_diagonal: 25.8
+  everything_else_above_the_ground_by_mm: 55
+  note: 'the first angle is over a side of the feet''s square: the one that matters'
+propellers:
+  count: 4
+  kind: tractors on the fins
+  diameter_mm: 233.5
+  motor_from_the_axis_mm: 190.0
+  disc_plane_from_the_nose_mm: 778
+  disc_edge_from_the_fuselage_side_mm: 38
+  between_neighbouring_discs_mm: 35
+  disc_plane_behind_the_wing_trailing_edge_mm: 92
+  discs_above_the_ground_standing_mm: 382
+struck_by_the_discs_cm3:
+  wing: 0.0
+  fins: 0.0
+  fuselage: 0.0
+  launcher: 0.0
+span_mm: 1200
+length_mm: 1160
+not_done:
+- balance and mass ledger (the X tail and feet against the tail halves and fin they replace)
+- the flight model with an X tail (astor_x_flight has ASTOR-X's flat tail)
+- 'hover control: elevon power in the wash against the wing''s side area in a gust'
+- the transition from the hover to wing-borne flight and back
+- 'structure: the fins carry the motors AND the landing loads'
+- CFD
+- 'whether it can stand in wind: side area of the wing 1 m above the feet'
