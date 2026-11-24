@@ -59,7 +59,24 @@ def _df_rows(df) -> dict:
     return {str(k): _f(v) for k, v in df.to_dict(orient="index").items()}
 
 
-def main(argv=None) -> int:
+def _cases(V: float, dv: float, quick: bool, airbrake: float) -> dict:
+    cases = {("forward", "as is, still air"): dict(kind="forward"),
+             ("back", "as is, still air"): dict(kind="back"),
+             ("back", "headwind 6 m/s"): dict(kind="back", headwind=6.0),
+             ("back", f"after a net shot (entered at {V - dv:.1f} m/s)"): dict(kind="back", V_entry=V - dv)}
+    if not quick:
+        cases[("back", f"crow brake ±{airbrake:g}°")] = dict(kind="back", airbrake_deg=airbrake)
+        cases[("back", "after a net shot, crow brake")] = dict(kind="back", V_entry=V - dv, airbrake_deg=airbrake)
+        cases[("forward", "headwind 6 m/s")] = dict(kind="forward", headwind=6.0)
+    return cases
+
+
+def units(*, quick: bool = False, matrix: bool = False) -> int:
+    """The jobs the global bar counts: the tables (1), each transition, the remedy matrix (1)."""
+    return 1 + len(_cases(16.0, 0.0, quick, 0.0)) + (1 if matrix else 0)
+
+
+def main(argv=None, progress=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--quick", action="store_true", help="the tables and the nominal transitions only")
     ap.add_argument("--matrix", action="store_true", help="also the back transition's remedy matrix (~15 min)")
@@ -129,14 +146,9 @@ def main(argv=None) -> int:
     print(f"net shot: recoil {dv:.2f} m/s; hover sink {report['shot']['hover_sink_after_a_shot_up_m']:.2f} m; cruise after a shot {V - dv:.1f} m/s (stall {report['shot']['stall_m_s']:.1f})")
 
     # ---- transitions
-    cases = {("forward", "as is, still air"): dict(kind="forward"),
-             ("back", "as is, still air"): dict(kind="back"),
-             ("back", "headwind 6 m/s"): dict(kind="back", headwind=6.0),
-             ("back", f"after a net shot (entered at {V - dv:.1f} m/s)"): dict(kind="back", V_entry=V - dv)}
-    if not args.quick:
-        cases[("back", f"crow brake ±{k2.AIRBRAKE_DEG:g}°")] = dict(kind="back", airbrake_deg=k2.AIRBRAKE_DEG)
-        cases[("back", f"after a net shot, crow brake")] = dict(kind="back", V_entry=V - dv, airbrake_deg=k2.AIRBRAKE_DEG)
-        cases[("forward", "headwind 6 m/s")] = dict(kind="forward", headwind=6.0)
+    if progress:
+        progress("tables")
+    cases = _cases(V, dv, args.quick, k2.AIRBRAKE_DEG)
     rows, eps = {}, {}
     for (kind, name), kw in cases.items():
         kw = dict(kw)
@@ -146,6 +158,8 @@ def main(argv=None) -> int:
         rows[(kind, name)] = dict(ep.metrics)
         eps[(kind, name)] = ep
         print(f"  {kind:8s} {name:45s} pass={ep.metrics.get('pass')}  ({time.monotonic() - t1:.0f} s)")
+        if progress:
+            progress(f"{kind} {name}")
     tdf = pd.DataFrame(rows).T
     tdf.index.names = ["direction", "case"]
     tdf.to_csv(out / "transitions.csv")
@@ -158,6 +172,8 @@ def main(argv=None) -> int:
         df = mat["table"] if isinstance(mat, dict) else mat[0]
         df.to_csv(out / "remedy_matrix.csv")
         report["remedy_matrix"] = {" | ".join(map(str, k)) if isinstance(k, tuple) else str(k): _f(v) for k, v in df.to_dict(orient="index").items()}
+        if progress:
+            progress("remedy matrix")
 
     if not args.no_figures:
         try:
