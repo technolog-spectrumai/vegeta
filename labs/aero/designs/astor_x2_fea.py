@@ -155,6 +155,7 @@ def row(case, r) -> dict:
             ref["fin_spar"]["landing" if case.name == "fin_landing" else "flight_8g"]
         out.update({"peak_von_mises_MPa": None if vm is None else float(vm), "max_displacement_mm": r.metrics.get("max_displacement"), "allowable_MPa": allow,
                     "margin": None if not vm else round(allow / float(vm) - 1, 2), "beam_reference": beam})
+        TF.with_robust(out, r, allow)
     return out
 
 

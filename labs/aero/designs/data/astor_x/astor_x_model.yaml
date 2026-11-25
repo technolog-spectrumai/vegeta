@@ -19,15 +19,17 @@ balance:
   cg_mm: 396.2
   wing_mean_quarter_chord_mm: 373
   source: vortex lattice on the drawn wing and tail (no body)
-static_margin: 0.0765
-CLa_per_rad: 3.4457
-CL0: 0.1666
-CL_MAX: 0.8945
-alpha_stall_deg: 20.0
-CD0: 0.0381
-k: 0.181
-stall_m_s: 17.4
-top_speed_m_s: 76.6
+  static_margin_with_the_cfd: 0.138
+  note: 'the CG is still the lattice''s choice: if this margin is not near 0.08, move astor_x_flight''s CG rule to the CFD''s neutral point'
+static_margin: 0.1383
+CLa_per_rad: 3.6929
+CL0: 0.1717
+CL_MAX: 1.5276
+alpha_stall_deg: 22.0
+CD0: 0.0387
+k: 0.0943
+stall_m_s: 13.3
+top_speed_m_s: 76.3
 Cnb: 0.1052
 Clb: -0.0251
 Cmq: -4.507
@@ -39,44 +41,35 @@ Clda_per_deg:
   tail: 0.0045
 linear_modes_bare_airframe_at_30_m_s:
   short_period:
-    real: -4.168
-    imag: 5.955
-    omega_n: 7.269
-    zeta: 0.573
-    period_s: 1.055
-    t_half_or_double_s: 0.166
-    stable: true
-  phugoid:
-    real: -0.061
-    imag: 0.38
-    omega_n: 0.385
-    zeta: 0.159
-    period_s: 16.523
-    t_half_or_double_s: 11.344
+    real: -0.122
+    imag: 0.605
+    omega_n: 0.617
+    zeta: 0.198
+    period_s: 10.389
+    t_half_or_double_s: 5.675
     stable: true
   roll_subsidence:
-    real: -3.987
+    real: -4.002
     imag: 0.0
-    omega_n: 3.987
+    omega_n: 4.002
     zeta: 1.0
     period_s: null
-    t_half_or_double_s: 0.174
+    t_half_or_double_s: 0.173
     stable: true
   spiral:
-    real: 0.025
+    real: 0.023
     imag: 0.0
-    omega_n: 0.025
+    omega_n: 0.023
     zeta: -1.0
     period_s: null
-    t_half_or_double_s: 27.989
+    t_half_or_double_s: 29.532
     stable: false
   dutch_roll:
-    real: -0.278
-    imag: 5.018
-    omega_n: 5.025
-    zeta: 0.055
-    period_s: 1.252
-    t_half_or_double_s: 2.496
+    real: -0.263
+    imag: 5.01
+    omega_n: 5.017
+    zeta: 0.052
+    period_s: 1.254
+    t_half_or_double_s: 2.639
     stable: true
-aero_source: 'model: lattice on the swept wing and tail; ASTOR-TWIN''s drag area + struts, induced factor by aspect ratio, ASTOR-TWIN''s maximum lift (HAND):
-  no CFD of its own yet'
+aero_source: cfd corrections (screening RANS, 15 angles) on the lattice + hand model

@@ -193,6 +193,36 @@ def solve_one(case, workdir, *, run=True, threads=4, n_modes=6):
         return r
 
 
+def robust_stress(r) -> dict:
+    """The von Mises field's upper percentiles beside its single highest node. A coarse second-order mesh of a thin
+    tube now and then holds one distorted element whose corner reads thousands of MPa (ASTOR-X's runs of 2026-11-24:
+    1.6e6 MPa in a spar whose twin case gave 238): then the 99.9th percentile is the number to read, and the case
+    should be meshed again finer (--fea-element 2)."""
+    try:
+        import numpy as np
+        from vegeta.talos.frd import read_frd
+        path = (getattr(r, "artifacts", {}) or {}).get("frd")
+        vm = np.asarray(read_frd(path).von_mises, dtype=float)
+        vm = vm[np.isfinite(vm)]
+        p999, p99 = float(np.percentile(vm, 99.9)), float(np.percentile(vm, 99.0))
+        return {"von_mises_p99_9_MPa": round(p999, 1), "von_mises_p99_MPa": round(p99, 1), "nodes": int(vm.size),
+                "nodes_above_3x_p99_9": int((vm > 3 * p999).sum()), "peak_is_a_spike": bool(vm.max() > 3 * p999)}
+    except Exception as exc:                                               # noqa: BLE001
+        return {"robust_stress": f"not available ({type(exc).__name__})"}
+
+
+def with_robust(out, r, allow) -> dict:
+    """Add the robust stress to a static case's row; when the peak is a spike, the margin is the percentile's and says so."""
+    rb = robust_stress(r)
+    out.update(rb)
+    out["peak_location_mm"] = r.metrics.get("max_von_mises_location")
+    if rb.get("peak_is_a_spike"):
+        out["margin_on_the_peak"] = out.get("margin")
+        out["margin"] = round(allow / rb["von_mises_p99_9_MPa"] - 1, 2)
+        out["note"] = "the peak is a single-node spike (a distorted element): margin from the 99.9th percentile; mesh again finer to confirm"
+    return out
+
+
 def row(case, r) -> dict:
     """One case's result against the allowable and the beam reference."""
     status = "NOT RUN" if r is None else "solved" if getattr(r, "ok", False) else ("NOT RUN" if any("NOT RUN" in m for m in getattr(r, "messages", [])) else "FAILED")
@@ -207,6 +237,7 @@ def row(case, r) -> dict:
         vm, allow = r.metrics.get("max_von_mises"), CARBON_TUBE["strength"] * KNOCKDOWN
         out.update({"peak_von_mises_MPa": None if vm is None else float(vm), "max_displacement_mm": r.metrics.get("max_displacement"), "allowable_MPa": allow,
                     "margin": None if not vm else round(allow / float(vm) - 1, 2), "beam_reference": {k: reference()[k] for k in ("root", "pivot", "tip_deflection_ultimate_mm")}})
+        with_robust(out, r, allow)
     return out
 
 

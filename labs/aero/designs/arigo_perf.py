@@ -138,7 +138,10 @@ def electrical_power(C, T, V):
     sel = C["thrust"].get("propulsor") if isinstance(C.get("thrust"), dict) else None
     if sel:
         import arigo_propulsion as ap
-        return ap.electrical_power(sel, T, V) + P_AVIONICS_W
+        try:
+            return ap.electrical_power(sel, T, V) + P_AVIONICS_W
+        except KeyError:                 # a HAND propulsor that is not a library entry (ASTOR-TWIN's variable pitch, ASTOR-X's four): momentum theory
+            pass
     return electrical_power_momentum(C, T, V)
 
 

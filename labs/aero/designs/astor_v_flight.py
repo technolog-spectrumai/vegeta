@@ -602,6 +602,12 @@ class Fixed(amj.Sim):
         self.info = {}
         self.alpha_limit = alpha_limit
 
+    def start(self, *a, **k):
+        # a new test starts with the dampers' filters empty. (Until 2026-11-25 the yaw damper's washout kept the yaw
+        # rate of the test before: after the full-aileron roll it held the rudder hard over into the gust test.)
+        self.__dict__.pop("_sas", None)
+        return super().start(*a, **k)
+
     def step(self, n=1):
         import mujoco
         for _ in range(n):
