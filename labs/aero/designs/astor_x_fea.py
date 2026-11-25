@@ -134,7 +134,9 @@ def spar_cad(p=None):
             continue
         seg = TF._tube(a, b, SPAR["inner_od"], SPAR["inner_id"]) if b <= sp + 1e-6 else TF._tube(a, b, SPAR["outer_od"], SPAR["outer_id"])
         out = seg if out is None else out.union(seg, clean=False)
-    plug = cq.Workplane("XZ").circle(SPAR["inner_id"] / 2).circle(SPAR["outer_id"] / 2).extrude(-SPAR["plug_mm"]).translate((0, sp - SPAR["plug_mm"] / 2, 0))
+    # the sleeve between the two tubes: it fills the inner tube's bore and takes the outer tube's outside (until 2026-11-25
+    # it was drawn down to the outer tube's bore, through that tube's wall)
+    plug = cq.Workplane("XZ").circle(SPAR["inner_id"] / 2).circle(SPAR["outer_od"] / 2).extrude(-SPAR["plug_mm"]).translate((0, sp - SPAR["plug_mm"] / 2, 0))
     return out.union(plug, clean=False), cuts
 
 

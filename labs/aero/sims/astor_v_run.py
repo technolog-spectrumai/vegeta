@@ -485,7 +485,10 @@ def _smoke_checks(a) -> list:
                 assert [c.name for c in cs] == [n for n, _, _ in FE.CASE_LIST], [c.name for c in cs]
                 empty = {c.name: [r.name for r in c.model.regions if not _faces_in(c, r)] for c in cs}
                 assert not any(empty.values()), f"regions that select no face: {empty}"
-            return f"{len(cs)} cases built, every region selects faces; wing root margin (beam) {ref['wing_spar']['root']['margin']}"
+                clash = {c.name: [(p.name, q.name) for i, p in enumerate(c.model.regions) for q in c.model.regions[i + 1:]
+                                  if all(p.box[k] < q.box[k + 3] and q.box[k] < p.box[k + 3] for k in range(3))] for c in cs}
+                assert not any(clash.values()), f"regions that overlap (a face would carry two loads): {clash}"
+            return f"{len(cs)} cases built, every region selects faces and none overlap; wing root margin (beam) {ref['wing_spar']['root']['margin']}"
 
         out += [(f"{d}: CFD state {st}", (lambda st=st: geometry(st))) for st in states]
         out += [(f"{d}: STL and CFD case", stl), (f"{d}: flight model", model), (f"{d}: performance card", card), (f"{d}: short flights", fly), (f"{d}: FEA cases", fea)]

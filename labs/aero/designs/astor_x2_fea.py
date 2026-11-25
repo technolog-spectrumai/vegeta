@@ -50,9 +50,12 @@ def fin_loads(p=None) -> dict:
     R, r_m = p["fin_radius"], p["x_radius"]
     r0 = A.fuselage_radius(p, p["xfin_root_le_x"] + 0.3 * p["xfin_root_chord"])
     area = 0.5 * (A._fin_chord(p, r0) + A._fin_chord(p, R)) * (R - r0) / 1e6
-    air = ULTIMATE * 0.5 * RHO * FIN_V ** 2 * area * FIN_CN
-    return {"root_mm": float(r0), "motor_mm": float(r_m), "tip_mm": float(R), "air_station_mm": float(0.5 * (r0 + R)), "fin_area_m2": area,
-            "thrust_ultimate_N": ULTIMATE * THRUST_N, "motor_inertia_ultimate_N": ULTIMATE * N_G * MOTOR_KG * G, "air_ultimate_N": air,
+    air_N = ULTIMATE * 0.5 * RHO * FIN_V ** 2 * area * FIN_CN
+    # the air load's station: the exposed fin's middle, but clear of the motor's mount (their two rings overlapped until
+    # 2026-11-25: a 7 mm ring carried both loads, and the case gave 30 000 - 350 000 MPa at a node, different every run)
+    air = max(0.5 * (r0 + R), r_m + 1.5 * MOUNT_MM + 12.0)
+    return {"root_mm": float(r0), "motor_mm": float(r_m), "tip_mm": float(R), "air_station_mm": float(air), "fin_area_m2": area,
+            "thrust_ultimate_N": ULTIMATE * THRUST_N, "motor_inertia_ultimate_N": ULTIMATE * N_G * MOTOR_KG * G, "air_ultimate_N": air_N,
             "landing_ultimate_N": ULTIMATE * LAND_G * MASS_KG * G / 2, "motor_kg": MOTOR_KG}
 
 

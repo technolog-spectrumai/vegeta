@@ -44,9 +44,9 @@ beam_reference:
       thrust_N: 75.9
       motor_weight_at_8g_N: 43.0
       fin_air_load_N: 234.8
-      root_moment_Nm: 48.7
-      stress_MPa: 215
-      margin: 0.86
+      root_moment_Nm: 55.7
+      stress_MPa: 246
+      margin: 0.63
     landing:
       g: 3.0
       feet_carrying: 2
@@ -64,12 +64,12 @@ faces_selected_per_region:
     root: 3
     S0: 2
     S1: 2
-    S2: 5
-    S3: 4
+    S2: 6
+    S3: 3
     S4: 2
     S5: 3
   fin_spar:
     root: 3
-    mount: 4
-    air: 4
+    mount: 2
+    air: 2
     foot: 3
