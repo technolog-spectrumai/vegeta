@@ -5,6 +5,7 @@
 #   labs/aero/sims/astor_x.sh -j 12 -m 2        # ASTOR-X2
 #   labs/aero/sims/astor_x.sh -j 12 -m all      # both (the default when -m is not given)
 #   ... --cfd-only | --stability-only | --fea-only | --skip-cfd | --skip-fea
+#   labs/aero/sims/astor_x.sh --smoke           # a minute or two: checks every phase's plumbing, solves nothing. Run it first.
 #   ... --dry-run   list what would run;  --help  all options;  --fresh  forget saved results
 # Restartable: solved CFD cases, stability jobs and FEA cases are kept and read back.
 set -uo pipefail

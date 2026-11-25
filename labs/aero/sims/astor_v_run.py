@@ -14,6 +14,7 @@ its predecessors, kept for comparison (``--design t | v | boost``).
     labs/aero/sims/astor_x.sh -j 12 -m 1              # ASTOR-X (swept wing, four pushers on an X; designs/astor_x): CFD (37), stability (8), FEA (3) under one bar
     labs/aero/sims/astor_x.sh -j 12 -m 2              # ASTOR-X2 (the tail-sitter; designs/astor_x2): CFD (37), stability (8), FEA (4) under one bar
     labs/aero/sims/astor_x.sh -j 12 -m all            # both (the default of astor_x.sh): 97 units under one bar
+    labs/aero/sims/astor_x.sh --smoke                 # a minute or two: every phase's plumbing checked for both, nothing solved (run it before the long one)
                                                       #   also: --cfd-only | --stability-only | --fea-only | --skip-cfd | --skip-fea | --dry-run | --fresh
     labs/aero/sims/astor.sh --dry-run                 # list what would run, and stop
 
@@ -401,10 +402,141 @@ def _fea_one(a, d) -> int:
     return 0 if cases and all(v.get("status") == "solved" for v in rows.values()) else 1
 
 
+# ------------------------------------------------------------------------------------------------ smoke (ASTOR-X, ASTOR-X2)
+def _smoke_checks(a) -> list:
+    """(name, function) pairs: every phase's plumbing exercised in seconds, nothing solved in CFD. A check returns a
+    short string of what it found, or raises."""
+    import importlib
+    import tempfile
+    out = []
+    for d in a.designs:
+        states = CFD_STATES.get(d, [d])
+
+        def geometry(st):
+            import astor_v_cfd as cf
+            cls, var = cf._cls(st)
+            p = cls().resolve(**var(wing_sweep_deg=12.0, tail_fan=1.0))                      # the state's parameters pass their limits (no CAD: the STL check builds it)
+            row = cf.lattice_row(12.0, 4.0, st)
+            assert all(math.isfinite(v) for v in row.values()), row
+            assert len(cf.alphas(st, 12.0)) >= 3 and cf.l_ref(st) > 0.2
+            return f"{len(p)} parameters, {len(cf.alphas(st, 12.0))} angles at {cf.speed(st, 12.0):g} m/s, lattice CL(4 deg) {row['Cl']}"
+
+        def stl(st=states[0]):
+            import astor_v_cfd as cf
+            with tempfile.TemporaryDirectory() as tmp:
+                p, tag = cf.export_stl(Path(tmp) / "stl", st, 12.0, 4.0)
+                size = Path(p).stat().st_size
+                assert size > 100_000, f"STL of {size} bytes"
+                cls, var = cf._cls(st)
+                sh = cls().generate(**var(wing_sweep_deg=12.0, tail_fan=1.0)).shape
+                sh = sh.val() if hasattr(sh, "val") else sh
+                vols = sorted((round(x.Volume() / 1e3) for x in sh.Solids()), reverse=True)
+                assert len(vols) <= 2 and vols[0] > 5000, f"unexpected solids {vols}"        # the airframe, and the launcher under it
+                try:
+                    c = cf.case(tmp, st, 12.0, alpha_deg=4.0)
+                    return f"STL {size // 1024} kB; case {Path(c.workdir).name}"
+                except Exception as exc:                              # noqa: BLE001  (no OpenFOAM on this machine: the STL alone)
+                    return f"STL {size // 1024} kB; case not built ({type(exc).__name__}: {str(exc)[:60]})"
+
+        def model(d=d):
+            import arigo1_model as am
+            import astor_model as AM
+            import astor_v_flight as VF
+            C = VF.get(d)
+            for k in ("CLa", "Cma", "Cmde", "Cnb", "Clda", "CD0", "CL_MAX", "static_margin"):
+                assert math.isfinite(float(C[k])), k
+            assert C["CLa"] > 1.0 and C["Cmde"] < 0 and 0.0 < C["CL_MAX"] < 3.0, {k: C[k] for k in ("CLa", "Cmde", "CL_MAX")}
+            tr = [am.trim(C, V) for _, V in states_of(d)]
+            assert all(t["ok"] for t in tr), tr
+            md = am.name_modes(am.modes(C, states_of(d)[0][1]))
+            Cf = VF.with_flap(C, 1.0)
+            return (f"margin {C['static_margin']:.3f}, stall {VF.stall(C):.1f} (flaps {VF.stall(Cf):.1f}) m/s, top {AM.top_speed(C):.1f} m/s, "
+                    f"modes {sorted(md)}; {str(C['aero_source'])[:40]}")
+
+        def card(d=d):
+            import arigo_perf as P
+            import astor_v_flight as VF
+            pm = P.point_mass(VF.get(d))
+            return "point-mass card: " + ", ".join(f"{k} {pm[k]}" for k in list(pm)[:4] if isinstance(pm[k], (int, float)))
+
+        def fly(d=d):
+            import arigo1_mujoco as amj
+            import astor_v_flight as VF
+            V = states_of(d)[1][1]
+            sim = VF.Fixed(d, 12.0)
+            sim.start(V, 60.0)
+            h = amj.run(sim, 1.0)
+            dz = float(h["z"][-1] - 60.0)
+            assert abs(dz) < 0.5 and abs(h["phi"][-1]) < 1.0, f"hands-off 1 s: altitude {dz:+.2f} m, bank {h['phi'][-1]:.1f} deg"
+            sim.start(V, 60.0)
+            h = amj.run(sim, 1.5, lambda t, s: s.controls.__setitem__(2, 1.0 if t < 0.2 else 0.0))
+            bank = float(max(abs(x) for x in h["phi"]))
+            assert bank < 45.0 and h["z"][-1] > 50.0, f"a 1 deg rudder tap: bank {bank:.0f} deg, altitude {h['z'][-1]:.0f} m after 1.5 s"
+            sim.start(V, 60.0)
+            h = amj.run(sim, 1.0, lambda t, s: s.controls.__setitem__(0, s.trim["elevator_deg"] - (3.0 if t < 0.3 else 0.0)))
+            assert max(h["n"]) > 1.05, f"3 deg of up elevator gave {max(h['n']):.2f} g"
+            return f"at {V:g} m/s: holds trim; a 1 deg rudder tap banks it {bank:.1f} deg; 3 deg of up elevator pulls {max(h['n']):.2f} g"
+
+        def fea(d=d):
+            FE = importlib.import_module(FEA_MODULE[d])
+            ref = FE.reference()
+            with tempfile.TemporaryDirectory() as tmp:
+                cs = FE.cases(tmp, element_size=a.fea_element)
+                assert [c.name for c in cs] == [n for n, _, _ in FE.CASE_LIST], [c.name for c in cs]
+                empty = {c.name: [r.name for r in c.model.regions if not _faces_in(c, r)] for c in cs}
+                assert not any(empty.values()), f"regions that select no face: {empty}"
+            return f"{len(cs)} cases built, every region selects faces; wing root margin (beam) {ref['wing_spar']['root']['margin']}"
+
+        out += [(f"{d}: CFD state {st}", (lambda st=st: geometry(st))) for st in states]
+        out += [(f"{d}: STL and CFD case", stl), (f"{d}: flight model", model), (f"{d}: performance card", card), (f"{d}: short flights", fly), (f"{d}: FEA cases", fea)]
+    return out
+
+
+def states_of(d):
+    return states(d)
+
+
+def _faces_in(case, region) -> int:
+    import cadquery as cq
+    shape = cq.importers.importStep(str(case.model.geometry))
+    b = region.box
+    return sum(b[0] <= f.xmin and f.xmax <= b[3] and b[1] <= f.ymin and f.ymax <= b[4] and b[2] <= f.zmin and f.zmax <= b[5]
+               for f in (x.BoundingBox() for x in shape.val().Faces()))
+
+
+def phase_smoke(a) -> int:
+    """sims/astor_x.sh --smoke: every check of ``_smoke_checks``, one after the other; PASS / FAIL each, one YAML."""
+    import traceback
+    checks = _smoke_checks(a)
+    if a.dry_run:
+        for name, _ in checks:
+            print("smoke ", name)
+        print(len(checks), "checks")
+        return 0
+    bar = R._bar(len(checks), 0, "smoke", unit="check")
+    rows, bad = {}, 0
+    for name, fn in checks:
+        t = time.time()
+        try:
+            rows[name] = {"status": "PASS", "found": fn()}
+        except Exception as exc:                                     # noqa: BLE001
+            bad += 1
+            rows[name] = {"status": "FAIL", "error": f"{type(exc).__name__}: {exc}"[:400], "trace": traceback.format_exc()[-700:]}
+        rows[name]["seconds"] = round(time.time() - t, 1)
+        print(f"  {rows[name]['status']}  {name}: {rows[name].get('found') or rows[name].get('error')}")
+        if bar:
+            bar.set_postfix_str(f"{bad} failed"); bar.update(1)
+    if bar:
+        bar.close()
+    run = R._write("smoke", {"run": _meta("smoke", a), "summary": {"checks": len(rows), "failed": bad}, "checks": rows}, "astor_x")
+    print(f"smoke: {len(rows) - bad} of {len(rows)} passed ->", run)
+    return 1 if bad else 0
+
+
 def counts(a) -> dict:
     """How many units each phase has: CFD cases, stability jobs, net-drop sorties."""
     import astor_v_cfd as cf
-    return {"fea": sum(FEA_CASES.get(d, 0) for d in a.designs), "netshot": a.sorties * 3, "cfd": sum(len(cf.alphas(d, s)) for d0 in a.designs for d in CFD_STATES.get(d0, [d0]) for s in cf.sweeps(d)), "stability": sum(len(states(d)) * 2 + 1 + len(FLAP_STATES.get(d, ())) for d in a.designs),
+    return {"smoke": len(_smoke_checks(a)) if getattr(a, "smoke", False) else 0, "fea": sum(FEA_CASES.get(d, 0) for d in a.designs), "netshot": a.sorties * 3, "cfd": sum(len(cf.alphas(d, s)) for d0 in a.designs for d in CFD_STATES.get(d0, [d0]) for s in cf.sweeps(d)), "stability": sum(len(states(d)) * 2 + 1 + len(FLAP_STATES.get(d, ())) for d in a.designs),
             "netdrop": len(a.designs) * 2 * len(a.bandits) * a.sorties, "launch": len(_launch_jobs(a))}
 
 
@@ -440,6 +572,8 @@ def main(argv=None) -> int:
                     "flaperons and inboard flaps down 20 deg (tube level); 16 cases, stored beside the others, the flight model untouched")
     ap.add_argument("--section-cfd", action="store_true", help="cfd only: the section question (astor_v_cfd.SECTION_STATES): the 12 %% wing with 2 %% camber, flaps up and "
                     "down, and the 4 %% wing with every flap reflexed 6 deg up at the fast-flight angles; 24 cases, the flight model untouched")
+    ap.add_argument("--smoke", action="store_true", help="sims/astor_x.sh: a quick check of every phase's plumbing (geometry, STL, flight model, 2-3 s flights, "
+                    "FEA cases built), nothing solved; PASS / FAIL each, a minute or two")
     ap.add_argument("--skip-fea", action="store_true", help="--design x / x2: no FEA phase")
     ap.add_argument("--fea-element", type=float, default=3.0, help="--design x / x2: the FEA mesh's element size [mm] (default 3)")
     ap.add_argument("-m", "--model", choices=("1", "2", "all"), help="sims/astor_x.sh: 1 (ASTOR-X), 2 (ASTOR-X2, the tail-sitter) or all (both, one after the other in each phase)")
@@ -470,7 +604,7 @@ def main(argv=None) -> int:
     if set(a.designs) & {"x", "x2"}:                                     # ASTOR-X / ASTOR-X2: CFD, stability as an aeroplane, then the FEA (sims/astor_x.sh, astor_x2.sh)
         if set(a.designs) - {"x", "x2"}:
             ap.error("ASTOR-X / ASTOR-X2 are not run together with the other designs")
-        phases = ["fea"] if a.fea_only else [ph for ph in phases if ph in ("cfd", "stability")] + ([] if (a.cfd_only or a.stability_only or a.skip_fea) else ["fea"])
+        phases = ["smoke"] if a.smoke else ["fea"] if a.fea_only else [ph for ph in phases if ph in ("cfd", "stability")] + ([] if (a.cfd_only or a.stability_only or a.skip_fea) else ["fea"])
     elif a.fea_only:
         ap.error("--fea-only is for --design x or x2 (ASTOR-TWIN's FEA is sims/astor_fea.sh)")
     if "goshawk" in a.designs:                                           # GOSHAWK: its CFD and stability (its hunt in the wood is not written)
@@ -479,7 +613,7 @@ def main(argv=None) -> int:
         phases = [ph for ph in phases if ph in ("cfd", "stability")]
     if a.netshot_only:
         a.designs, phases = ["twin"], ["netshot"]
-    fns = {"fea": phase_fea, "cfd": phase_cfd, "stability": phase_stability, "netdrop": phase_netdrop, "launch": phase_launch, "netshot": phase_netshot}
+    fns = {"smoke": phase_smoke, "fea": phase_fea, "cfd": phase_cfd, "stability": phase_stability, "netdrop": phase_netdrop, "launch": phase_launch, "netshot": phase_netshot}
     n = counts(a)
     if a.dry_run:
         for ph in phases:
