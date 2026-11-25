@@ -355,7 +355,7 @@ def phase_netshot(a) -> int:
 
 
 # ------------------------------------------------------------------------------------------------ FEA (ASTOR-X, ASTOR-X2)
-FEA_CASES = {"x": 3, "x2": 4}
+FEA_CASES = {"x": 3, "x2": 6}
 FEA_MODULE = {"x": "astor_x_fea", "x2": "astor_x2_fea"}
 
 

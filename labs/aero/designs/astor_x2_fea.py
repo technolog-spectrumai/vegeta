@@ -110,6 +110,8 @@ def fin_regions(p=None):
 FEACase, solve_one, regions_select = TF.FEACase, TF.solve_one, TF.regions_select
 CASE_LIST = [("wing_spar_8g", "static", "the half wing's lift at 8 g, ultimate, on the swept spar"),
              ("fin_flight_8g", "static", "one fin's tube: full thrust, the motor's weight at 8 g and the fin's air load, ultimate"),
+             ("fin_motor_8g", "static", "DIAGNOSTIC: the flight case's motor loads alone (thrust and the motor's weight at 8 g)"),
+             ("fin_air", "static", "DIAGNOSTIC: the flight case's air load alone"),
              ("fin_landing", "static", "one fin's tube alone: a 3 g landing on two feet, ultimate"),
              ("fin_modes", "modes", "the fin's tube with the motor as a point mass")]
 AIRCRAFT, PREFIX, BAR = "ASTOR-X2", "astor_x2", "astor-x2 fea"
@@ -134,6 +136,12 @@ def cases(workdir, p=None, *, element_size=3.0):
     reg = fin_regions(p)
     out.append(FEACase("fin_flight_8g", text["fin_flight_8g"], talos.StructuralModel(step_f, "mm-N-MPa", mat, reg, sup,
                [talos.Force("mount", fx=-ld["thrust_ultimate_N"], fz=-ld["motor_inertia_ultimate_N"]), talos.Force("air", fz=-ld["air_ultimate_N"])], mesh, name="fin_flight_8g")))
+    # the flight case gave thousands of MPa around its air-load ring on every mesh while its deflection was right
+    # (2026-11-25): its two loads apart, to see which one the solver or the mesh mishandles
+    out.append(FEACase("fin_motor_8g", text["fin_motor_8g"], talos.StructuralModel(step_f, "mm-N-MPa", mat, reg, sup,
+               [talos.Force("mount", fx=-ld["thrust_ultimate_N"], fz=-ld["motor_inertia_ultimate_N"])], mesh, name="fin_motor_8g")))
+    out.append(FEACase("fin_air", text["fin_air"], talos.StructuralModel(step_f, "mm-N-MPa", mat, reg, sup,
+               [talos.Force("air", fz=-ld["air_ultimate_N"])], mesh, name="fin_air")))
     out.append(FEACase("fin_landing", text["fin_landing"], talos.StructuralModel(step_f, "mm-N-MPa", mat, reg, sup,
                [talos.Force("foot", fx=-ld["landing_ultimate_N"])], mesh, name="fin_landing")))
     out.append(FEACase("fin_modes", text["fin_modes"], talos.StructuralModel(step_f, "mm-N-MPa", mat, reg, sup, [], mesh,
@@ -156,6 +164,9 @@ def row(case, r) -> dict:
         vm, allow = r.metrics.get("max_von_mises"), CARBON_TUBE["strength"] * KNOCKDOWN
         beam = {k: ref["wing_spar"][k] for k in ("root", "step", "tip_deflection_ultimate_mm")} if case.name.startswith("wing") else \
             ref["fin_spar"]["landing" if case.name == "fin_landing" else "flight_8g"]
+        ld = fin_loads()
+        out["stations_along_the_tube_mm"] = {"root": round(ld["root_mm"]), "motor": ld["motor_mm"], "air": ld["air_station_mm"], "tip": ld["tip_mm"]}
+        out["reaction_total_N"] = r.metrics.get("reaction_total")
         out.update({"peak_von_mises_MPa": None if vm is None else float(vm), "max_displacement_mm": r.metrics.get("max_displacement"), "allowable_MPa": allow,
                     "margin": None if not vm else round(allow / float(vm) - 1, 2), "beam_reference": beam})
         TF.with_robust(out, r, allow)
