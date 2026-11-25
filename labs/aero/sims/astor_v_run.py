@@ -483,11 +483,11 @@ def _smoke_checks(a) -> list:
             with tempfile.TemporaryDirectory() as tmp:
                 cs = FE.cases(tmp, element_size=a.fea_element)
                 assert [c.name for c in cs] == [n for n, _, _ in FE.CASE_LIST], [c.name for c in cs]
-                empty = {c.name: [r.name for r in c.model.regions if not _faces_in(c, r)] for c in cs}
+                sel = {c.name: {r.name: _face_ids(c, r) for r in c.model.regions} for c in cs}
+                empty = {n: [r for r, ids in d_.items() if not ids] for n, d_ in sel.items()}
                 assert not any(empty.values()), f"regions that select no face: {empty}"
-                clash = {c.name: [(p.name, q.name) for i, p in enumerate(c.model.regions) for q in c.model.regions[i + 1:]
-                                  if all(p.box[k] < q.box[k + 3] and q.box[k] < p.box[k + 3] for k in range(3))] for c in cs}
-                assert not any(clash.values()), f"regions that overlap (a face would carry two loads): {clash}"
+                clash = {n: [(p, q) for i, p in enumerate(d_) for q in list(d_)[i + 1:] if d_[p] & d_[q]] for n, d_ in sel.items()}
+                assert not any(clash.values()), f"regions that share a face (it would carry two loads): {clash}"
             return f"{len(cs)} cases built, every region selects faces and none overlap; wing root margin (beam) {ref['wing_spar']['root']['margin']}"
 
         out += [(f"{d}: CFD state {st}", (lambda st=st: geometry(st))) for st in states]
@@ -499,12 +499,18 @@ def states_of(d):
     return states(d)
 
 
-def _faces_in(case, region) -> int:
+_STEP_FACES: dict = {}
+
+
+def _face_ids(case, region) -> set:
+    """The faces of the case's STEP that lie wholly inside the region's box (Talos's own rule), by their index."""
     import cadquery as cq
-    shape = cq.importers.importStep(str(case.model.geometry))
+    key = str(case.model.geometry)
+    if key not in _STEP_FACES:
+        _STEP_FACES[key] = [x.BoundingBox() for x in cq.importers.importStep(key).val().Faces()]
     b = region.box
-    return sum(b[0] <= f.xmin and f.xmax <= b[3] and b[1] <= f.ymin and f.ymax <= b[4] and b[2] <= f.zmin and f.zmax <= b[5]
-               for f in (x.BoundingBox() for x in shape.val().Faces()))
+    return {i for i, f in enumerate(_STEP_FACES[key])
+            if b[0] <= f.xmin and f.xmax <= b[3] and b[1] <= f.ymin and f.ymax <= b[4] and b[2] <= f.zmin and f.zmax <= b[5]}
 
 
 def phase_smoke(a) -> int:
