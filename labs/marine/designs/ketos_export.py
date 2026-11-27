@@ -8,7 +8,7 @@ reads. The meshes come from the CadQuery models; the numbers from each design's 
 
 The card is the contract between Vegeta and Ketos (``ketos.card`` 1.0):
 
-    {"schema":"ketos.card","version":"1.0","name":"cyclopterus","kind":"rov"|"crawler"|"boat"|"hull"|"pen"|"barge"|"air"|"craft",
+    {"schema":"ketos.card","version":"1.0","name":"cyclopterus","kind":"rov"|"crawler"|"boat"|"hull"|"pen"|"barge"|"air"|"craft"|"ufo",
      "parts":[{"model":"cyclopterus_hull","color":[r,g,b]}], "size":[L,W,H], "mass_kg":..., "displacement_L":...,
      "thrusters":[{"at":[x,y,z],"axis":[ax,ay,az],"max_N":...}], "battery_Wh":..., "hotel_W":..., "tools":{...}, ...}
 
@@ -17,6 +17,14 @@ the pack), ``mtow_kg``, ``payload_kg``, ``battery_Wh`` / ``usable_Wh``, ``cruise
 ``power_hover_W`` (+ ``_empty``; None for a fixed-wing), ``wh_per_km`` (+ ``_empty``), ``range_km``, ``radius_km``,
 ``endurance_min``, ``wind_limit_m_s``, ``deck_hs_limit_m`` (the landing on a deck's sea-state limit), ``launch`` and
 ``recovery`` ("pad" | "catapult" | "net"), ``swap_s``.
+
+A ``ufo`` card (the alien pirates' fictional craft: saucer, cigar; ``labs/aero/designs/ufo.py``) has ``fictional``
+true, ``model`` ("helicopter" | "airplane": how it moves), ``kinematics`` (the limits ``ufo.step`` applies: speeds,
+accelerations, climb/descent, bank, roll and yaw rates, the turn by speed), ``collision`` (primitives in the card's
+frame) and ``bounding_radius_m``, ``signature`` (``rcs_m2`` by aspect, ``ir``, ``lights``, ``sound``), ``flak`` (time
+in each gun's range on typical passes, tracking rate, lead), ``flag``; ``ais`` and ``weapons`` None. A part may carry
+``texture`` (an image file written beside the meshes); its model then has ``uv`` (two per vertex, (0, 0) the image's
+bottom left) and ``texture``.
 """
 from __future__ import annotations
 
@@ -24,6 +32,7 @@ import argparse
 import json
 import math
 import os
+import shutil
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -846,6 +855,40 @@ def fulmar():
     return card, models
 
 
+#: Textures the models name, and where they are made (copied beside the meshes on export).
+TEXTURES = {"alien_jolly_roger.png": os.path.join(HERE, "..", "..", "aero", "designs", "data", "alien_jolly_roger.png")}
+
+
+def _ufo(name):
+    """A UFO (``labs/aero/designs/ufo.py``): a ``ufo`` card - fictional game craft that move like a helicopter (the
+    saucer) or a jet (the cigar), with their kinematic limits, collision primitives, signatures and flak figures; the
+    CAD parts and the flag, a textured panel with the owner's alien Jolly Roger. Saucer: z = 0 its pads' feet; cigar:
+    z = 0 its axis; both centred on x = 0. No weapons, no AIS."""
+    _aero()
+    import ufo
+    s = ufo.sizing(name)
+    models = [_mesh(ufo.build(name, part), f"{name}_{part}", _hex(col), 10.0) for part, col in ufo.PART_COLOURS[name].items()]
+    for m in models:
+        m["source"] = "vegeta labs/aero/designs/ufo.py (CadQuery)"
+    models.append(ufo.flag_mesh(name))
+    parts = [{"model": m["name"], "color": m["color"]} | ({"texture": m["texture"]} if m.get("texture") else {}) for m in models]
+    k = s["kinematics"]
+    card = CARD | {"name": name, "kind": "ufo", "fictional": True, "what": s["what"], "model": k["model"], "parts": parts,
+                   "size": s["size"], "mass_kg": s["mass_kg"], "kinematics": k, "collision": s["collision"],
+                   "bounding_radius_m": s["bounding_radius_m"], "rcs_m2": s["signature"]["rcs_m2"], "signature": s["signature"],
+                   "flak": s["flak"], "flag": s["flag"], "crew": s["crew"], "ais": None, "weapons": None,
+                   "class_values": True, "basis": s["basis"]}
+    return card, models
+
+
+def saucer():
+    return _ufo("saucer")
+
+
+def cigar():
+    return _ufo("cigar")
+
+
 MACHINES = {"cyclopterus": cyclopterus, "shrimp": shrimp, "workboat": workboat, "pen": salmon_pen, "barge": feed_barge,
             "scampi": scampi, "echensis": echensis, "ship_hull": ship_hull, "wellboat": wellboat,
             "homarus": homarus, "jacket": jacket, "dp_vessel": dp_vessel, "tms": tms, "manifold": manifold,
@@ -853,7 +896,8 @@ MACHINES = {"cyclopterus": cyclopterus, "shrimp": shrimp, "workboat": workboat, 
             "nephro": nephro, "trencher": trencher, "cable_vessel": cable_vessel, "cable": cable, "cable_joint": cable_joint,
             "walrus": walrus, "clam_basket": clam_basket, "clam_boat": clam_boat,
             "zarco": zarco, "gannet": gannet, "fulmar": fulmar, "barracuda": barracuda, "esmeralda": esmeralda,
-            "fishing_boat": fishing_boat, "pilot_boat": pilot_boat, "yacht": yacht, "skiff": skiff}
+            "fishing_boat": fishing_boat, "pilot_boat": pilot_boat, "yacht": yacht, "skiff": skiff,
+            "saucer": saucer, "cigar": cigar}
 
 
 def export(out, only=None):
@@ -866,6 +910,8 @@ def export(out, only=None):
         for m in models:
             with open(os.path.join(out, m["name"] + ".json"), "w") as fh:
                 json.dump(m, fh, separators=(",", ":"))
+            if m.get("texture"):
+                shutil.copyfile(TEXTURES[m["texture"]], os.path.join(out, m["texture"]))
         with open(os.path.join(out, name + ".card.json"), "w") as fh:
             json.dump(card, fh, indent=1)
         tris = sum(len(m["triangles"]) // 3 for m in models)

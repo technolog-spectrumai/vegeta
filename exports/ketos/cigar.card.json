@@ -1,0 +1,550 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "cigar",
+ "kind": "ufo",
+ "fictional": true,
+ "what": "an 18 m winged cigar (after the 1952 'winged cigar-shape' sketch): a smooth 2 m spindle, swept wings of 10 m span from mid-body, a dorsal fin with the flag on both sides, one glowing nozzle; flies like a jet",
+ "model": "airplane",
+ "parts": [
+  {
+   "model": "cigar_hull",
+   "color": [
+    0.482,
+    0.49,
+    0.49
+   ]
+  },
+  {
+   "model": "cigar_wings",
+   "color": [
+    0.365,
+    0.427,
+    0.494
+   ]
+  },
+  {
+   "model": "cigar_fin",
+   "color": [
+    0.106,
+    0.149,
+    0.192
+   ]
+  },
+  {
+   "model": "cigar_nozzle",
+   "color": [
+    0.906,
+    0.298,
+    0.235
+   ]
+  },
+  {
+   "model": "cigar_flag",
+   "color": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "texture": "alien_jolly_roger.png"
+  }
+ ],
+ "size": [
+  18.0,
+  10.0,
+  3.95
+ ],
+ "mass_kg": 8500.0,
+ "kinematics": {
+  "model": "airplane",
+  "accel_m_s2": 2.5,
+  "decel_m_s2": 4.0,
+  "climb_m_s": 25.0,
+  "descent_m_s": 40.0,
+  "bank_max_deg": 67.0,
+  "roll_rate_deg_s": 90.0,
+  "pitch_max_deg": 25.0,
+  "ceiling_m": 13000.0,
+  "alt_band_m": {
+   "low_pass": [
+    30.0,
+    300.0
+   ],
+   "high": [
+    7000.0,
+    12000.0
+   ]
+  },
+  "hover": false,
+  "v_min_m_s": 70.0,
+  "v_max_m_s": {
+   "low": 215.0,
+   "high": 245.0
+  },
+  "v_cruise_m_s": {
+   "low": 200.0,
+   "high": 230.0
+  },
+  "v_max_alt_split_m": 3000.0,
+  "n_max": {
+   "low": 2.5,
+   "high": 1.5
+  },
+  "turn_by_speed": [
+   {
+    "v_m_s": 70.0,
+    "bank_deg": 66.4,
+    "rate_deg_s": 18.4,
+    "radius_m": 218.0,
+    "t_180_s": 9.8,
+    "alt": "low"
+   },
+   {
+    "v_m_s": 100.0,
+    "bank_deg": 66.4,
+    "rate_deg_s": 12.88,
+    "radius_m": 444.9,
+    "t_180_s": 14.0,
+    "alt": "low"
+   },
+   {
+    "v_m_s": 150.0,
+    "bank_deg": 66.4,
+    "rate_deg_s": 8.59,
+    "radius_m": 1001.0,
+    "t_180_s": 21.0,
+    "alt": "low"
+   },
+   {
+    "v_m_s": 200.0,
+    "bank_deg": 66.4,
+    "rate_deg_s": 6.44,
+    "radius_m": 1779.6,
+    "t_180_s": 28.0,
+    "alt": "low"
+   },
+   {
+    "v_m_s": 215.0,
+    "bank_deg": 66.4,
+    "rate_deg_s": 5.99,
+    "radius_m": 2056.5,
+    "t_180_s": 30.0,
+    "alt": "low"
+   },
+   {
+    "v_m_s": 150.0,
+    "bank_deg": 48.2,
+    "rate_deg_s": 4.19,
+    "radius_m": 2051.4,
+    "t_180_s": 43.0,
+    "alt": "high"
+   },
+   {
+    "v_m_s": 230.0,
+    "bank_deg": 48.2,
+    "rate_deg_s": 2.73,
+    "radius_m": 4823.2,
+    "t_180_s": 65.9,
+    "alt": "high"
+   },
+   {
+    "v_m_s": 245.0,
+    "bank_deg": 48.2,
+    "rate_deg_s": 2.56,
+    "radius_m": 5472.8,
+    "t_180_s": 70.2,
+    "alt": "high"
+   }
+  ]
+ },
+ "collision": [
+  {
+   "name": "body",
+   "type": "capsule",
+   "size": [
+    1.0,
+    8.0
+   ],
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "axis": [
+    1,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "tail",
+   "type": "cylinder",
+   "size": [
+    0.8,
+    1.05
+   ],
+   "pos": [
+    -8.0,
+    0.0,
+    0.0
+   ],
+   "axis": [
+    1,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "fin",
+   "type": "box",
+   "size": [
+    1.7,
+    0.07,
+    1.1
+   ],
+   "pos": [
+    -6.3,
+    0.0,
+    1.85
+   ]
+  },
+  {
+   "name": "wing_port",
+   "type": "box",
+   "size": [
+    3.662,
+    1.734,
+    0.125
+   ],
+   "pos": [
+    -3.489,
+    2.45,
+    -0.2
+   ],
+   "quat": [
+    0.429975,
+    0.0,
+    0.0,
+    0.902841
+   ]
+  },
+  {
+   "name": "wing_starboard",
+   "type": "box",
+   "size": [
+    3.662,
+    1.734,
+    0.125
+   ],
+   "pos": [
+    -3.489,
+    -2.45,
+    -0.2
+   ],
+   "quat": [
+    0.429975,
+    0.0,
+    0.0,
+    -0.902841
+   ]
+  }
+ ],
+ "bounding_radius_m": 9.47,
+ "rcs_m2": {
+  "front": 1.5,
+  "side": 10.0,
+  "rear": 3.0,
+  "top": 30.0,
+  "bottom": 25.0
+ },
+ "signature": {
+  "rcs_m2": {
+   "front": 1.5,
+   "side": 10.0,
+   "rear": 3.0,
+   "top": 30.0,
+   "bottom": 25.0
+  },
+  "ir": {
+   "hot_spots": [
+    {
+     "what": "the tail nozzle (a small turbofan's exhaust)",
+     "T_K": 700.0,
+     "area_m2": 0.6
+    }
+   ],
+   "skin_dT_K": 20.5,
+   "skin_dT_note": "aerodynamic heating at 215 m/s: r v^2 / 2cp"
+  },
+  "lights": "a red glow at the nozzle, no navigation lights",
+  "sound": "a jet's roar on a low pass, heard after it has gone by",
+  "ais": null
+ },
+ "flak": {
+  "guns": {
+   "hmg_12_7": {
+    "what": "a 12.7 mm heavy machine gun",
+    "range_m": 1500.0,
+    "muzzle_m_s": 890.0,
+    "mean_m_s": 650.0,
+    "rate_rpm": 600
+   },
+   "ciws_30": {
+    "what": "a 30 mm cannon (CIWS class)",
+    "range_m": 2500.0,
+    "muzzle_m_s": 1080.0,
+    "mean_m_s": 850.0,
+    "rate_rpm": 600
+   },
+   "aa_35": {
+    "what": "a twin 35 mm anti-aircraft gun",
+    "range_m": 4000.0,
+    "muzzle_m_s": 1175.0,
+    "mean_m_s": 900.0,
+    "rate_rpm": 1100
+   }
+  },
+  "passes": [
+   {
+    "what": "low pass",
+    "v_m_s": 200.0,
+    "alt_m": 100.0,
+    "by_gun": {
+     "hmg_12_7": {
+      "0m": {
+       "in_range_s": 15.0,
+       "closest_m": 100,
+       "track_deg_s": 114.6,
+       "lead_m": 30.8,
+       "lead_deg": 17.1,
+       "rounds_in_range": 150
+      },
+      "500m": {
+       "in_range_s": 14.1,
+       "closest_m": 510,
+       "track_deg_s": 22.5,
+       "lead_m": 156.9,
+       "lead_deg": 17.1,
+       "rounds_in_range": 141
+      },
+      "1000m": {
+       "in_range_s": 11.1,
+       "closest_m": 1005,
+       "track_deg_s": 11.4,
+       "lead_m": 309.2,
+       "lead_deg": 17.1,
+       "rounds_in_range": 111
+      },
+      "2000m": {
+       "in_range_s": 0.0,
+       "closest_m": 2002,
+       "track_deg_s": null,
+       "lead_m": null,
+       "lead_deg": null
+      }
+     },
+     "ciws_30": {
+      "0m": {
+       "in_range_s": 25.0,
+       "closest_m": 100,
+       "track_deg_s": 114.6,
+       "lead_m": 23.5,
+       "lead_deg": 13.2,
+       "rounds_in_range": 250
+      },
+      "500m": {
+       "in_range_s": 24.5,
+       "closest_m": 510,
+       "track_deg_s": 22.5,
+       "lead_m": 120.0,
+       "lead_deg": 13.2,
+       "rounds_in_range": 245
+      },
+      "1000m": {
+       "in_range_s": 22.9,
+       "closest_m": 1005,
+       "track_deg_s": 11.4,
+       "lead_m": 236.5,
+       "lead_deg": 13.2,
+       "rounds_in_range": 229
+      },
+      "2000m": {
+       "in_range_s": 15.0,
+       "closest_m": 2002,
+       "track_deg_s": 5.7,
+       "lead_m": 471.2,
+       "lead_deg": 13.2,
+       "rounds_in_range": 150
+      }
+     },
+     "aa_35": {
+      "0m": {
+       "in_range_s": 40.0,
+       "closest_m": 100,
+       "track_deg_s": 114.6,
+       "lead_m": 22.2,
+       "lead_deg": 12.5,
+       "rounds_in_range": 733
+      },
+      "500m": {
+       "in_range_s": 39.7,
+       "closest_m": 510,
+       "track_deg_s": 22.5,
+       "lead_m": 113.3,
+       "lead_deg": 12.5,
+       "rounds_in_range": 727
+      },
+      "1000m": {
+       "in_range_s": 38.7,
+       "closest_m": 1005,
+       "track_deg_s": 11.4,
+       "lead_m": 223.3,
+       "lead_deg": 12.5,
+       "rounds_in_range": 710
+      },
+      "2000m": {
+       "in_range_s": 34.6,
+       "closest_m": 2002,
+       "track_deg_s": 5.7,
+       "lead_m": 445.0,
+       "lead_deg": 12.5,
+       "rounds_in_range": 635
+      }
+     }
+    }
+   },
+   {
+    "what": "high transit",
+    "v_m_s": 230.0,
+    "alt_m": 9000.0,
+    "by_gun": {
+     "hmg_12_7": {
+      "0m": {
+       "in_range_s": 0.0,
+       "closest_m": 9000,
+       "track_deg_s": null,
+       "lead_m": null,
+       "lead_deg": null
+      },
+      "500m": {
+       "in_range_s": 0.0,
+       "closest_m": 9014,
+       "track_deg_s": null,
+       "lead_m": null,
+       "lead_deg": null
+      },
+      "1000m": {
+       "in_range_s": 0.0,
+       "closest_m": 9055,
+       "track_deg_s": null,
+       "lead_m": null,
+       "lead_deg": null
+      },
+      "2000m": {
+       "in_range_s": 0.0,
+       "closest_m": 9220,
+       "track_deg_s": null,
+       "lead_m": null,
+       "lead_deg": null
+      }
+     },
+     "ciws_30": {
+      "0m": {
+       "in_range_s": 0.0,
+       "closest_m": 9000,
+       "track_deg_s": null,
+       "lead_m": null,
+       "lead_deg": null
+      },
+      "500m": {
+       "in_range_s": 0.0,
+       "closest_m": 9014,
+       "track_deg_s": null,
+       "lead_m": null,
+       "lead_deg": null
+      },
+      "1000m": {
+       "in_range_s": 0.0,
+       "closest_m": 9055,
+       "track_deg_s": null,
+       "lead_m": null,
+       "lead_deg": null
+      },
+      "2000m": {
+       "in_range_s": 0.0,
+       "closest_m": 9220,
+       "track_deg_s": null,
+       "lead_m": null,
+       "lead_deg": null
+      }
+     },
+     "aa_35": {
+      "0m": {
+       "in_range_s": 0.0,
+       "closest_m": 9000,
+       "track_deg_s": null,
+       "lead_m": null,
+       "lead_deg": null
+      },
+      "500m": {
+       "in_range_s": 0.0,
+       "closest_m": 9014,
+       "track_deg_s": null,
+       "lead_m": null,
+       "lead_deg": null
+      },
+      "1000m": {
+       "in_range_s": 0.0,
+       "closest_m": 9055,
+       "track_deg_s": null,
+       "lead_m": null,
+       "lead_deg": null
+      },
+      "2000m": {
+       "in_range_s": 0.0,
+       "closest_m": 9220,
+       "track_deg_s": null,
+       "lead_m": null,
+       "lead_deg": null
+      }
+     }
+    }
+   }
+  ],
+  "high_band": "above 9000 m it is out of every gun's reach (the longest, 4000 m)",
+  "min_speed_m_s": 70.0
+ },
+ "flag": {
+  "origin": [
+   -5.6,
+   0.0,
+   1.2
+  ],
+  "u": [
+   -1.0,
+   0.0,
+   0.0
+  ],
+  "v": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "size": [
+   1.5,
+   1.0
+  ],
+  "faces": "both",
+  "offset_m": 0.07500000000000001,
+  "where": "painted on both sides of the dorsal fin",
+  "texture": "alien_jolly_roger.png"
+ },
+ "crew": [
+  1,
+  3
+ ],
+ "ais": null,
+ "weapons": null,
+ "class_values": true,
+ "basis": "sized as a light-to-midsize business jet or a fast jet drone: 15-20 m long, MTOW ~8.5 t; Mach 0.6-0.8 (215 m/s low, 245 m/s high); a minimum speed of ~70 m/s (its stall, clean); load factor 2.5 at low level (transport-category limit), 1.5 sustainable near its ceiling; roll ~90 deg/s; climb ~25 m/s; thrust/weight ~0.35 (accelerating ~2.5 m/s2 at low speed). RCS of a bizjet (~1 m2 nose-on, ~10 beam); IR of a small turbofan's nozzle (~700 K). The winged spindle and its flight are fiction."
+}

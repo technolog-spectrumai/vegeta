@@ -1,0 +1,541 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "saucer",
+ "kind": "ufo",
+ "fictional": true,
+ "what": "a 12 m flying saucer: a lens-shaped disc with a glass dome, a mast and flag on the dome, three landing pads; flies like a helicopter",
+ "model": "helicopter",
+ "parts": [
+  {
+   "model": "saucer_hull",
+   "color": [
+    0.557,
+    0.604,
+    0.651
+   ]
+  },
+  {
+   "model": "saucer_dome",
+   "color": [
+    0.365,
+    0.678,
+    0.886
+   ]
+  },
+  {
+   "model": "saucer_mast",
+   "color": [
+    0.173,
+    0.243,
+    0.314
+   ]
+  },
+  {
+   "model": "saucer_flag",
+   "color": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "texture": "alien_jolly_roger.png"
+  }
+ ],
+ "size": [
+  12.0,
+  12.0,
+  6.0
+ ],
+ "mass_kg": 6400.0,
+ "kinematics": {
+  "model": "helicopter",
+  "accel_m_s2": 3.0,
+  "decel_m_s2": 4.0,
+  "climb_m_s": 10.0,
+  "descent_m_s": 10.0,
+  "bank_max_deg": 45.0,
+  "roll_rate_deg_s": 40.0,
+  "pitch_max_deg": 20.0,
+  "ceiling_m": 6000.0,
+  "alt_band_m": {
+   "nap_of_the_earth": [
+    10.0,
+    30.0
+   ],
+   "patrol": [
+    100.0,
+    500.0
+   ],
+   "transit": [
+    500.0,
+    1500.0
+   ]
+  },
+  "hover": true,
+  "v_max_m_s": 78.0,
+  "v_cruise_m_s": 68.0,
+  "v_side_m_s": 18.0,
+  "v_back_m_s": 15.0,
+  "yaw_rate_deg_s": 40.0,
+  "turn_by_speed": [
+   {
+    "v_m_s": 0.0,
+    "bank_deg": 0.0,
+    "rate_deg_s": 40.0,
+    "radius_m": 0.0,
+    "t_180_s": 4.5
+   },
+   {
+    "v_m_s": 10.0,
+    "bank_deg": 35.4,
+    "rate_deg_s": 40.0,
+    "radius_m": 14.3,
+    "t_180_s": 4.5
+   },
+   {
+    "v_m_s": 20.0,
+    "bank_deg": 45.0,
+    "rate_deg_s": 28.1,
+    "radius_m": 40.8,
+    "t_180_s": 6.4
+   },
+   {
+    "v_m_s": 30.0,
+    "bank_deg": 45.0,
+    "rate_deg_s": 18.74,
+    "radius_m": 91.7,
+    "t_180_s": 9.6
+   },
+   {
+    "v_m_s": 50.0,
+    "bank_deg": 45.0,
+    "rate_deg_s": 11.24,
+    "radius_m": 254.8,
+    "t_180_s": 16.0
+   },
+   {
+    "v_m_s": 68.0,
+    "bank_deg": 45.0,
+    "rate_deg_s": 8.27,
+    "radius_m": 471.4,
+    "t_180_s": 21.8
+   },
+   {
+    "v_m_s": 78.0,
+    "bank_deg": 45.0,
+    "rate_deg_s": 7.21,
+    "radius_m": 620.2,
+    "t_180_s": 25.0
+   }
+  ]
+ },
+ "collision": [
+  {
+   "name": "disc",
+   "type": "ellipsoid",
+   "size": [
+    6.0,
+    6.0,
+    0.75
+   ],
+   "pos": [
+    0.0,
+    0.0,
+    1.15
+   ]
+  },
+  {
+   "name": "dome",
+   "type": "ellipsoid",
+   "size": [
+    2.3,
+    2.3,
+    1.5
+   ],
+   "pos": [
+    0.0,
+    0.0,
+    1.9
+   ]
+  },
+  {
+   "name": "mast",
+   "type": "capsule",
+   "size": [
+    0.06,
+    1.3
+   ],
+   "pos": [
+    0.0,
+    0.0,
+    4.7
+   ],
+   "axis": [
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "name": "pad_0",
+   "type": "cylinder",
+   "size": [
+    0.35,
+    0.2
+   ],
+   "pos": [
+    0.0,
+    3.6,
+    0.2
+   ],
+   "axis": [
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "name": "pad_1",
+   "type": "cylinder",
+   "size": [
+    0.35,
+    0.2
+   ],
+   "pos": [
+    -3.118,
+    -1.8,
+    0.2
+   ],
+   "axis": [
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "name": "pad_2",
+   "type": "cylinder",
+   "size": [
+    0.35,
+    0.2
+   ],
+   "pos": [
+    3.118,
+    -1.8,
+    0.2
+   ],
+   "axis": [
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "bounding_radius_m": 6.71,
+ "rcs_m2": {
+  "front": 4.0,
+  "side": 6.0,
+  "rear": 4.0,
+  "top": 30.0,
+  "bottom": 40.0
+ },
+ "signature": {
+  "rcs_m2": {
+   "front": 4.0,
+   "side": 6.0,
+   "rear": 4.0,
+   "top": 30.0,
+   "bottom": 40.0
+  },
+  "ir": {
+   "hot_spots": [
+    {
+     "what": "the belly's drive ring (where a helicopter's engine exhausts would be)",
+     "T_K": 520.0,
+     "area_m2": 0.8
+    }
+   ],
+   "skin_dT_K": 8.0,
+   "skin_dT_note": "a warm hull from the drive inside it (class)"
+  },
+  "lights": "a ring of 24 cyan lights round the rim, a white light on the mast; can go dark",
+  "sound": "a low hum, about a medium helicopter's level at a distance (no rotor slap)",
+  "ais": null
+ },
+ "flak": {
+  "guns": {
+   "hmg_12_7": {
+    "what": "a 12.7 mm heavy machine gun",
+    "range_m": 1500.0,
+    "muzzle_m_s": 890.0,
+    "mean_m_s": 650.0,
+    "rate_rpm": 600
+   },
+   "ciws_30": {
+    "what": "a 30 mm cannon (CIWS class)",
+    "range_m": 2500.0,
+    "muzzle_m_s": 1080.0,
+    "mean_m_s": 850.0,
+    "rate_rpm": 600
+   },
+   "aa_35": {
+    "what": "a twin 35 mm anti-aircraft gun",
+    "range_m": 4000.0,
+    "muzzle_m_s": 1175.0,
+    "mean_m_s": 900.0,
+    "rate_rpm": 1100
+   }
+  },
+  "passes": [
+   {
+    "what": "patrol pass",
+    "v_m_s": 68.0,
+    "alt_m": 150.0,
+    "by_gun": {
+     "hmg_12_7": {
+      "0m": {
+       "in_range_s": 43.9,
+       "closest_m": 150,
+       "track_deg_s": 26.0,
+       "lead_m": 15.7,
+       "lead_deg": 6.0,
+       "rounds_in_range": 439
+      },
+      "500m": {
+       "in_range_s": 41.4,
+       "closest_m": 522,
+       "track_deg_s": 7.5,
+       "lead_m": 54.6,
+       "lead_deg": 6.0,
+       "rounds_in_range": 414
+      },
+      "1000m": {
+       "in_range_s": 32.6,
+       "closest_m": 1011,
+       "track_deg_s": 3.9,
+       "lead_m": 105.8,
+       "lead_deg": 6.0,
+       "rounds_in_range": 326
+      },
+      "2000m": {
+       "in_range_s": 0.0,
+       "closest_m": 2006,
+       "track_deg_s": null,
+       "lead_m": null,
+       "lead_deg": null
+      }
+     },
+     "ciws_30": {
+      "0m": {
+       "in_range_s": 73.4,
+       "closest_m": 150,
+       "track_deg_s": 26.0,
+       "lead_m": 12.0,
+       "lead_deg": 4.6,
+       "rounds_in_range": 734
+      },
+      "500m": {
+       "in_range_s": 71.9,
+       "closest_m": 522,
+       "track_deg_s": 7.5,
+       "lead_m": 41.8,
+       "lead_deg": 4.6,
+       "rounds_in_range": 719
+      },
+      "1000m": {
+       "in_range_s": 67.2,
+       "closest_m": 1011,
+       "track_deg_s": 3.9,
+       "lead_m": 80.9,
+       "lead_deg": 4.6,
+       "rounds_in_range": 672
+      },
+      "2000m": {
+       "in_range_s": 43.9,
+       "closest_m": 2006,
+       "track_deg_s": 1.9,
+       "lead_m": 160.4,
+       "lead_deg": 4.6,
+       "rounds_in_range": 439
+      }
+     },
+     "aa_35": {
+      "0m": {
+       "in_range_s": 117.6,
+       "closest_m": 150,
+       "track_deg_s": 26.0,
+       "lead_m": 11.3,
+       "lead_deg": 4.3,
+       "rounds_in_range": 2155
+      },
+      "500m": {
+       "in_range_s": 116.6,
+       "closest_m": 522,
+       "track_deg_s": 7.5,
+       "lead_m": 39.4,
+       "lead_deg": 4.3,
+       "rounds_in_range": 2138
+      },
+      "1000m": {
+       "in_range_s": 113.8,
+       "closest_m": 1011,
+       "track_deg_s": 3.9,
+       "lead_m": 76.4,
+       "lead_deg": 4.3,
+       "rounds_in_range": 2087
+      },
+      "2000m": {
+       "in_range_s": 101.8,
+       "closest_m": 2006,
+       "track_deg_s": 1.9,
+       "lead_m": 151.5,
+       "lead_deg": 4.3,
+       "rounds_in_range": 1866
+      }
+     }
+    }
+   },
+   {
+    "what": "nap-of-the-earth dash",
+    "v_m_s": 78.0,
+    "alt_m": 20.0,
+    "by_gun": {
+     "hmg_12_7": {
+      "0m": {
+       "in_range_s": 38.5,
+       "closest_m": 20,
+       "track_deg_s": 223.5,
+       "lead_m": 2.4,
+       "lead_deg": 6.8,
+       "rounds_in_range": 385
+      },
+      "500m": {
+       "in_range_s": 36.3,
+       "closest_m": 500,
+       "track_deg_s": 8.9,
+       "lead_m": 60.0,
+       "lead_deg": 6.8,
+       "rounds_in_range": 363
+      },
+      "1000m": {
+       "in_range_s": 28.7,
+       "closest_m": 1000,
+       "track_deg_s": 4.5,
+       "lead_m": 120.0,
+       "lead_deg": 6.8,
+       "rounds_in_range": 287
+      },
+      "2000m": {
+       "in_range_s": 0.0,
+       "closest_m": 2000,
+       "track_deg_s": null,
+       "lead_m": null,
+       "lead_deg": null
+      }
+     },
+     "ciws_30": {
+      "0m": {
+       "in_range_s": 64.1,
+       "closest_m": 20,
+       "track_deg_s": 223.5,
+       "lead_m": 1.8,
+       "lead_deg": 5.2,
+       "rounds_in_range": 641
+      },
+      "500m": {
+       "in_range_s": 62.8,
+       "closest_m": 500,
+       "track_deg_s": 8.9,
+       "lead_m": 45.9,
+       "lead_deg": 5.2,
+       "rounds_in_range": 628
+      },
+      "1000m": {
+       "in_range_s": 58.7,
+       "closest_m": 1000,
+       "track_deg_s": 4.5,
+       "lead_m": 91.8,
+       "lead_deg": 5.2,
+       "rounds_in_range": 587
+      },
+      "2000m": {
+       "in_range_s": 38.5,
+       "closest_m": 2000,
+       "track_deg_s": 2.2,
+       "lead_m": 183.5,
+       "lead_deg": 5.2,
+       "rounds_in_range": 385
+      }
+     },
+     "aa_35": {
+      "0m": {
+       "in_range_s": 102.6,
+       "closest_m": 20,
+       "track_deg_s": 223.5,
+       "lead_m": 1.7,
+       "lead_deg": 5.0,
+       "rounds_in_range": 1880
+      },
+      "500m": {
+       "in_range_s": 101.8,
+       "closest_m": 500,
+       "track_deg_s": 8.9,
+       "lead_m": 43.4,
+       "lead_deg": 5.0,
+       "rounds_in_range": 1866
+      },
+      "1000m": {
+       "in_range_s": 99.3,
+       "closest_m": 1000,
+       "track_deg_s": 4.5,
+       "lead_m": 86.7,
+       "lead_deg": 5.0,
+       "rounds_in_range": 1821
+      },
+      "2000m": {
+       "in_range_s": 88.8,
+       "closest_m": 2000,
+       "track_deg_s": 2.2,
+       "lead_m": 173.3,
+       "lead_deg": 5.0,
+       "rounds_in_range": 1628
+      }
+     }
+    }
+   }
+  ],
+  "hover": "a hovering saucer is in range as long as it stays: tracking ~0 deg/s, no lead - its danger is the hover"
+ },
+ "flag": {
+  "origin": [
+   -0.06,
+   0.0,
+   4.95
+  ],
+  "u": [
+   -1.0,
+   0.0,
+   0.0
+  ],
+  "v": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "size": [
+   1.5,
+   1.0
+  ],
+  "faces": "both",
+  "where": "on the mast atop the dome, flying aft",
+  "texture": "alien_jolly_roger.png"
+ },
+ "crew": [
+  2,
+  4
+ ],
+ "ais": null,
+ "weapons": null,
+ "class_values": true,
+ "basis": "sized as a medium twin helicopter of a 13-14 m rotor (the AW139 / Bell 412 class): MTOW ~6.4 t; max speed ~78 m/s (150 kn) and cruise ~68 m/s (130 kn); sideward and rearward flight limits 35 and 30 kn; climb ~10 m/s; a hover yaw rate of ~40 deg/s; 45 deg bank, 20 deg pitch in manoeuvres; accelerating at ~0.3 g (nose ~17 deg down), flaring at ~0.4 g. RCS of a helicopter that size (a few m2 nose-on); IR of its exhausts (~500 K) put at the belly. The disc, dome and its flight are fiction."
+}
