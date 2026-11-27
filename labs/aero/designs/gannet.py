@@ -60,7 +60,7 @@ SURVEY = {
 
 class Gannet(Design):
     parameters = [
-        Parameter("part", "aircraft", choices=("aircraft", "body", "arms", "rotors", "skids", "crate", "gimbal")),
+        Parameter("part", "aircraft", choices=("aircraft", "body", "arms", "rotors", "skids", "crate", "gimbal", "ladder")),
         Parameter("prop_in", 28.0, "in", description="propeller diameter"),
         Parameter("arm", 760.0, "mm", description="motor axis from the centre (diagonal)"),
         Parameter("body", 420.0, "mm", description="body square"),
@@ -74,7 +74,7 @@ class Gannet(Design):
         Parameter("avionics_w", 25.0, "W"),
         Parameter("skid_span", 900.0, "mm"),
         Parameter("price_eur", 9800.0, "EUR"),
-        Parameter("payload", "cargo", choices=("cargo", "eoir"), description="the crate (cargo) or the surveillance pod (eoir_payload.py)"),
+        Parameter("payload", "cargo", choices=("cargo", "eoir", "ladder"), description="the crate (cargo), the surveillance pod or the ladder pod (eoir_payload.py)"),
     ]
 
     @staticmethod
@@ -168,6 +168,27 @@ class Gannet(Design):
                 "datalink": {f"{a:.0f}m": ep.link("gannet", a) for a in ep.POD["gannet"]["altitudes_m"]},
                 "ais_km": round(min(sensing_horizon(ep.POD["gannet"]["altitudes_m"][0], 3.0), 40.0), 1)}
 
+    @classmethod
+    def ladder_sizing(cls, over=None):
+        """Gannet with the ladder pod (``eoir_payload.LADDER_POD``: searchlight, strobe, loudspeaker) instead of the
+        crate: its endurance and time on station on the same power model, and what the effectors reach from the air."""
+        import eoir_payload as ep
+        pod = ep.ladder_totals()
+        base = cls.p(over)
+        p = base | {"payload_kg": pod["mass_kg"], "drag_area": 0.7 * base["drag_area"] + ep.LADDER_POD["cda_m2"],
+                    "avionics_w": base["avionics_w"] + pod["power_W"]}
+        usable = p["battery_wh"] * 0.8 * 0.85
+        loiter_v = min([v * 0.5 for v in range(0, 50)], key=lambda v: cls.power(p, v))
+        p_h, p_l, p_c = cls.power(p, 0.0), cls.power(p, loiter_v), cls.power(p, p["cruise"])
+        wh_km = p_c / p["cruise"] / 3.6
+        on_station = (usable - p_h * 90.0 * 2 / 3600.0 - 2 * 5.0 * wh_km) / p_h * 60
+        return {"payload": "ladder", "pod": pod, "pod_parts": {k: {"kg": m, "W": w, "eur": e} for k, (m, w, e) in ep.LADDER_POD["parts"].items()},
+                "mtow_kg": round(cls.empty_kg(p) + p["payload_kg"], 2), "hover_W": round(p_h), "loiter_m_s": loiter_v,
+                "endurance_hover_min": round(usable / p_h * 60, 1), "endurance_loiter_min": round(usable / p_l * 60, 1),
+                "on_station_hovering_min_at_5km": round(on_station, 1), "cruise_m_s": p["cruise"],
+                "wind_limit_m_s": cls.sizing(over)["wind_limit_m_s"], "deck_hs_limit_m": cls.sizing(over)["deck_hs_limit_m"],
+                "effectors": ep.ladder_effectors()}
+
     # --- CAD ---------------------------------------------------------------------------------------------------
     def _rotor_at(self, p):
         a = p["arm"] / math.sqrt(2)
@@ -212,6 +233,15 @@ class Gannet(Design):
         mast = cq.Workplane("XY").add(cq.Solid.makeCylinder(8, 160, cq.Vector(-80, 0, 230), cq.Vector(0, 0, -1)))
         return plate.union(yoke).union(ball).union(mast)
 
+    def _ladder(self, p):
+        """The ladder pod on the crate hook's mount: a pan-tilt with the searchlight, the strobe and the horn."""
+        plate = cq.Workplane("XY").box(260, 200, 40).translate((0, 0, 250))
+        head = cq.Workplane("XY").box(120, 120, 60).translate((0, 0, 200))
+        light = cq.Workplane("XY").add(cq.Solid.makeCylinder(70, 160, cq.Vector(40, 80, 120), cq.Vector(1, 0, 0)))
+        horn = cq.Workplane("XY").add(cq.Solid.makeCone(30, 80, 180, cq.Vector(40, -80, 120), cq.Vector(1, 0, 0)))
+        strobe = cq.Workplane("XY").box(60, 60, 60).translate((0, 0, 140))
+        return plate.union(head).union(light).union(horn).union(strobe)
+
     def _crate(self, p):
         return cq.Workplane("XY").box(400, 300, 200).translate((0, 0, 130)).edges("|Z").fillet(15)
 
@@ -219,10 +249,11 @@ class Gannet(Design):
         if cq is None:
             raise ImportError("Gannet's CAD needs CadQuery")
         parts = {"body": self._body, "arms": self._arms, "rotors": self._rotors, "skids": self._skids, "crate": self._crate,
-                 "gimbal": self._gimbal}
+                 "gimbal": self._gimbal, "ladder": self._ladder}
         if p["part"] in parts:
             return parts[p["part"]](p)
-        drawn = [k for k in parts if k != ("crate" if p.get("payload", "cargo") == "eoir" else "gimbal")]
+        carried = {"cargo": "crate", "eoir": "gimbal", "ladder": "ladder"}[p.get("payload", "cargo")]
+        drawn = [k for k in parts if k not in ("crate", "gimbal", "ladder") or k == carried]
         return cq.Workplane("XY").newObject([cq.Compound.makeCompound([parts[k](p).val() for k in drawn])])
 
 

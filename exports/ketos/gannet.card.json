@@ -320,6 +320,86 @@
     "gannet_skids",
     "gannet_gimbal"
    ]
+  },
+  "ladder": {
+   "pod": {
+    "mass_kg": 3.2,
+    "power_W": 170.0,
+    "price_eur": 14500.0
+   },
+   "pod_parts": {
+    "LED searchlight 6000 lm, 6 deg, on the pan-tilt": {
+     "kg": 0.9,
+     "W": 60.0,
+     "eur": 2500.0
+    },
+    "white LED strobe 0.5 Mcd peak, 5 ms at 6 Hz (non-laser)": {
+     "kg": 0.3,
+     "W": 30.0,
+     "eur": 1500.0
+    },
+    "directional loudspeaker, 130 dB at 1 m (2 kHz), 30 deg": {
+     "kg": 1.2,
+     "W": 60.0,
+     "eur": 4000.0
+    },
+    "pan-tilt head and the crate hook's quick-release mount": {
+     "kg": 0.45,
+     "W": 8.0,
+     "eur": 2500.0
+    },
+    "video and voice datalink 2 W + antennas": {
+     "kg": 0.35,
+     "W": 12.0,
+     "eur": 4000.0
+    }
+   },
+   "mtow_kg": 14.64,
+   "hover_W": 1931,
+   "loiter_m_s": 12.0,
+   "endurance_hover_min": 24.3,
+   "endurance_loiter_min": 33.7,
+   "on_station_hovering_min_at_5km": 12.8,
+   "cruise_m_s": 15.0,
+   "wind_limit_m_s": 14.0,
+   "deck_hs_limit_m": 2.0,
+   "effectors": {
+    "searchlight": {
+     "lumens": 6000.0,
+     "beam_deg": 6.0,
+     "peak_cd": 418075,
+     "range_m": 609,
+     "haze_range_m": 526
+    },
+    "strobe": {
+     "peak_cd": 500000.0,
+     "flash_ms": 5.0,
+     "hz": 6.0,
+     "effective_cd": 12195,
+     "dazzle_m": 219,
+     "visible_km": 23.9,
+     "laser": false
+    },
+    "loudspeaker": {
+     "spl_1m_db": 130.0,
+     "intelligible_m": {
+      "skiff_at_speed": 17,
+      "skiff_idling": 150,
+      "quiet_deck": 538
+     },
+     "audible_m": 1000
+    },
+    "verdict": "lights and strobe: yes, at speed, from 600 m; voice: only to a skiff idling (150 m) or stopped - against outboards at speed it is heard at ~17 m, too close for a drone; the hail (step 1) stays the carrier's VHF"
+   },
+   "what": "the ladder pod (eoir_payload.LADDER_POD): searchlight, strobe, loudspeaker",
+   "payload_kg": 3.2,
+   "parts": [
+    "gannet_body",
+    "gannet_arms",
+    "gannet_rotors",
+    "gannet_skids",
+    "gannet_ladder"
+   ]
   }
  }
 }

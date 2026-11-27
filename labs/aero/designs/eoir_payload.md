@@ -102,3 +102,25 @@ Fulmars, or a bigger aircraft. Neither is designed here.
   - rain on the optics (heavy rain behaves like fog);
   - the operator's search pattern;
   - the effect of the payload loader's swap time on the deck's rates.
+
+## The ladder pod, for Gannet (added for the Ketos ladder)
+
+Ketos's careful captain could not light a fast skiff in time from the 12 m workboat, so Gannet gets a third payload:
+the **ladder pod** (`eoir_payload.LADDER_POD`, `Gannet.ladder_sizing()`, the card's `payloads.ladder`). It carries a
+6000 lm searchlight (6 deg), a white LED strobe (0.5 Mcd, non-laser) and a 130 dB directional loudspeaker on a
+pan-tilt. It weighs **3.2 kg**, draws **170 W** and costs **EUR 14.5k**.
+
+| | |
+|---|---|
+| Gannet with it | 14.6 kg; hover 24.3 min, loiter 33.7 min; **12.8 min hovering on station 5 km out**; cruise 15 m/s; wind and deck limits unchanged |
+| searchlight | 0.42 Mcd: 1 lux at **610 m** (530 m in haze) |
+| strobe | dazzles to **220 m**, seen at 24 km |
+| loudspeaker | understood at **17 m** over a skiff's outboards at speed, **150 m** by a skiff idling, 540 m on a quiet deck |
+
+**What it does for the ladder**:
+- **Lights and strobe: yes**, at speed, from about 600 m. A drone can take step 3's lights well before any boat
+  arrives.
+- **Voice: only once the skiff slows.** Over running outboards a loudspeaker is heard at 17 m, too close for a drone.
+- **The hail (step 1)** stays the carrier's VHF.
+- **Blocking (step 4)** needs the fast boat, Barracuda (`labs/marine/designs/barracuda.md`, 46.6 kn), not the
+  workboat.

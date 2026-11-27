@@ -61,3 +61,13 @@ def test_cad_with_the_pod():
     for D in (Gannet, Fulmar):
         assert D().build(D.p({"payload": "eoir"})).val().isValid()
         assert D().build(D.p({"part": "gimbal"})).val().isValid()
+
+
+def test_ladder_pod_lights_but_cannot_talk_over_outboards():
+    s = Gannet.ladder_sizing()
+    e = s["effectors"]
+    assert s["pod"]["mass_kg"] <= 5.0 and s["endurance_hover_min"] > 15 and s["on_station_hovering_min_at_5km"] > 5
+    assert e["searchlight"]["range_m"] > 400 and e["strobe"]["laser"] is False
+    assert e["loudspeaker"]["intelligible_m"]["skiff_at_speed"] < 30 < e["loudspeaker"]["intelligible_m"]["skiff_idling"]
+    pytest.importorskip("cadquery")
+    assert Gannet().build(Gannet.p({"payload": "ladder"})).val().isValid()

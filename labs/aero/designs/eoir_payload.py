@@ -56,6 +56,17 @@ POD = {
 #: A small maritime surveillance radar for Fulmar, weighed (class values, assumed).
 RADAR_OPTION = {"what": "lightweight maritime surveillance radar (X/Ku-band, 360 deg scan, small-target mode)", "mass_kg": 3.6,
                 "power_W": 110.0, "price_eur": 90000.0, "skiff_km_from_900m": 12.0}
+#: Gannet's **ladder pod** (class values, assumed): the escalation ladder's lights and voice from the air, for a carrier
+#: whose boat cannot reach a fast skiff early - a searchlight, a white strobe (non-laser) and a directional
+#: loudspeaker on a pan-tilt under the body, with the 2 W link carrying the operator's live voice; no gimbal camera
+#: (the flight stack's deck camera stays). It replaces the crate or the EO/IR pod.
+LADDER_POD = {
+    "parts": {"LED searchlight 6000 lm, 6 deg, on the pan-tilt": (0.90, 60.0, 2500.0),
+              "white LED strobe 0.5 Mcd peak, 5 ms at 6 Hz (non-laser)": (0.30, 30.0, 1500.0),
+              "directional loudspeaker, 130 dB at 1 m (2 kHz), 30 deg": (1.20, 60.0, 4000.0),
+              "pan-tilt head and the crate hook's quick-release mount": (0.45, 8.0, 2500.0),
+              "video and voice datalink 2 W + antennas": (0.35, 12.0, 4000.0)},
+    "light_lm": 6000.0, "light_deg": 6.0, "strobe_cd": 5.0e5, "speaker_db": 130.0, "cda_m2": 0.025}
 FOG_LAYER_M = 150.0
 TARGETS = ("skiff_6m", "fishing_20m")
 
@@ -112,3 +123,20 @@ def radar_fits_fulmar(payload_max_kg: float = 5.0) -> dict:
             "fits_with_eoir": with_eoir <= payload_max_kg, "fits_alone": alone <= payload_max_kg,
             "verdict": ("does not fit with the gimbal (%.1f kg against %.0f kg); a radar-only pod (%.1f kg) %s - a choice between seeing "
                         "and finding, or a bigger aircraft" % (with_eoir, payload_max_kg, alone, "would fit" if alone <= payload_max_kg else "does not fit either"))}
+
+
+def ladder_totals() -> dict:
+    parts = LADDER_POD["parts"]
+    return {"mass_kg": round(sum(m for m, _, _ in parts.values()), 2), "power_W": sum(w for _, w, _ in parts.values()),
+            "price_eur": sum(e for _, _, e in parts.values())}
+
+
+def ladder_effectors() -> dict:
+    """What the ladder pod does from the air (``sensing.py``): the light's reach, the strobe's dazzle, the speaker's
+    intelligible range - over a skiff's running outboards it is a few metres, so the voice step needs the skiff slowed
+    or stopped (or the VHF hail from the carrier); the light and the strobe work at speed."""
+    L = LADDER_POD
+    return {"searchlight": sensing.searchlight(L["light_lm"], L["light_deg"]) | {"haze_range_m": sensing.searchlight(L["light_lm"], L["light_deg"], 5.0)["range_m"]},
+            "strobe": sensing.strobe(L["strobe_cd"], 0.005, 6.0), "loudspeaker": sensing.hailer(L["speaker_db"]),
+            "verdict": "lights and strobe: yes, at speed, from 600 m; voice: only to a skiff idling (150 m) or stopped - "
+                       "against outboards at speed it is heard at ~17 m, too close for a drone; the hail (step 1) stays the carrier's VHF"}

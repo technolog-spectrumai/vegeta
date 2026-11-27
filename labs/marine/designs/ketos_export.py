@@ -739,11 +739,13 @@ def gannet():
     from gannet import Gannet
     d, p, s = Gannet(), Gannet.p(), Gannet.sizing()
     parts = [("gannet_body", "body", "#1f618d"), ("gannet_arms", "arms", "#17202a"), ("gannet_rotors", "rotors", "#aab7b8"),
-             ("gannet_skids", "skids", "#566573"), ("gannet_crate", "crate", "#f5f5f5"), ("gannet_gimbal", "gimbal", "#16a085")]
+             ("gannet_skids", "skids", "#566573"), ("gannet_crate", "crate", "#f5f5f5"), ("gannet_gimbal", "gimbal", "#16a085"),
+             ("gannet_ladder", "ladder", "#e74c3c")]
     models = [_mesh(d.build(p | {"part": k}), n, _hex(c), 6.0) for n, k, c in parts]
     _x_centre(models)
     e = Gannet.eoir_sizing()
-    drawn = [m for m in models if m["name"] != "gannet_gimbal"]
+    drawn = [m for m in models if m["name"] not in ("gannet_gimbal", "gannet_ladder")]
+    lad = Gannet.ladder_sizing()
     card = CARD | {"name": "gannet", "kind": "air", "air": "vtol", "parts": [{"model": m["name"], "color": m["color"]} for m in drawn],
                    "size": [round(2 * p["arm"] / math.sqrt(2) / 1000 + p["prop_in"] * 0.0254, 2)] * 2 + [0.55],
                    "mass_kg": s["empty_kg"], "mtow_kg": s["mtow_kg"], "payload_kg": p["payload_kg"], "battery_Wh": p["battery_wh"],
@@ -757,7 +759,9 @@ def gannet():
                                           "power_hover_W": s["hover_W"], "power_cruise_W": s["cruise_W"], "endurance_min": s["endurance_hover_min"],
                                           "range_km": s["range_km"], "radius_km": s["radius_km"], "parts": [m["name"] for m in drawn]},
                                 "eoir": {k: v for k, v in e.items() if k != "payload"} | {"what": "the surveillance pod (eoir_payload.py) on the crate hook's mount",
-                                         "payload_kg": e["pod"]["mass_kg"], "parts": [m["name"] for m in models if m["name"] != "gannet_crate"]}}}
+                                         "payload_kg": e["pod"]["mass_kg"], "parts": [m["name"] for m in models if m["name"] not in ("gannet_crate", "gannet_ladder")]},
+                                "ladder": {k: v for k, v in lad.items() if k != "payload"} | {"what": "the ladder pod (eoir_payload.LADDER_POD): searchlight, strobe, loudspeaker",
+                                           "payload_kg": lad["pod"]["mass_kg"], "parts": [m["name"] for m in models if m["name"] not in ("gannet_crate", "gannet_gimbal")]}}}
     return card, models
 
 
