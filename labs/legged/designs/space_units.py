@@ -680,6 +680,13 @@ class Centurion(SpaceMarine):
         return {**super().armour_parts(p), "crest": crest(p)}
 
 
+class Kerchak2(SpaceMarine):
+    """Kerchak2: Kerchak's bare frame with a human's limb proportions (``space_unit_specs.KERCHAK2``); drawn bare
+    (its skeleton and joint modules), so the Marine's armour and weapons are not its own."""
+
+    SPECS, EXTRA, NAME = su.KERCHAK2, su.MARINE_EXTRA, "Kerchak2"
+
+
 class Breacher(SpaceMarine):
     """The Breacher: the Marine's armour with a tower shield on the left forearm and a power maul in the right fist."""
 

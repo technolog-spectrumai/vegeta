@@ -659,6 +659,13 @@ def bare(name: str = "Belisario", casing: str = "none", P=None, upright: bool = 
     return r
 
 
+def kerchak2(casing: str = "none"):
+    """Kerchak2: the bare frame (``bare``) with a human's limb proportions (``space_unit_specs.KERCHAK2``)."""
+    r = bare("Kerchak2", casing=casing, P=su.KERCHAK2)
+    r.notes = "Kerchak2: Kerchak's bare frame with a human's limb proportions (design stage)."
+    return r
+
+
 def marine():
     P = su.MARINE
     r = _unit("marine", "Marine", P, "Marine: a 1.86 m armoured humanoid (the line unit) with a carbine and a combat shield, "
