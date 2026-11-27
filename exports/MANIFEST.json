@@ -18,7 +18,7 @@
    "visual_triangles": 4247
   },
   "cigar": {
-   "bytes": 263367,
+   "bytes": 264922,
    "consumers": {
     "ketos": true,
     "montezuma": true,
@@ -30,7 +30,7 @@
    "lab": "aero",
    "links": 1,
    "mass_kg": 8500.0,
-   "sha256": "3d4af5033df1c730c84c45c680a78dba04362b6c006e9b3cd060415774dcfac0",
+   "sha256": "b1847cafea504a20a096d052233c88981608cf577689399c0e6753fa1ffeefe3",
    "visual_triangles": 4865
   },
   "drongo": {
@@ -266,7 +266,7 @@
    "visual_triangles": 4212
   },
   "saucer": {
-   "bytes": 243924,
+   "bytes": 245293,
    "consumers": {
     "ketos": true,
     "montezuma": true,
@@ -278,7 +278,7 @@
    "lab": "aero",
    "links": 1,
    "mass_kg": 6400.0,
-   "sha256": "2349497cb2eead082a74fc784aa50303c3a8a5f3ad5904044fb49a200c37ef95",
+   "sha256": "7f1dbbd7749201f7d01f8d4ec195a0503bdf729eed2bc0ba085a41d300247519",
    "visual_triangles": 5986
   },
   "skiff": {
@@ -346,10 +346,10 @@
    "visual_triangles": 5052
   }
  },
- "published": "2026-11-27T16:10:08Z",
+ "published": "2026-11-27T16:12:13Z",
  "vegeta": {
   "branch": "dev_ufo",
-  "commit": "70f1a01a9664cd23ffdcae64ae67cfd4cd088ad1",
+  "commit": "1429d4727d896f1f11c4b4bf638c2e47eefd45a7",
   "dirty": false,
   "repo": "technolog-spectrumai/vegeta"
  },
