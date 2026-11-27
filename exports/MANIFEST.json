@@ -1,6 +1,21 @@
 {
  "format": "vegeta-exports/1",
  "machines": {
+  "barracuda": {
+   "bytes": 185279,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": false
+   },
+   "file": "barracuda.yx2",
+   "joints": 0,
+   "lab": "marine",
+   "links": 1,
+   "mass_kg": 3340.068,
+   "sha256": "c4fe9aeac9b23953535bf02889f9007d595f16e4f07507ca4eb9fdc88a0f84c4",
+   "visual_triangles": 4247
+  },
   "drongo": {
    "bytes": 234087,
    "consumers": {
@@ -15,6 +30,21 @@
    "mass_kg": 0.5869,
    "sha256": "664e4f2245f7dcda7d6cd2b7745a0f223ddd7a7283e630661bc207fd7c569649",
    "visual_triangles": 4316
+  },
+  "esmeralda": {
+   "bytes": 200900,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": false
+   },
+   "file": "esmeralda.yx2",
+   "joints": 0,
+   "lab": "marine",
+   "links": 1,
+   "mass_kg": 94011.8509,
+   "sha256": "79a9ec2b486d8f1bd03ce6f623dc5334d7f0f7e8ec2a9c5bff8c8a27e262b9ad",
+   "visual_triangles": 5105
   },
   "onager": {
    "bytes": 262978,
@@ -120,12 +150,27 @@
    "mass_kg": 2.0854,
    "sha256": "e9f858c84c6cf73b8acc3106a557bd057b10c6e30211e971347cc02097c1c53a",
    "visual_triangles": 4212
+  },
+  "zarco": {
+   "bytes": 195446,
+   "consumers": {
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": false
+   },
+   "file": "zarco.yx2",
+   "joints": 0,
+   "lab": "marine",
+   "links": 1,
+   "mass_kg": 96750.0,
+   "sha256": "cf770693e4597526b4383e2d2b5b3a939e0e062012011ac182570734ee6abf74",
+   "visual_triangles": 5052
   }
  },
- "published": "2026-10-22T16:51:50Z",
+ "published": "2026-11-27T03:33:04Z",
  "vegeta": {
-  "branch": "dev_yax",
-  "commit": "7f0f003cb60d9a256f37f4bd48f85dd624d21655",
+  "branch": "dev_sea_game_machines",
+  "commit": "7eeff489af1515ba06f89494ce87a78aea2cd4de",
   "dirty": false,
   "repo": "technolog-spectrumai/vegeta"
  },
