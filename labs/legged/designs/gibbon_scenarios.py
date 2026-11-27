@@ -2268,3 +2268,54 @@ def _radio_call(kin, q_stand, q0, base, pt):
 gs.DEFAULTS["fire"] = FIRE
 gs.SCENARIOS["fire"] = scenario_fire
 gs.COMPOSITE["fire"] = fire_props
+
+
+# ---- the footballer: the monkey face and a solid shirt on the spider monkey's frame (no tail, no toes), on a pitch
+KIT = {"shirt": (0.80, 0.08, 0.10, 1.0), "trim": (0.97, 0.97, 0.95, 1.0)}   #: the shirt's solid red, the collar's and cuffs' white
+KIT_ON = {"monkey_face": "thorax", "shirt": "thorax", "sleeve_L": "L_upper_arm", "sleeve_R": "R_upper_arm"}   #: each worn piece's body (its geoms in that body's frame)
+FOOTBALL = {"walk_m": 6.0, "pitch_x0": -12.0, "pitch_x1": 20.0, "pitch_w": 14.0}
+
+
+def kit_props(p=None):
+    """What the footballer wears, each a free piece set on its body every frame: the monkey face (camera eyes, smoke
+    detector nose, disc ears with microphones), the shirt over the ribs (below the head, the shoulder joints left
+    out), a short sleeve on each upper arm, a white collar and cuffs."""
+    S, W = KIT["shirt"], KIT["trim"]
+    v = lambda name, typ, size, pos, rgba, quat=(1.0, 0.0, 0.0, 0.0): Geom(name, typ, size, pos=pos, quat=quat, mass=0.01, role="visual", rgba=rgba)
+    shirt = [v("shirt_body", "box", (0.078, 0.128, 0.11), (-0.006, 0.0, 0.02), S),
+             v("shirt_yoke", "box", (0.07, 0.15, 0.02), (-0.006, 0.0, 0.115), S),
+             v("shirt_collar", "cylinder", (0.04, 0.006), (-0.01, 0.0, 0.138), W)]
+    out = [face_prop(p), Prop(Link("shirt", pos=(-6.0, 0.0, 3.0), geoms=shirt), free=True)]
+    for t_ in ("L", "R"):
+        out.append(Prop(Link(f"sleeve_{t_}", pos=(-6.0, 1.0, 3.0), geoms=[
+            v(f"sleeve_{t_}_tube", "capsule", (0.036, 0.05), (0.0, 0.0, -0.04), S),
+            v(f"sleeve_{t_}_cuff", "cylinder", (0.038, 0.006), (0.0, 0.0, -0.1), W)]), free=True))
+    return out
+
+
+def pitch_prop(p):
+    """Grass with its white lines: the halfway line across the walk, its circle's arc, the touchline."""
+    g, w = (0.22, 0.55, 0.22, 1.0), (0.97, 0.97, 0.95, 1.0)
+    x0, x1, hw = p["pitch_x0"], p["pitch_x1"], p["pitch_w"]
+    geoms = [Geom("grass", "box", ((x1 - x0) / 2, hw, 0.002), pos=((x0 + x1) / 2, 0.0, -0.0015), mass=1.0, role="visual", rgba=g),
+             Geom("touchline", "box", ((x1 - x0) / 2, 0.04, 0.0006), pos=((x0 + x1) / 2, -1.5, 0.0008), mass=0.1, role="visual", rgba=w),
+             Geom("halfway", "box", (0.04, hw, 0.0006), pos=(4.0, 0.0, 0.0008), mass=0.1, role="visual", rgba=w)]
+    for i in range(16):
+        a_ = math.radians(-90 + 12 * i)
+        geoms.append(Geom(f"circle_{i}", "box", (0.04, 0.2, 0.0006), pos=(4.0 + 1.6 * math.cos(a_), 1.6 * math.sin(a_), 0.0008),
+                          quat=(math.cos(a_ / 2), 0.0, 0.0, math.sin(a_ / 2)), mass=0.1, role="visual", rgba=w))
+    return Prop(Link("pitch", pos=(0.0, 0.0, 0.0), geoms=geoms), free=False)
+
+
+def football_props(p):
+    return (pitch_prop(p),) + tuple(kit_props(p))
+
+
+def scenario_football(kin, q_stand, p):
+    """For now: the footballer walks across the halfway line."""
+    return [("gait", p["walk_m"] / 0.6, 0.0)]
+
+
+gs.DEFAULTS["football"] = FOOTBALL
+gs.SCENARIOS["football"] = scenario_football
+gs.COMPOSITE["football"] = football_props

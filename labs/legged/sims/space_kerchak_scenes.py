@@ -40,16 +40,19 @@ import space_unit_robots as sr  # noqa: E402
 from vegeta.chiron import SimOptions  # noqa: E402
 
 OUT = march_sim.OUT
-VIEWS = {"fire": (14.0, 225.0), "heist": (14.0, 225.0), "heist_jump": (14.0, 225.0), "tree_spider": (10.0, 235.0), "chimney": (10.0, 240.0), "course": (18.0, 232.0), "brachiate": (16.0, 228.0), "brachiate_up": (14.0, 230.0), "wall": (12.0, 265.0), "tree": (12.0, 265.0), "hull": (12.0, 265.0), "rope": (12.0, 265.0), "window": (14.0, 230.0),
+VIEWS = {"football": (8.0, 330.0), "fire": (14.0, 225.0), "heist": (14.0, 225.0), "heist_jump": (14.0, 225.0), "tree_spider": (10.0, 235.0), "chimney": (10.0, 240.0), "course": (18.0, 232.0), "brachiate": (16.0, 228.0), "brachiate_up": (14.0, 230.0), "wall": (12.0, 265.0), "tree": (12.0, 265.0), "hull": (12.0, 265.0), "rope": (12.0, 265.0), "window": (14.0, 230.0),
          "window_hammer": (14.0, 230.0), "obstacles": (12.0, 265.0), "door": (14.0, 215.0)}
 
 
 class ScenePlayer:
     def __init__(self, scene, mode, params=None, casing="none", machine="kerchak"):
         self.scene, self.mode, self.machine = scene, mode, machine
-        if machine in ("humanoid", "gibbon", "spider"):                             # the upright frames: they stand, and walk
+        if machine in ("humanoid", "gibbon", "spider", "footballer"):              # the upright frames: they stand, and walk
             import humanoid_motions as hum
-            self.robot = {"humanoid": sr.humanoid, "gibbon": sr.gibbon, "spider": sr.spider}[machine](casing=casing)
+            self.robot = {"humanoid": sr.humanoid, "gibbon": sr.gibbon, "spider": sr.spider, "footballer": sr.footballer}[machine](casing=casing)
+            if machine == "footballer":                                     # the face's ears: solid parts of the head
+                import gibbon_scenarios as gb
+                [lk for lk in self.robot.links() if lk.name == "thorax"][0].geoms.extend(gb.ear_geoms(solid=True))
             if scene == "fire":                                            # the firefighter's ears: solid parts of the head
                 import gibbon_scenarios as gb
                 [lk for lk in self.robot.links() if lk.name == "thorax"][0].geoms.extend(gb.ear_geoms(solid=True) + gb.scapula_geoms())
@@ -62,6 +65,10 @@ class ScenePlayer:
             S = gm.scale()
             if machine == "humanoid":
                 self.walk = hum.walk(self.kin, speed=1.0, stance=0.6 * S, duty=0.6, step=0.08 * S, crouch=0.06, arm=0.4)
+            elif machine == "footballer":                                  # a footballer's walk: the arms down at the sides, swinging, the elbows bent
+                for side in ("L", "R"):
+                    self.q_quad[self.kin.index[f"{side}_shoulder_pitch"]], self.q_quad[self.kin.index[f"{side}_elbow"]] = 0.0, -0.5
+                self.walk = hum.walk(self.kin, speed=0.6, stance=0.18, duty=0.6, step=0.04, crouch=0.03, arm=0.2, arm_offset=0.0, elbow=-0.5)
             else:                                                          # the gibbon's bipedal walk: short quick steps, the long arms held up and out
                 self.walk = hum.walk(self.kin, speed=0.6, stance=0.16, duty=0.6, step=0.04, crouch=0.03, arm=0.15, arm_offset=-2.2, elbow=-0.9)
             self.walk_h = hum.gait_height(self.kin, self.walk, self.q_quad)   # the walk's pelvis height: the soles on the ground, not in it
@@ -73,7 +80,7 @@ class ScenePlayer:
             self.walk = gm.knuckle_walk(self.kin, self.q_quad)
             self.walk_h = gm.STANCE["h"]
         self.v = float(self.walk.base["velocity_m_s"][0])
-        gs.set_hand({"gibbon": su.GIBBON, "spider": su.SPIDER, "humanoid": su.HUMANOID}.get(machine, su.MARINE))   # the grip from this frame's own hand
+        gs.set_hand({"gibbon": su.GIBBON, "spider": su.SPIDER, "footballer": su.FOOTBALLER, "humanoid": su.HUMANOID}.get(machine, su.MARINE))   # the grip from this frame's own hand
         opts = SimOptions()
         opts.course_extent = (-2.0, 14.0, -3.0, 3.0)
         xml = self.robot.to_mjcf(options=opts, props=list(gs.props(scene, params)))
@@ -105,6 +112,13 @@ class ScenePlayer:
         self.strike_t = None                                               # when the pane goes (window_hammer)
         self._hammer = None
         self._pack = None
+        self._kit = []                                                     # the footballer's worn pieces: (free joint's qpos address, body id)
+        if scene == "football":
+            import gibbon_scenarios as gb
+            m = self.model
+            for piece, body in gb.KIT_ON.items():
+                j = [j for j in range(m.njnt) if m.jnt_type[j] == mujoco.mjtJoint.mjJNT_FREE and m.body(m.jnt_bodyid[j]).name == piece][0]
+                self._kit.append((m.jnt_qposadr[j], m.body(body).id))
         if "backpack" in [self.model.body(i).name for i in range(self.model.nbody)]:   # the heist: a backpack on the thorax's back
             m = self.model
             freep = [j for j in range(m.njnt) if m.jnt_type[j] == mujoco.mjtJoint.mjJNT_FREE and m.body(m.jnt_bodyid[j]).name == "backpack"]
@@ -214,6 +228,12 @@ class ScenePlayer:
             mujoco.mju_mat2Quat(qq, Rt.reshape(9))
             a = self._pack["adr"]
             d.qpos[a:a + 3], d.qpos[a + 3:a + 7] = d.xpos[self._pack["thorax"]] + Rt @ np.array(gb.BACKPACK["on_thorax"]), qq
+            mujoco.mj_kinematics(self.model, d)
+        if self._kit:                                                      # the face, the shirt and its sleeves worn on their bodies
+            for a, b in self._kit:
+                qq = np.zeros(4)
+                mujoco.mju_mat2Quat(qq, d.xmat[b])
+                d.qpos[a:a + 3], d.qpos[a + 3:a + 7] = d.xpos[b], qq
             mujoco.mj_kinematics(self.model, d)
         if self._hammer is not None:
             self._hammer_pose(t)
@@ -588,7 +608,7 @@ def main(argv=None):
     ap.add_argument("--param", action="append", default=[], help="scene parameter key=value")
     ap.add_argument("--render", choices=("mesh", "boxes"), default="mesh", help="the CAD on the bodies (belisario_render), or the collision shapes")
     ap.add_argument("--casing", choices=("none", "plastic"), default="plastic")
-    ap.add_argument("--machine", choices=("kerchak", "humanoid", "gibbon", "spider"), default="kerchak", help="the frame: Kerchak on four, the upright humanoid, the gibbon or the spider monkey")
+    ap.add_argument("--machine", choices=("kerchak", "humanoid", "gibbon", "spider", "footballer"), default="kerchak", help="the frame: Kerchak on four, the upright humanoid, the gibbon or the spider monkey")
     ap.add_argument("--size", default="1280x720")
     ap.add_argument("--chunk", default="", help="i/n: draw only every n-th frame from i into --frames-dir (parallel renders); no movie is assembled")
     ap.add_argument("--from-s", type=float, default=0.0, help="draw only the frames from this time on (re-drawing part of a --frames-dir)")
@@ -615,7 +635,7 @@ def main(argv=None):
         import belisario_render as br
         w, h = (int(v) for v in a.size.split("x"))
         import space_unit_specs as su
-        renderer = br.Renderer(g.model, bm.load(a.casing, P={"humanoid": su.HUMANOID, "gibbon": su.GIBBON, "spider": su.SPIDER}.get(a.machine)), w, h)
+        renderer = br.Renderer(g.model, bm.load(a.casing, P={"humanoid": su.HUMANOID, "gibbon": su.GIBBON, "spider": su.SPIDER, "footballer": su.FOOTBALLER}.get(a.machine)), w, h)
 
     def draw(path, t, what):
         c = np.array(g.data.qpos[0:3])
@@ -653,7 +673,7 @@ def main(argv=None):
                 eye = tgt + 1.0 * look / np.linalg.norm(look)
                 cam = br.Camera(tuple((1 - f) * np.asarray(cam.eye) + f * eye), tuple((1 - f) * np.asarray(cam.target) + f * tgt))
                 renderer.hidden |= {"back_wall", "side_left", "side_right", "roof"} if f > 0.5 else set()
-            renderer.render(g.data, cam, title=f"{ {'kerchak': 'Kerchak', 'humanoid': 'the humanoid', 'gibbon': 'the gibbon', 'spider': 'the spider monkey'}[a.machine]}: {a.scene}   -   t = {t:4.1f} s   -   {what}  ({a.mode})").save(path)
+            renderer.render(g.data, cam, title=f"{ {'kerchak': 'Kerchak', 'humanoid': 'the humanoid', 'gibbon': 'the gibbon', 'spider': 'the spider monkey', 'footballer': 'the footballer'}[a.machine]}: {a.scene}   -   t = {t:4.1f} s   -   {what}  ({a.mode})").save(path)
             return
         import matplotlib
         matplotlib.use("Agg")

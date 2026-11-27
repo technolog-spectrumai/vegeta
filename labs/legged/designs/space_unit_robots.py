@@ -530,6 +530,14 @@ def spider(casing: str = "plastic"):
     return r
 
 
+def footballer(casing: str = "plastic"):
+    """The footballer (``space_unit_specs.FOOTBALLER``): the spider monkey's frame with no tail and toeless feet."""
+    r = gibbon(casing, P=su.FOOTBALLER, name="Footballer")
+    r.notes = "The footballer: the spider monkey's frame, no tail, plain soles (design stage)."
+    r.sources["geometry"] = r.sources["geometry"].replace("GIBBON", "FOOTBALLER")
+    return r
+
+
 def gibbon(casing: str = "plastic", P=None, name: str = "Gibbon"):
     """The gibbon (``space_unit_specs.GIBBON``): Kerchak's fork for the trees, fully arboreal - the same kind of
     skeleton, spine and hands at a siamang's size with a gibbon's arms and hook hands, on small joint modules
@@ -632,7 +640,7 @@ def bare(name: str = "Belisario", casing: str = "none", P=None, upright: bool = 
         elif j.tag == "shoulder_roll":
             j.range = (-0.8, 2.5) if j.name.startswith("L") else (-2.5, 0.8)
     _hands(r, P)
-    spec = "GIBBON" if P is su.GIBBON else "SPIDER" if P is getattr(su, "SPIDER", None) else "HUMANOID" if upright else "MARINE"
+    spec = "GIBBON" if P is su.GIBBON else "SPIDER" if P is getattr(su, "SPIDER", None) else "FOOTBALLER" if P is getattr(su, "FOOTBALLER", None) else "HUMANOID" if upright else "MARINE"
     r.sources["geometry"] = f"designs/space_units.py ({name} bare: space_unit_specs.{spec}, no weapons, casing {casing})"
     for lk in r.links():                                                  # the frame drawn as bone
         for g in lk.geoms:
