@@ -95,7 +95,7 @@
  ],
  "draught_m": 1.5,
  "displacement_t": 108.0,
- "mass_kg": 96350,
+ "mass_kg": 96750,
  "service_kn": 10.0,
  "max_kn": 14.6,
  "service_kW": 170,
@@ -127,14 +127,14 @@
  "robots": {
   "davit": {
    "count": 4,
-   "what": "an automatic davit with a latch cradle: a Walrus over the side and back, the tether reel paced to it",
-   "reach_m": 2.5,
+   "what": "a motion-compensated davit with a latch cradle (``DAVIT_AHC``): an MRU on its base, an active-heave-compensated winch, a compensating luff and slew - the hook stands still in the earth frame while the deck moves; a Walrus over the side and back, the tether reel paced to it",
+   "reach_m": 2.4,
    "payload_kg": 60.0,
    "cycle_s": 300.0,
-   "power_kW": 1.5,
-   "faults_per_day": 0.05,
+   "power_kW": 2.5,
+   "faults_per_day": 0.08,
    "fix_min": 10.0,
-   "price_eur": 38000.0
+   "price_eur": 66500.0
   },
   "basket_gantry": {
    "count": 1,
@@ -212,6 +212,85 @@
  "davits": 4,
  "tether_reels": 4,
  "usbl": true,
+ "davit": {
+  "compensated": true,
+  "mechanism": "MRU + AHC winch + compensating luff and slew",
+  "boom_m": 2.4,
+  "mru": {
+   "what": "6-DOF motion reference unit (MEMS gyros + accelerometers, heave filter), on the davit's base",
+   "heave_accuracy_m": 0.05,
+   "heave_accuracy_frac": 0.05,
+   "roll_pitch_accuracy_deg": 0.02,
+   "rate_hz": 100.0,
+   "latency_s": 0.01,
+   "power_W": 15.0,
+   "price_eur": 7000.0
+  },
+  "winch": {
+   "what": "AHC winch: a servo motor on the drum, 4-quadrant drive, regenerating",
+   "line_pull_N": 1200.0,
+   "rope_speed_m_s": 2.5,
+   "rope_accel_m_s2": 3.0,
+   "rope_m": 40.0,
+   "peak_kW": 4.0,
+   "price_eur": 9000.0
+  },
+  "luff": {
+   "what": "luffing ball-screw cylinder (boom angle from the vertical)",
+   "range_deg": [
+    5.0,
+    85.0
+   ],
+   "rate_deg_s": 40.0,
+   "stroke_m": 0.55,
+   "speed_m_s": 0.3,
+   "peak_kW": 1.5,
+   "price_eur": 4500.0
+  },
+  "slew": {
+   "what": "worm slewing drive under the post",
+   "range_deg": [
+    -35.0,
+    35.0
+   ],
+   "rate_deg_s": 30.0,
+   "peak_kW": 1.0,
+   "price_eur": 3500.0
+  },
+  "supercaps": {
+   "what": "supercapacitor bank on the davit's DC bus (the peaks, the regenerated energy)",
+   "kJ": 60.0,
+   "price_eur": 1500.0
+  },
+  "hs_limit_m": 2.8,
+  "hs_limit_uncompensated_m": 2.0,
+  "limited_by": "luff_stroke",
+  "max_heave_m": 2.1,
+  "max_roll_deg": 10.5,
+  "max_pitch_deg": 5.0,
+  "sheave_motion_at_limit_m": 2.59,
+  "residual_at_limit_m": {
+   "vertical": 0.167,
+   "horizontal": 0.082
+  },
+  "residual_at_2m_m": {
+   "vertical": 0.125,
+   "horizontal": 0.059
+  },
+  "payload_kg": 60.0,
+  "uprated_winch": {
+   "what": "uprated AHC winch: 3 kN line pull, the same rope speed",
+   "payload_kg": 150.0,
+   "line_pull_N": 3000.0,
+   "peak_kW": 9.0,
+   "extra_eur": 6000.0,
+   "hs_limit_m": 2.8
+  },
+  "compensation_eur": 28500.0,
+  "power_kW_avg": 2.5,
+  "peak_kW": 6.5
+ },
+ "davit_hs_limit_m": 2.8,
  "haul_min_per_basket": 1.5,
  "basket_robot": true,
  "packing": {
@@ -286,6 +365,6 @@
   "pack_kg_h": 300,
   "baskets_per_h": 40
  },
- "price_eur": 4039780,
+ "price_eur": 4153780,
  "day_rate_eur": 1400.0
 }
