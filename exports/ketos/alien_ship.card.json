@@ -1,0 +1,122 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "alien_ship",
+ "kind": "vessel",
+ "fictional": true,
+ "functional": false,
+ "faction": "alien raiders",
+ "parts": [
+  {
+   "model": "alien_ship_hull",
+   "color": [
+    0.169,
+    0.176,
+    0.188
+   ]
+  },
+  {
+   "model": "alien_ship_superstructure",
+   "color": [
+    0.478,
+    0.49,
+    0.502
+   ]
+  },
+  {
+   "model": "alien_ship_bridge",
+   "color": [
+    0.478,
+    0.49,
+    0.502
+   ]
+  },
+  {
+   "model": "alien_ship_windows",
+   "color": [
+    0.02,
+    0.02,
+    0.02
+   ]
+  },
+  {
+   "model": "alien_ship_tower",
+   "color": [
+    0.42,
+    0.431,
+    0.447
+   ]
+  },
+  {
+   "model": "alien_ship_emblem",
+   "color": [
+    0.949,
+    0.949,
+    0.949
+   ]
+  },
+  {
+   "model": "alien_ship_emblem_eyes",
+   "color": [
+    0.02,
+    0.02,
+    0.02
+   ]
+  },
+  {
+   "model": "alien_ship_flag",
+   "color": [
+    0.039,
+    0.039,
+    0.039
+   ]
+  },
+  {
+   "model": "alien_ship_flag_emblem",
+   "color": [
+    0.949,
+    0.949,
+    0.949
+   ]
+  }
+ ],
+ "components": [
+  "hull",
+  "superstructure",
+  "bridge",
+  "windows",
+  "tower",
+  "emblem",
+  "emblem_eyes",
+  "flag",
+  "flag_emblem"
+ ],
+ "mass_kg": 5346400,
+ "displacement_t": 5346.4,
+ "flag": {
+  "what": "black, a white alien head with large almond-shaped black eyes above two crossed bones",
+  "models": [
+   "alien_ship_flag",
+   "alien_ship_flag_emblem"
+  ]
+ },
+ "emblem": {
+  "models": [
+   "alien_ship_emblem",
+   "alien_ship_emblem_eyes"
+  ]
+ },
+ "size": [
+  140.0,
+  17.0,
+  35.5
+ ],
+ "draught_m": 4.5,
+ "freeboard_m": 8.0,
+ "height_above_water_m": 31.0,
+ "superstructure_m": [
+  56.0,
+  13.0
+ ],
+ "frame": "z = 0 the waterline"
+}

@@ -206,3 +206,30 @@ def craft_visual(name: str):
         import small_craft as sc
         return sc.build(name)
     return build
+
+
+def alien(name: str) -> Robot:
+    """A fictional alien vessel (``alien_vessels.py``): a rigid body of its hull's displacement (the ship's below its
+    waterline, the submarine's submerged), a box (ship) or a cylinder (submarine) for its shape; looks from its CAD."""
+    import alien_vessels as av
+    if name == "alien_ship":
+        p, s = av.AlienShip.p(), av.AlienShip.sizing()
+        g = [Geom("hull", "box", (p["length"] * 0.45, p["beam"] * 0.4, (p["freeboard"] + p["draught"]) / 2),
+                  pos=(0.0, 0.0, (p["freeboard"] - p["draught"]) / 2), mass=s["displacement_t"] * 1000, role="body", rgba=(0.17, 0.18, 0.19, 1.0))]
+    else:
+        p, s = av.AlienSubmarine.p(), av.AlienSubmarine.sizing()
+        g = [Geom("hull", "cylinder", (p["diameter"] / 2, p["length"] * 0.42), quat=(0.7071068, 0.0, 0.7071068, 0.0),
+                  mass=s["displacement_t"] * 1000, role="body", rgba=(0.11, 0.11, 0.12, 1.0))]
+    r = Robot(name.replace("_", " ").title().replace(" ", ""), Link("hull", log=True, geoms=g),
+              notes=f"{name}: a fictional, non-functional exterior model; a rigid body of its hull's displacement",
+              sources={"mass": "alien_vessels sizing (the hull's volume x 1025 kg/m3)", "looks": "designs/alien_vessels.py"})
+    r.validate()
+    return r
+
+
+def alien_visual(name: str):
+    def build():
+        import alien_vessels as av
+        D = av.AlienShip if name == "alien_ship" else av.AlienSubmarine
+        return D().build(D.p())
+    return build

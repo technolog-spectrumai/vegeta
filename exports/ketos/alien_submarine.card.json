@@ -1,0 +1,117 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "alien_submarine",
+ "kind": "vessel",
+ "fictional": true,
+ "functional": false,
+ "faction": "alien raiders",
+ "parts": [
+  {
+   "model": "alien_submarine_sub_hull",
+   "color": [
+    0.11,
+    0.114,
+    0.122
+   ]
+  },
+  {
+   "model": "alien_submarine_sail",
+   "color": [
+    0.11,
+    0.114,
+    0.122
+   ]
+  },
+  {
+   "model": "alien_submarine_fins",
+   "color": [
+    0.227,
+    0.235,
+    0.247
+   ]
+  },
+  {
+   "model": "alien_submarine_masts",
+   "color": [
+    0.227,
+    0.235,
+    0.247
+   ]
+  },
+  {
+   "model": "alien_submarine_emblem",
+   "color": [
+    0.949,
+    0.949,
+    0.949
+   ]
+  },
+  {
+   "model": "alien_submarine_emblem_eyes",
+   "color": [
+    0.02,
+    0.02,
+    0.02
+   ]
+  },
+  {
+   "model": "alien_submarine_flag",
+   "color": [
+    0.039,
+    0.039,
+    0.039
+   ]
+  },
+  {
+   "model": "alien_submarine_flag_emblem",
+   "color": [
+    0.949,
+    0.949,
+    0.949
+   ]
+  }
+ ],
+ "components": [
+  "sub_hull",
+  "sail",
+  "fins",
+  "masts",
+  "emblem",
+  "emblem_eyes",
+  "flag",
+  "flag_emblem"
+ ],
+ "mass_kg": 5758700,
+ "displacement_t": 5758.7,
+ "flag": {
+  "what": "black, a white alien head with large almond-shaped black eyes above two crossed bones",
+  "models": [
+   "alien_submarine_flag",
+   "alien_submarine_flag_emblem"
+  ]
+ },
+ "emblem": {
+  "models": [
+   "alien_submarine_emblem",
+   "alien_submarine_emblem_eyes"
+  ]
+ },
+ "size": [
+  95.0,
+  10.0,
+  17.0
+ ],
+ "diameter_m": 10.0,
+ "sail_m": [
+  12.0,
+  4.0,
+  7.0
+ ],
+ "surfaced_waterline_z_m": 3.0,
+ "frame": "z = 0 the hull's axis; surfaced, the waterline at surfaced_waterline_z_m and the flag up",
+ "configurations": {
+  "surfaced": "all components",
+  "submerged": "without flag and flag_emblem"
+ }
+}

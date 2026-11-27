@@ -784,6 +784,39 @@ def skiff():
     return _craft("skiff")
 
 
+def _alien(name, D, parts, extra):
+    """A fictional alien vessel (``alien_vessels.py``): non-functional exterior, one mesh per component in its
+    colour; the card says what it is (``fictional``), its dimensions and its hull's displacement - no performance."""
+    import alien_vessels as av
+    d, p, s = D(), D.p(), D.sizing()
+    models = [_mesh(d.build(p | {"part": k}), f"{name}_{k}", _hex(av.COLOURS[k]), 60.0, ang=0.4) for k in parts]
+    _x_centre(models)
+    card = CARD | {"name": name, "kind": "vessel", "fictional": True, "functional": False, "faction": "alien raiders",
+                   "parts": [{"model": m["name"], "color": m["color"]} for m in models], "components": list(parts),
+                   "mass_kg": round(s["displacement_t"] * 1000), "displacement_t": s["displacement_t"],
+                   "flag": {"what": "black, a white alien head with large almond-shaped black eyes above two crossed bones",
+                            "models": [f"{name}_flag", f"{name}_flag_emblem"]},
+                   "emblem": {"models": [f"{name}_emblem", f"{name}_emblem_eyes"]}, **extra(s, p)}
+    return card, models
+
+
+def alien_ship():
+    import alien_vessels as av
+    return _alien("alien_ship", av.AlienShip, av.SHIP_PARTS,
+                  lambda s, p: {"size": [s["length_m"], s["beam_m"], round(s["height_m"] + s["draught_m"], 1)], "draught_m": s["draught_m"],
+                                "freeboard_m": s["freeboard_m"], "height_above_water_m": s["height_m"],
+                                "superstructure_m": s["superstructure_m"], "frame": "z = 0 the waterline"})
+
+
+def alien_submarine():
+    import alien_vessels as av
+    return _alien("alien_submarine", av.AlienSubmarine, av.SUB_PARTS,
+                  lambda s, p: {"size": [s["length_m"], s["diameter_m"], s["height_m"]], "diameter_m": s["diameter_m"],
+                                "sail_m": s["sail_m"], "surfaced_waterline_z_m": round(p["diameter"] * 0.3, 2),
+                                "frame": "z = 0 the hull's axis; surfaced, the waterline at surfaced_waterline_z_m and the flag up",
+                                "configurations": {"surfaced": "all components", "submerged": "without flag and flag_emblem"}})
+
+
 def _aero():
     aero = os.path.join(HERE, "..", "..", "aero", "designs")
     if aero not in sys.path:
@@ -924,7 +957,7 @@ MACHINES = {"cyclopterus": cyclopterus, "shrimp": shrimp, "workboat": workboat, 
             "walrus": walrus, "clam_basket": clam_basket, "clam_boat": clam_boat,
             "zarco": zarco, "gannet": gannet, "fulmar": fulmar, "barracuda": barracuda, "esmeralda": esmeralda,
             "fishing_boat": fishing_boat, "pilot_boat": pilot_boat, "yacht": yacht, "skiff": skiff,
-            "saucer": saucer, "cigar": cigar}
+            "saucer": saucer, "cigar": cigar, "alien_ship": alien_ship, "alien_submarine": alien_submarine}
 
 
 def export(out, only=None):
