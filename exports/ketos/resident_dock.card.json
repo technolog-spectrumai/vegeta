@@ -22,5 +22,114 @@
  "charge_W": 2000.0,
  "mass_kg": 1800.0,
  "comms": "fibre",
- "price_eur": 900000.0
+ "price_eur": 900000.0,
+ "leg": "A1",
+ "legs_that_fit_at_depth": [
+  "A1",
+  "B1",
+  "B2"
+ ],
+ "fitting_depths_m": {
+  "A1": [
+   -30.0,
+   -40.0,
+   -45.0,
+   -55.0,
+   -60.0,
+   -70.0,
+   -75.0,
+   -80.0
+  ],
+  "A2": [],
+  "B1": [
+   -30.0,
+   -40.0,
+   -45.0,
+   -55.0,
+   -60.0,
+   -70.0,
+   -75.0,
+   -80.0
+  ],
+  "B2": [
+   -30.0,
+   -40.0,
+   -45.0,
+   -55.0,
+   -60.0,
+   -70.0,
+   -75.0,
+   -80.0
+  ]
+ },
+ "clearance_m": 8.95,
+ "mount": {
+  "leg_d_m": 2.0,
+  "liner_bore_m": 2.024,
+  "collars": 2,
+  "collar_spacing_m": 1.5,
+  "collar_height_m": 0.45,
+  "collar_wall_m": 0.03,
+  "weight_in_water_kN": 15.4,
+  "drag_kN": 3.2,
+  "lever_m": 3.25,
+  "normal_force_per_collar_kN": 418,
+  "bolts_per_collar": 4,
+  "bolt": "M30 10.9, 280 kN preload (class)",
+  "mu": 0.2,
+  "safety_factor": 2.0,
+  "collar_mass_kg": 1644,
+  "install": "two halves lowered from the DP vessel and closed round the leg by a work-class ROV (Homarus), studs tensioned hydraulically after the leg is cleaned of growth under the liner; the garage on a bracket that takes out the leg's 1:10 batter so it lies level",
+  "cp": "bonded to the jacket's cathodic protection through the collars' bonding straps, plus two anodes on the garage",
+  "no_welding": true
+ },
+ "mount_mass_kg": 1644,
+ "services": {
+  "charger": {
+   "kind": "inductive coupler at the garage's back (no wet-mate pins)",
+   "kW": 2.0,
+   "efficiency": 0.9,
+   "squilla_battery_Wh": 4500.0,
+   "usable_Wh": 3825,
+   "charge_h": 2.2
+  },
+  "patrol": {
+   "power_W": 236,
+   "hours_on_a_charge": 16.2,
+   "duty_out_of_dock": 0.87,
+   "note": "a guard patrol at ~1 m/s round the jacket; intervention work (s['work_W']) empties it ~3x faster"
+  },
+  "work_W": 650,
+  "cable": {
+   "length_m": 160,
+   "what": "armoured hybrid cable up the leg in clamps: 2 single-mode fibres + 2 x 6 mm2 copper",
+   "power": "400 V DC from the topside, 2.5 kW",
+   "loss_W": 39
+  },
+  "data": {
+   "topside": "1 Gbit/s Ethernet over fibre",
+   "docked": "optical free-space modem at the coupler, ~100 Mbit/s over ~1 m: video and logs off, mission plans on",
+   "away": "acoustic modem + USBL head on the dock: ~5-10 kbit/s to ~2 km, Squilla's position for the carrier and the topside",
+   "latency": "fibre: ms; acoustic: ~1.5 s a km"
+  }
+ },
+ "docking": {
+  "cycle_s": {
+   "home on the dock's USBL to 30 m off the mouth": 0,
+   "hover and line up 10 m off, tail to the mouth, into the current": 60,
+   "back in along the guide lights at 0.15 m/s (the garage's 3 m and the last 7 m)": 67,
+   "latch, seat on the coupler, optical link up": 30
+  },
+  "dock_s": 157,
+  "undock_s": 23,
+  "cross_current_limit_m_s": 0.42,
+  "head_current_limit_m_s": 1.0,
+  "orbital_at_depth_m_s": {
+   "-30m": 0.47,
+   "-50m": 0.21,
+   "-65m": 0.11,
+   "-80m": 0.06
+  },
+  "note": "the mouth faces out from the jacket; a rotating tidal current crosses it twice a tide - docking waits for the cross component under the limit (North Sea tides at 80 m: ~0.3-0.6 m/s, assumed)"
+ }
 }

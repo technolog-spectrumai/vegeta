@@ -23,7 +23,7 @@ Made by `labs/marine/designs/ketos_export.py` from the CadQuery models and the d
 
     python labs/marine/designs/ketos_export.py exports/ketos
 | squilla | `squilla.py` (arms stowed) | Ketos Oil's resident drone: the 2.2 m intervention AUV, 4.5 kWh, docked on the jacket |
-| resident_dock | `oil_platform.py` `ResidentDock` | Squilla's garage on a leg at -80 m: inductive charger, fibre to the topside |
+| resident_dock | `oil_platform.py` `ResidentDock`, `squilla_dock.py` | Squilla's garage clamped by two split collars to leg A1 at -80 m (fits A1/B1/B2, not the riser leg A2): 2 kW inductive charger (2.2 h), fibre to the topside, docking 157 s, cross current 0.42 m/s |
 | riser_clamp | `oil_platform.py` `RiserClamp` | a riser guide clamp (two bolted halves, an arm to the leg) |
 | debris | `oil_platform.py` `Debris` | dropped objects on the seabed: drum, scaffold tube, wire coil, grating |
 | nephro | `nephro.py` | Ketos Cable's cable AUV: 3 m torpedo, 8 kWh, the coil-array cable tracker (depth of burial), MBES, SBP; ~100 km a dive |

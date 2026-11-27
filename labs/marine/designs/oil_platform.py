@@ -304,7 +304,8 @@ class Manifold(Design):
 
 
 class ResidentDock(Design):
-    """The resident drone's subsea dock on the jacket (Ketos Oil stage 3): a garage frame clamped to a leg at -80 m,
+    """The resident drone's subsea dock on the jacket (Ketos Oil stage 3): a garage frame clamped to a leg at -80 m by
+    two split collars on a bracket (``squilla_dock.py``: the fit, the clamp, power, data, the docking cycle),
     an open-ended tube the AUV backs into, an inductive charging coupler and a fibre/wet-mate connection to the
     topside. z = 0 the garage's middle height, x out of the garage's mouth."""
     parameters = [
@@ -313,7 +314,8 @@ class ResidentDock(Design):
         Parameter("height", 1.4, "m"),
         Parameter("depth", 80.0, "m"),
         Parameter("charge_kw", 2.0, "kW", description="inductive charger (class value)"),
-        Parameter("mass_kg", 1800.0, "kg"),
+        Parameter("mass_kg", 1800.0, "kg", description="the garage, charger and bracket (the leg collars: squilla_dock.mounting)"),
+        Parameter("leg_d", 2.0, "m", description="the jacket leg it clamps to (squilla_dock.py)"),
         Parameter("price_eur", 900000.0, "EUR", description="garage, charger, topside fibre and power (assumed)"),
     ]
 
@@ -333,7 +335,14 @@ class ResidentDock(Design):
             s.append(cq.Solid.makeBox(120, W + 120, 120, cq.Vector(x, -W / 2 - 60, -H / 2 - 60)))
             s.append(cq.Solid.makeBox(120, W + 120, 120, cq.Vector(x, -W / 2 - 60, H / 2 - 60)))
         s.append(cq.Solid.makeBox(200, W * 0.6, H * 0.6, cq.Vector(-L / 2 - 200, -W * 0.3, -H * 0.3)))   # the charger
-        s.append(cq.Solid.makeBox(500, 300, H * 1.6, cq.Vector(-L / 2 - 700, -150, -H * 0.8)))           # the leg clamp
+        R = p["leg_d"] * MM / 2 + 12.0                                                                   # the liner's bore
+        xl = -L / 2 - 700 - R                                                                            # the leg's axis
+        s.append(cq.Solid.makeBox(700 - 200, 300, H * 1.6, cq.Vector(-L / 2 - 700, -150, -H * 0.8)))      # the bracket to the collars
+        for zc in (-750, 750):                                                                           # two split collars on the leg
+            ring = cq.Solid.makeCylinder(R + 30, 450, cq.Vector(xl, 0, zc - 225)).cut(cq.Solid.makeCylinder(R, 450, cq.Vector(xl, 0, zc - 225)))
+            s.append(ring)
+            for sy in (-1, 1):                                                                           # the bolted flanges
+                s.append(cq.Solid.makeBox(160, 120, 450, cq.Vector(xl - 80, sy * (R + 30) - 60, zc - 225)))
         return _compound(s)
 
 

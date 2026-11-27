@@ -119,6 +119,7 @@ def test_oil_stage3_export(tmp_path):
     _meshes(tmp_path, sq)
     dock = json.load(open(tmp_path / "resident_dock.card.json"))
     assert dock["kind"] == "dock" and dock["charge_W"] > 0 and dock["depth_m"] == 80.0
+    assert dock["leg"] in dock["legs_that_fit_at_depth"] and dock["mount"]["collars"] == 2 and dock["docking"]["dock_s"] > 0
     deb = json.load(open(tmp_path / "debris.card.json"))
     assert set(deb["kinds"]) == {"drum", "tube", "coil", "grating"} and len(_meshes(tmp_path, deb)) == 4
     _meshes(tmp_path, json.load(open(tmp_path / "riser_clamp.card.json")))

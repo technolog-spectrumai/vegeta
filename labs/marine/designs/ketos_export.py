@@ -432,6 +432,12 @@ def resident_dock():
     card = CARD | {"name": "resident_dock", "kind": "dock", "parts": [{"model": "resident_dock_frame", "color": models[0]["color"]}],
                    "size": [p["length"], p["width"], p["height"]], "depth_m": p["depth"], "charge_W": p["charge_kw"] * 1000,
                    "mass_kg": p["mass_kg"], "comms": "fibre", "price_eur": p["price_eur"]}
+    import squilla_dock as sd
+    r = sd.report()
+    card |= {"leg": "A1", "legs_that_fit_at_depth": r["fits_at_80_on"], "fitting_depths_m": r["fitting_depths"],
+             "clearance_m": r["best"]["clearance_m"] if r["best"] and r["best"]["leg"] == "A1" and r["best"]["depth_m"] == -p["depth"] else
+             next(x["clearance_m"] for x in r["at_80"] if x["leg"] == "A1"),
+             "mount": r["mounting"], "mount_mass_kg": r["mounting"]["collar_mass_kg"], "services": r["services"], "docking": r["docking"]}
     return card, models
 
 
