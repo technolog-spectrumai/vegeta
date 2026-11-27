@@ -2282,14 +2282,20 @@ def kit_props(p=None):
     out), a short sleeve on each upper arm, a white collar and cuffs."""
     S, W = KIT["shirt"], KIT["trim"]
     v = lambda name, typ, size, pos, rgba, quat=(1.0, 0.0, 0.0, 0.0): Geom(name, typ, size, pos=pos, quat=quat, mass=0.01, role="visual", rgba=rgba)
-    shirt = [v("shirt_body", "box", (0.078, 0.128, 0.11), (-0.006, 0.0, 0.02), S),
-             v("shirt_yoke", "box", (0.07, 0.15, 0.02), (-0.006, 0.0, 0.115), S),
-             v("shirt_collar", "cylinder", (0.04, 0.006), (-0.01, 0.0, 0.138), W)]
+    across = (0.70710678, -0.70710678, 0.0, 0.0)                              # a capsule's axis turned across the chest (y)
+    # fitted to the ribcage (thorax frame: front x ~0.05, spine x ~-0.076, sides y ~0.107, the ribs' bottom z ~-0.1,
+    # the shoulder girdle z 0.1-0.16 out to the shoulder joints, the neck from z 0.18): rounded bands round the ribs
+    # tapering to the waist, a yoke over the shoulders, a collar at the neck
+    bands = [(-0.075, 0.068, 0.030, -0.008), (-0.035, 0.074, 0.040, -0.012), (0.005, 0.076, 0.042, -0.014),
+             (0.045, 0.076, 0.040, -0.015), (0.082, 0.074, 0.040, -0.015)]   # clear of the ribs by a cloth's ease   # (z, radius, half length across, x)
+    shirt = [v(f"shirt_band_{i}", "capsule", (r_, h_), (x_, 0.0, z_), S, quat=across) for i, (z_, r_, h_, x_) in enumerate(bands)]
+    shirt += [v("shirt_yoke", "capsule", (0.042, 0.105), (-0.012, 0.0, 0.122), S, quat=across),
+              v("shirt_collar", "cylinder", (0.046, 0.005), (-0.005, 0.0, 0.163), W)]
     out = [face_prop(p), Prop(Link("shirt", pos=(-6.0, 0.0, 3.0), geoms=shirt), free=True)]
     for t_ in ("L", "R"):
         out.append(Prop(Link(f"sleeve_{t_}", pos=(-6.0, 1.0, 3.0), geoms=[
-            v(f"sleeve_{t_}_tube", "capsule", (0.036, 0.05), (0.0, 0.0, -0.04), S),
-            v(f"sleeve_{t_}_cuff", "cylinder", (0.038, 0.006), (0.0, 0.0, -0.1), W)]), free=True))
+            v(f"sleeve_{t_}_tube", "capsule", (0.033, 0.035), (0.0, 0.0, -0.03), S),
+            v(f"sleeve_{t_}_cuff", "cylinder", (0.034, 0.005), (0.0, 0.0, -0.075), W)]), free=True))
     return out
 
 

@@ -158,7 +158,8 @@ SPIDER = dict(GIBBON, pelvis_width=130.0, pelvis_depth=80.0, torso_width=220.0, 
 
 #: The footballer: the spider monkey's frame on the pitch - no tail, and plain feet (a sole, no toes: it walks and
 #: kicks, it does not grasp with them). The monkey face and a solid-colour shirt are worn over it (``football``).
-FOOTBALLER = dict({k: v for k, v in SPIDER.items() if not k.startswith("tail_")}, foot_toes=False)
+FOOTBALLER = dict({k: v for k, v in SPIDER.items() if not k.startswith("tail_")}, foot_toes=False,
+                  upper_arm_length=200.0, forearm_length=165.0, finger_length=80.0, hand_scale=0.5, thumb_scale=0.4)   # a human's arms: the hand at mid-thigh
 
 import math as _math
 
