@@ -219,7 +219,7 @@
    "visual_triangles": 5673
   },
   "resident_dock": {
-   "bytes": 43498,
+   "bytes": 90514,
    "consumers": {
     "ketos": true,
     "montezuma": true,
@@ -231,8 +231,8 @@
    "lab": "marine",
    "links": 1,
    "mass_kg": 1800.0,
-   "sha256": "bc2b669c006240b13ed76e01a7da38c3177b7e5fa9d5be2adb33d84a7189dd55",
-   "visual_triangles": 752
+   "sha256": "690267a393907eed8360b2a35ca06985e20ee7ba7bf61fa8b2c3f082f5eeabaf",
+   "visual_triangles": 1472
   },
   "rover": {
    "bytes": 196743,
@@ -314,10 +314,10 @@
    "visual_triangles": 5052
   }
  },
- "published": "2026-11-27T04:14:12Z",
+ "published": "2026-11-27T15:43:08Z",
  "vegeta": {
   "branch": "dev_sea_game_machines",
-  "commit": "9ff08d971deb69aeff74c10f2ab57024bcc170b7",
+  "commit": "adf98e6fa8fe9761ed64592148630e8f2da76d35",
   "dirty": false,
   "repo": "technolog-spectrumai/vegeta"
  },
