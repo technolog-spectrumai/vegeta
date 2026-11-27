@@ -48,6 +48,22 @@
    "sha256": "c47347bb385b948f52ad243935d4b5d5960196e611b821311af60b6ab61bb3c6",
    "visual_triangles": 5105
   },
+  "fishing_boat": {
+   "bytes": 32604,
+   "consumers": {
+    "ketos": true,
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": false
+   },
+   "file": "fishing_boat.yx2",
+   "joints": 0,
+   "lab": "marine",
+   "links": 1,
+   "mass_kg": 156970.0,
+   "sha256": "e2d2cbb6929b7fd8d3604dc5ca3fbef887f1720719263ba4a4f19cb67b51e0fe",
+   "visual_triangles": 480
+  },
   "fulmar": {
    "bytes": 212390,
    "consumers": {
@@ -171,6 +187,22 @@
    "sha256": "e2a3e57e02ffaca858aca25cf1d994bc010e340d862146cb8335db0cce14feed",
    "visual_triangles": 5748
   },
+  "pilot_boat": {
+   "bytes": 23227,
+   "consumers": {
+    "ketos": true,
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": false
+   },
+   "file": "pilot_boat.yx2",
+   "joints": 0,
+   "lab": "marine",
+   "links": 1,
+   "mass_kg": 26640.0,
+   "sha256": "89299dac389192aa467a250bc640668610d7d0fe72e85af94c5e644d2ccc3a4a",
+   "visual_triangles": 280
+  },
   "quad": {
    "bytes": 224357,
    "consumers": {
@@ -217,6 +249,22 @@
    "sha256": "e9f858c84c6cf73b8acc3106a557bd057b10c6e30211e971347cc02097c1c53a",
    "visual_triangles": 4212
   },
+  "skiff": {
+   "bytes": 20084,
+   "consumers": {
+    "ketos": true,
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": false
+   },
+   "file": "skiff.yx2",
+   "joints": 0,
+   "lab": "marine",
+   "links": 1,
+   "mass_kg": 1650.0,
+   "sha256": "bbd95b570a9a68eb15817d2c807f06f1d56ca1d2f87398f1bd58898d1fc4f43f",
+   "visual_triangles": 208
+  },
   "squilla": {
    "bytes": 236267,
    "consumers": {
@@ -232,6 +280,22 @@
    "mass_kg": 138.6649,
    "sha256": "5e306c40e335f3dbc404457c126a28952593d4dcb3296562e6f09b74a5d7114a",
    "visual_triangles": 5884
+  },
+  "yacht": {
+   "bytes": 23967,
+   "consumers": {
+    "ketos": true,
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": false
+   },
+   "file": "yacht.yx2",
+   "joints": 0,
+   "lab": "marine",
+   "links": 1,
+   "mass_kg": 12120.0,
+   "sha256": "f0163881ecd6b528da2ef5686d5e379f256a5e5714aef3ed8fcbc7dd930fe35c",
+   "visual_triangles": 302
   },
   "zarco": {
    "bytes": 213618,
@@ -250,10 +314,10 @@
    "visual_triangles": 5052
   }
  },
- "published": "2026-11-27T04:08:39Z",
+ "published": "2026-11-27T04:14:12Z",
  "vegeta": {
   "branch": "dev_sea_game_machines",
-  "commit": "dac1ed8a92914dae9483427705c6885f55b6e5af",
+  "commit": "9ff08d971deb69aeff74c10f2ab57024bcc170b7",
   "dirty": false,
   "repo": "technolog-spectrumai/vegeta"
  },
