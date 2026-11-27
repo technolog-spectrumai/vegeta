@@ -25,4 +25,15 @@ def test_registered():
     from vegeta.labkit import machines
     import os
     machines.discover(os.path.join(os.path.dirname(sr.__file__)))
-    assert {"zarco", "esmeralda", "barracuda"} <= set(machines.names())
+    assert {"zarco", "esmeralda", "barracuda", "squilla", "resident_dock", "jacket"} <= set(machines.names())
+
+
+def test_site_bodies_and_the_ketos_card():
+    import json
+    assert sr.squilla().total_mass() == pytest.approx(json.loads((sr.KETOS_CARDS / "squilla.card.json").read_text())["mass_kg"], abs=0.1)
+    assert sr.resident_dock().total_mass() == 1800.0 and sr.jacket().total_mass() > 1e6
+
+    class M:
+        pass
+    part = sr.ketos_card("barracuda")(M())
+    assert part["ketos"]["card"]["name"] == "barracuda" and part["tags"] == {"data:ketos*": "ketos"}

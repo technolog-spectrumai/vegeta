@@ -9,12 +9,33 @@ link (a free-floating body; no joints), its mass and centre of gravity those of 
   entrained water at half load; the fuel tank's position chosen so the centre of gravity is the one the planing
   model assumes (``lcg_frac`` of the waterline length from the transom). Root frame: the waterline amidships.
 
+* **Squilla** (the resident AUV), the **resident dock** and the **jacket** (``oil_platform.py``): rigid bodies of their
+  cards' masses; the jacket's steel on its four battered legs (it stands on the seabed: a simulator fixes it there).
+
 Units SI; x forward, y left, z up. The hydrodynamics (resistance, seakeeping, the speeds) are on the Ketos cards, not
 here: a rigid body with its mass properties and its looks is what a simulator takes from these files.
 """
 from __future__ import annotations
 
+import json
+import math
+from pathlib import Path
+
 from vegeta.chiron import Geom, Link, PointMass, Robot
+
+#: The published Ketos cards (``ketos_export.py``): what the Yax files carry as part data for Ketos.
+KETOS_CARDS = Path(__file__).resolve().parents[3] / "exports" / "ketos"
+
+
+def ketos_card(name: str):
+    """A parts function for ``machines.register``: the machine's published Ketos card (``exports/ketos/<name>.card.json``)
+    as ``data["ketos"]``, tagged ``ketos``: the game's physics (speeds by sea state, sensors, effectors, limits) rides
+    in the same file as the mass properties and the looks."""
+    def parts(m):
+        card = json.loads((KETOS_CARDS / f"{name}.card.json").read_text())
+        return {"ketos": {"card": card, "source": f"exports/ketos/{name}.card.json", "meshes": [q["model"] for q in card.get("parts", [])]},
+                "tags": {"data:ketos*": "ketos"}}
+    return parts
 
 HULL_RGBA = (0.20, 0.29, 0.37, 1.0)
 
@@ -118,3 +139,47 @@ def barracuda() -> Robot:
                            "centres": "sea_robots.BARRACUDA_CENTRES (class estimates)", "looks": "designs/barracuda.py:Barracuda"})
     robot.validate()
     return robot
+
+
+def squilla() -> Robot:
+    """Squilla, the resident intervention AUV: its body of revolution as a cylinder along x carrying the sizing's mass
+    (+1 kg buoyant: the buoyancy is the simulator's, from the card's displacement)."""
+    from squilla import Squilla
+    p, s = Squilla.p(), Squilla.sizing()
+    L, R = p["length"] / 1000, p["diameter"] / 2000
+    g = [Geom("body", "cylinder", (R, L / 2), quat=(0.7071068, 0.0, 0.7071068, 0.0), mass=s["mass_in_air_kg"], role="body",
+              rgba=(0.91, 0.30, 0.24, 1.0))]
+    r = Robot("Squilla", Link("body", log=True, geoms=g), notes="Squilla, the resident AUV at the jacket: a rigid body of its sizing's mass",
+              sources={"mass": "squilla.Squilla.sizing (class values)", "looks": "designs/squilla.py:Squilla"})
+    r.validate()
+    return r
+
+
+def resident_dock() -> Robot:
+    from oil_platform import ResidentDock
+    p = ResidentDock.p()
+    g = [Geom("garage", "box", (p["length"] / 2, p["width"] / 2, p["height"] / 2), mass=p["mass_kg"], role="body", rgba=(0.4, 0.45, 0.5, 1.0))]
+    r = Robot("ResidentDock", Link("garage", log=True, geoms=g), notes="Squilla's garage on a leg of the jacket: a rigid body (fixed to the leg)",
+              sources={"mass": "oil_platform.ResidentDock (class value)", "looks": "designs/oil_platform.py:ResidentDock"})
+    r.validate()
+    return r
+
+
+def jacket() -> Robot:
+    """The 4-leg jacket in 110 m: its steel (the sizing's tonnes) on four battered legs from the mudline to the top;
+    the root at the waterline on the jacket's axis. It stands on the seabed: the simulator fixes it."""
+    from oil_platform import Jacket
+    p = Jacket.p()
+    steel_t = Jacket.sizing()["steel_t"] if hasattr(Jacket, "sizing") else 2639.0
+    top, bot, h = p["top"], -p["water_depth"], p["half_top"]
+    hb = h + (top - bot) / p["batter"]
+    geoms = []
+    for sx in (1, -1):
+        for sy in (1, -1):
+            geoms.append(Geom(f"leg_{'n' if sx > 0 else 's'}{'w' if sy > 0 else 'e'}", "capsule", (p["leg_d"] / 2,),
+                              fromto=(sx * hb, sy * hb, bot, sx * h, sy * h, top), mass=steel_t * 1000 / 4, role="link",
+                              rgba=(0.79, 0.64, 0.15, 1.0)))
+    r = Robot("Jacket", Link("jacket", log=False, geoms=geoms), notes="the oil platform's 4-leg steel jacket in 110 m: fixed to the seabed",
+              sources={"mass": "oil_platform.Jacket steel tonnes (class)", "looks": "designs/oil_platform.py:Jacket"})
+    r.validate()
+    return r

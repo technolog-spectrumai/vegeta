@@ -16,4 +16,5 @@ designs or the export change. `python tools/publish.py --check` checks that the 
 valid YX2. Do not edit the files by hand.
 
 Consumers: Montezuma (`scripts/update_designs.sh` fetches this folder at a Vegeta ref); Piccolo and Perkun through
-their requirements files.
+their requirements files; Ketos (`tools/consumers/ketos.json`): the sea game's machines carry their Ketos card as
+part data (`data["ketos"]["card"]`, tag `ketos`) next to the rigid body and the CAD looks.

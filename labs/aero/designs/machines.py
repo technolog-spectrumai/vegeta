@@ -28,3 +28,18 @@ machines.register("quad", "quad_robot:quad", visual="quadcopter_assembly:Quadcop
 machines.register("falco", "falco_robot:falco_robot", parts=pp.falco)
 machines.register("nisus", "nisus_robot:nisus_robot", parts=pp.nisus)
 machines.register("nisus_plus", "nisus_plus_robot:nisus_plus_robot", parts=pp.nisus_plus)
+
+
+def _ketos_card(name):
+    """The drone's published Ketos card as part data (``labs/marine/designs/sea_robots.ketos_card``)."""
+    import os
+    import sys
+    marine = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "marine", "designs")
+    if marine not in sys.path:
+        sys.path.insert(0, marine)
+    import sea_robots
+    return sea_robots.ketos_card(name)
+
+
+machines.register("gannet", "carrier_drone_robots:gannet", parts=lambda m: _ketos_card("gannet")(m), visual="gannet:Gannet")
+machines.register("fulmar", "carrier_drone_robots:fulmar", parts=lambda m: _ketos_card("fulmar")(m), visual="fulmar:Fulmar")
