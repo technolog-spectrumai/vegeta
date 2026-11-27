@@ -65,7 +65,7 @@
    "visual_triangles": 4844
   },
   "gannet": {
-   "bytes": 259694,
+   "bytes": 266392,
    "consumers": {
     "ketos": true,
     "montezuma": true,
@@ -77,7 +77,7 @@
    "lab": "aero",
    "links": 1,
    "mass_kg": 11.44,
-   "sha256": "1c819290e396bfe2036fca004abedb27dcea68de3cf920efe5c53b311d924e53",
+   "sha256": "a013354ad52c24d9310de044007c7d9500b51fcaebe81fe40967826c2e870a12",
    "visual_triangles": 4247
   },
   "jacket": {
@@ -250,10 +250,10 @@
    "visual_triangles": 5052
   }
  },
- "published": "2026-11-27T03:54:33Z",
+ "published": "2026-11-27T04:08:39Z",
  "vegeta": {
   "branch": "dev_sea_game_machines",
-  "commit": "0e5e4bc0ef53e7f383512dc5efb7ad2ea1e08fb7",
+  "commit": "dac1ed8a92914dae9483427705c6885f55b6e5af",
   "dirty": false,
   "repo": "technolog-spectrumai/vegeta"
  },
