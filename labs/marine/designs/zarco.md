@@ -24,3 +24,5 @@ All of these are class values for 24 m workcats and USVs (assumed; no vendor's v
 | flight deck | 4 VTOL pads, a 7 m catapult, a 6 x 4 m net; the deck closes above Hs 2.0 m; 240 VTOL launches and 84.7 recoveries an hour, 15 fixed-wing launches and 12 recoveries an hour |
 | hangar | 8 Gannets, 3 Fulmars, 12 chargers (16 kW) |
 | price | EUR 4.15 M, EUR 1400 a day |
+
+Esmeralda (`esmeralda.md`) is Zarco's guard-duty variant for the sea game.

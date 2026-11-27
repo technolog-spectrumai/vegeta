@@ -171,3 +171,16 @@ def test_barracuda_export(tmp_path):
     zs = [z for m in ms for z in m["vertices"][2::3]]
     xs = [x for m in ms for x in m["vertices"][0::3]]
     assert -0.8 < min(zs) < -0.5 and 4.0 < max(zs) < 5.5 and abs(max(xs) + min(xs)) < 0.01   # z = 0 the waterline
+
+
+def test_esmeralda_export(tmp_path):
+    ketos_export.export(str(tmp_path), {"esmeralda", "zarco"})
+    e = json.load(open(tmp_path / "esmeralda.card.json"))
+    z = json.load(open(tmp_path / "zarco.card.json"))
+    assert e["kind"] == "boat" and e["variant_of"] == "zarco" and e["unmanned"] and e["crew"] == 0
+    assert "barracuda" in e["carries"] and "walrus" not in e["carries"] and "davit" not in e["robots"]
+    assert e["service_kn"] == z["service_kn"] and e["flight_deck"]["pads"] == z["flight_deck"]["pads"]
+    assert e["flight_deck"]["hangar"] == {"gannet": 4, "fulmar": 2} and e["sea_state_limits"]["deck_hs_m"] == 2.0
+    assert {"hailer", "searchlights", "water_cannon", "flare_launcher"} <= set(e["effectors"]) and "turret" in e["sensors"]
+    assert set(e["changed_vs_zarco"]) >= {"mass_t", "draught_m", "trim_deg", "price_eur"}
+    _meshes(tmp_path, e)

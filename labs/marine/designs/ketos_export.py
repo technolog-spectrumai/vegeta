@@ -688,6 +688,44 @@ def barracuda():
     return card, models
 
 
+def esmeralda():
+    """Esmeralda, Zarco's guard-duty variant (``esmeralda.py``): Zarco's hull, mast and flight deck; the boat bay and
+    ramp for Barracuda, the guard effectors, the EO/IR turret, the guard hangar. A ``boat`` card next to Zarco's,
+    with ``changed_vs_zarco``. Barracuda is drawn apart (its own card). z = 0 the waterline."""
+    from esmeralda import AUTONOMY_ADDED, Esmeralda
+    from zarco import AUTONOMY
+    d, p, s = Esmeralda(), Esmeralda.p(), Esmeralda.sizing()
+    parts = [("esmeralda_hulls", "hulls", "#34495e"), ("esmeralda_deck", "deck", "#95a5a6"), ("esmeralda_house", "house", "#ecf0f1"),
+             ("esmeralda_flight_deck", "flight_deck", "#7f8c8d"), ("esmeralda_pads", "pads", "#f1c40f"), ("esmeralda_catapult", "catapult", "#c0392b"),
+             ("esmeralda_net", "net", "#2c3e50"), ("esmeralda_mast", "mast", "#d0d3d4"), ("esmeralda_robots", "robots", "#27ae60"),
+             ("esmeralda_ramp", "ramp", "#8e44ad"), ("esmeralda_effectors", "effectors", "#2980b9"), ("esmeralda_turret", "turret", "#16a085")]
+    models = [_mesh(d.build(p | {"part": k}), n, _hex(c), 40.0) for n, k, c in parts]
+    z_fd = (d._z_deck(p) + 3600 + 150) / 1000
+    card = CARD | {"name": "esmeralda", "kind": "boat", "role": "guard carrier", "variant_of": "zarco", "autonomous": True, "unmanned": True, "crew": 0,
+                   "operators_ashore": round(s["operators_ashore"], 3), "parts": [{"model": m["name"], "color": m["color"]} for m in models],
+                   "size": [s["length_m"], s["beam_m"], round(p["hull_depth"] / 1000 + 7.8, 1)], "draught_m": round(s["draught_m"], 2),
+                   "displacement_t": s["displacement_t"], "mass_kg": round(1000 * s["mass_t"]), "trim": s["trim"],
+                   "level_by_moving_fuel_m": s["level_by_moving_fuel_m"],
+                   "service_kn": s["service_kn"], "max_kn": s["max_kn"], "service_kW": s["service_kW"], "station_load_kW": s["station_load_kW"],
+                   "power_W": round(1000 * s["station_load_kW"]), "peak_kW": s["peak_kW"], "loads_kW": s["loads_kW"], "battery_kWh": p["battery_kwh"],
+                   "endurance_days": s["endurance_days"], "fuel_l_h_on_station": s["fuel_l_h_on_station"],
+                   "autonomy": AUTONOMY | AUTONOMY_ADDED, "robots": s["robots"], "carries": ["barracuda", "gannet", "fulmar"],
+                   "boat": s["boat"], "bay": s["bay"], "layout": s["layout"], "sensors": s["sensors"], "effectors": s["effectors"],
+                   "flight_deck": {"z_m": round(z_fd, 2), "pads": [[x / 1000, y / 1000] for x, y in d._pad_at(p)], "pad_cycle_s": p["pad_cycle_s"],
+                                   "land_lock_s": 40.0, "payload_load_s": 40.0, "swap_s": 90.0, "launch_s": 30.0,
+                                   "catapult": {"at": [-0.2, 0.0], "cycle_s": p["catapult_cycle_s"], "stroke_m": 7.0},
+                                   "net": {"at": [-9.1, 0.0], "cycle_s": p["net_cycle_s"], "size_m": [6.0, 4.0]},
+                                   "deck_hs_limit_m": p["deck_hs_limit"], "hangar": {"gannet": p["hangar_gannets"], "fulmar": p["hangar_fulmars"]},
+                                   "hangar_bays": s["hangar"], "packs": {"gannet": p["gannet_packs"], "fulmar": p["fulmar_packs"]},
+                                   "chargers": s["chargers"], "charging_kW": s["charging_kW"]},
+                   "rates": {k: s[k] for k in ("vtol_launches_per_h", "vtol_recoveries_per_h", "fixed_wing_launches_per_h", "fixed_wing_recoveries_per_h")}
+                   | {"boat_launch_s": s["boat"]["launch_s"], "boat_recovery_s": s["boat"]["recovery_s"]},
+                   "sea_state_limits": {"deck_hs_m": p["deck_hs_limit"], "boat_ramp_hs_m": s["boat"]["hs_limit_m"]},
+                   "changed_vs_zarco": s["changed_vs_zarco"], "price_eur": s["price_eur"], "price_with_barracuda_eur": s["price_with_barracuda_eur"],
+                   "day_rate_eur": 1400.0, "class_values": True}
+    return card, models
+
+
 def _aero():
     aero = os.path.join(HERE, "..", "..", "aero", "designs")
     if aero not in sys.path:
@@ -745,7 +783,7 @@ MACHINES = {"cyclopterus": cyclopterus, "shrimp": shrimp, "workboat": workboat, 
             "squilla": squilla, "resident_dock": resident_dock, "riser_clamp": riser_clamp, "debris": debris,
             "nephro": nephro, "trencher": trencher, "cable_vessel": cable_vessel, "cable": cable, "cable_joint": cable_joint,
             "walrus": walrus, "clam_basket": clam_basket, "clam_boat": clam_boat,
-            "zarco": zarco, "gannet": gannet, "fulmar": fulmar, "barracuda": barracuda}
+            "zarco": zarco, "gannet": gannet, "fulmar": fulmar, "barracuda": barracuda, "esmeralda": esmeralda}
 
 
 def export(out, only=None):

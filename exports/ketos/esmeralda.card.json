@@ -1,0 +1,645 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "esmeralda",
+ "kind": "boat",
+ "role": "guard carrier",
+ "variant_of": "zarco",
+ "autonomous": true,
+ "unmanned": true,
+ "crew": 0,
+ "operators_ashore": 0.333,
+ "parts": [
+  {
+   "model": "esmeralda_hulls",
+   "color": [
+    0.204,
+    0.286,
+    0.369
+   ]
+  },
+  {
+   "model": "esmeralda_deck",
+   "color": [
+    0.584,
+    0.647,
+    0.651
+   ]
+  },
+  {
+   "model": "esmeralda_house",
+   "color": [
+    0.925,
+    0.941,
+    0.945
+   ]
+  },
+  {
+   "model": "esmeralda_flight_deck",
+   "color": [
+    0.498,
+    0.549,
+    0.553
+   ]
+  },
+  {
+   "model": "esmeralda_pads",
+   "color": [
+    0.945,
+    0.769,
+    0.059
+   ]
+  },
+  {
+   "model": "esmeralda_catapult",
+   "color": [
+    0.753,
+    0.224,
+    0.169
+   ]
+  },
+  {
+   "model": "esmeralda_net",
+   "color": [
+    0.173,
+    0.243,
+    0.314
+   ]
+  },
+  {
+   "model": "esmeralda_mast",
+   "color": [
+    0.816,
+    0.827,
+    0.831
+   ]
+  },
+  {
+   "model": "esmeralda_robots",
+   "color": [
+    0.153,
+    0.682,
+    0.376
+   ]
+  },
+  {
+   "model": "esmeralda_ramp",
+   "color": [
+    0.557,
+    0.267,
+    0.678
+   ]
+  },
+  {
+   "model": "esmeralda_effectors",
+   "color": [
+    0.161,
+    0.502,
+    0.725
+   ]
+  },
+  {
+   "model": "esmeralda_turret",
+   "color": [
+    0.086,
+    0.627,
+    0.522
+   ]
+  }
+ ],
+ "size": [
+  24.0,
+  10.0,
+  11.0
+ ],
+ "draught_m": 1.36,
+ "displacement_t": 108.0,
+ "mass_kg": 94010,
+ "trim": {
+  "mass_t": 94.01,
+  "draught_m": 1.363,
+  "lcg_m": -1.8,
+  "lcb_m": -1.6,
+  "kg_m": 2.34,
+  "gm_t_m": 13.03,
+  "gm_l_m": 38.2,
+  "trim_deg": -0.3,
+  "trim_m": -0.12,
+  "trim_by": "stern",
+  "fuel_to_level_t_m": -18.7
+ },
+ "level_by_moving_fuel_m": 2.08,
+ "service_kn": 10.0,
+ "max_kn": 14.6,
+ "service_kW": 170,
+ "station_load_kW": 61.5,
+ "power_W": 61500,
+ "peak_kW": 171.9,
+ "loads_kW": {
+  "DP (two pods, a tunnel, 0.5 m/s tide, 8 m/s wind)": 45.0,
+  "drone chargers (4 Gannet + 2 Fulmar at 1C)": 8.48,
+  "autonomy: radars, lidar, cameras, compute, comms": 2.5,
+  "long-range EO/IR turret": 0.6,
+  "boat ramp, refuelling, Barracuda's shore power (average)": 2.5,
+  "effectors on standby": 0.4,
+  "hotel": 2.0
+ },
+ "battery_kWh": 350.0,
+ "endurance_days": 20.7,
+ "fuel_l_h_on_station": 21.5,
+ "autonomy": {
+  "radar": "X- and S-band ARPA: targets out to 12 nm, the collision avoidance's tracks",
+  "ais": "class A transponder: the others see it, it sees them",
+  "lidar_cameras": "360 deg lidar ring, day and IR cameras: small craft, buoys, swimmers, the drones on deck",
+  "gnss_ins": "dual RTK GNSS + fibre-optic INS: DP over the bed, the pads' motion for the drones",
+  "comms": "LEO satcom + 4G/LTE + UHF to shore; 900 MHz + LTE to the drones; ADS-B in",
+  "colregs": "COLREGs rules 8-17 in the autopilot: give way / stand on, a closest-approach limit of 0.3 nm",
+  "supervision": "one shore operator per 3 vessels: alarms, a remote takeover (teleop) when a fault asks",
+  "guard": "the guard picture: radar, turret, ring cameras, AIS and the drones' tracks fused; contacts classified with the operator; the escalation ladder's interlocks (no step above a hail without a live operator)",
+  "boat_control": "Barracuda's MANET and UHF command link from the mast, its takeover and lost-link rendezvous"
+ },
+ "robots": {
+  "crate_loader": {
+   "count": 1,
+   "what": "the payload loader: an arm on a rail along the flight deck and down the lift - an EO/IR pod or a cargo crate into a Gannet's hook or a Fulmar's bay",
+   "reach_m": 12.0,
+   "payload_kg": 8.0,
+   "cycle_s": 40.0,
+   "power_kW": 1.0,
+   "faults_per_day": 0.3,
+   "fix_min": 6.0,
+   "price_eur": 70000.0
+  },
+  "swap_robot": {
+   "count": 1,
+   "what": "a gantry between the pads and the battery room: the pack out of a locked drone's sled, a charged one in",
+   "reach_m": 12.0,
+   "payload_kg": 8.0,
+   "cycle_s": 90.0,
+   "power_kW": 1.0,
+   "faults_per_day": 0.3,
+   "fix_min": 8.0,
+   "price_eur": 90000.0
+  },
+  "deck_tug": {
+   "count": 1,
+   "what": "a low tug with a gripper: drones between the pads, the lift and the catapult cradle; a Fulmar out of the net",
+   "reach_m": 14.0,
+   "payload_kg": 30.0,
+   "cycle_s": 60.0,
+   "power_kW": 0.8,
+   "faults_per_day": 0.1,
+   "fix_min": 10.0,
+   "price_eur": 45000.0
+  },
+  "cleaner": {
+   "count": 1,
+   "what": "a magnetic crawler: washes the pads' grids, the deck, the radar and camera windows; inspects welds and the net",
+   "reach_m": 0.0,
+   "payload_kg": 5.0,
+   "cycle_s": 1800.0,
+   "power_kW": 0.4,
+   "faults_per_day": 0.05,
+   "fix_min": 15.0,
+   "price_eur": 30000.0
+  },
+  "boat_ramp": {
+   "count": 1,
+   "what": "the stern ramp's capture hook, haul-in winch and cradle lashings; the refuelling coupling and shore power for Barracuda",
+   "reach_m": 11.0,
+   "payload_kg": 6400.0,
+   "cycle_s": 240.0,
+   "power_kW": 22.0,
+   "faults_per_day": 0.1,
+   "fix_min": 15.0,
+   "price_eur": 260000.0
+  }
+ },
+ "carries": [
+  "barracuda",
+  "gannet",
+  "fulmar"
+ ],
+ "boat": {
+  "name": "barracuda",
+  "mass_kg": 3475,
+  "launch_s": 90.0,
+  "recovery_s": 240.0,
+  "hs_limit_m": 1.95,
+  "ramp": {
+   "system": "stern ramp between the demihulls: a capture hook for the bow eye, a haul-in winch, a cradle with keel guides at its top",
+   "ramp_deg": 8.0,
+   "ramp_length_m": 13.5,
+   "ramp_width_m": 3.38,
+   "clear_height_m": 2.9,
+   "winch_kN": 15.0,
+   "haul_pull_kN": 8.1,
+   "max_boat_kg": 6419,
+   "system_mass_kg": 3559,
+   "system_price_eur": 260000.0,
+   "power_kW": 22.0,
+   "launch_s": 90.0,
+   "recovery_s": 240.0,
+   "refuel_l_min": 100.0,
+   "hs_limit_m": 1.95,
+   "relative_motion_tolerance_m": 1.0,
+   "cycle": {
+    "launch": "release the lashings 20 s, slack the winch and slide down the wet ramp 40 s, jets on and away 30 s",
+    "recovery": "line up astern at 4 kn 60 s, drive into the ramp's mouth, the hook takes the bow eye 30 s, haul in 90 s, cradle, lash, refuel and shore power couple 60 s"
+   },
+   "boat_transom_keel_z_m": 0.27,
+   "boat_bow_keel_z_m": 1.54
+  },
+  "refuel_from_ship": true
+ },
+ "bay": {
+  "bay_width_m": 3.6,
+  "bay_length_m": 14.0,
+  "tunnel_width_m": 4.4,
+  "ramp_fits_tunnel": true,
+  "clear_height_over_cradle_m": 4.16,
+  "boat_needs_m": 2.9,
+  "boat_mast_up_top_m": 6.77,
+  "flight_deck_underside_m": 5.7,
+  "boat_mast": "folded in the bay: mast up it would hit the flight deck",
+  "boat_fits": true
+ },
+ "layout": {
+  "bay_x0_m": -12.0,
+  "boat_x_m": -3.42,
+  "boat_transom_keel_z_m": 0.27,
+  "cradle_keel_z_m": 1.54,
+  "ramp_foot_z_m": -0.3
+ },
+ "sensors": {
+  "turret": {
+   "what": "long-range EO/IR turret: HD day 1920 px (0.5 deg narrow), cooled MWIR 1280 px (0.9 deg narrow), eye-safe laser rangefinder 20 km",
+   "channels": [
+    {
+     "band": "visible",
+     "pixels_h": 1920,
+     "hfov_narrow_deg": 0.5,
+     "hfov_wide_deg": 30.0,
+     "zoom": 60
+    },
+    {
+     "band": "ir",
+     "pixels_h": 1280,
+     "hfov_narrow_deg": 0.9,
+     "hfov_wide_deg": 25.0,
+     "zoom": 28
+    }
+   ],
+   "lrf_km": 20.0,
+   "jitter_urad": 10.0,
+   "mass_t": 0.12,
+   "power_kW": 0.6,
+   "price_eur": 450000.0,
+   "z_m": 9.0,
+   "dri_skiff_km": {
+    "day_clear": {
+     "detection": 15.69,
+     "recognition": 15.69,
+     "identification": 13.24
+    },
+    "night_clear": {
+     "detection": 15.69,
+     "recognition": 15.69,
+     "identification": 13.24
+    },
+    "day_haze": {
+     "detection": 15.54,
+     "recognition": 11.68,
+     "identification": 9.7
+    },
+    "night_haze": {
+     "detection": 15.54,
+     "recognition": 11.68,
+     "identification": 9.7
+    },
+    "day_fog": {
+     "detection": 0.58,
+     "recognition": 0.43,
+     "identification": 0.36
+    },
+    "night_fog": {
+     "detection": 0.58,
+     "recognition": 0.43,
+     "identification": 0.36
+    }
+   },
+   "dri_fishing_km": {
+    "day_clear": {
+     "detection": 20.87,
+     "recognition": 20.87,
+     "identification": 19.4
+    },
+    "night_clear": {
+     "detection": 20.87,
+     "recognition": 20.87,
+     "identification": 19.4
+    },
+    "day_haze": {
+     "detection": 17.25,
+     "recognition": 13.39,
+     "identification": 11.41
+    },
+    "night_haze": {
+     "detection": 17.25,
+     "recognition": 13.39,
+     "identification": 11.41
+    },
+    "day_fog": {
+     "detection": 0.64,
+     "recognition": 0.5,
+     "identification": 0.42
+    },
+    "night_fog": {
+     "detection": 0.64,
+     "recognition": 0.5,
+     "identification": 0.42
+    }
+   }
+  },
+  "camera_ring": {
+   "what": "Zarco's ring of day 4K and uncooled LWIR 640 cameras, 60 deg each (kept)",
+   "dri_skiff_km": {
+    "day_clear": {
+     "detection": 4.91,
+     "recognition": 1.23,
+     "identification": 0.77
+    },
+    "night_clear": {
+     "detection": 0.82,
+     "recognition": 0.2,
+     "identification": 0.13
+    },
+    "day_haze": {
+     "detection": 3.46,
+     "recognition": 1.23,
+     "identification": 0.77
+    },
+    "night_haze": {
+     "detection": 0.82,
+     "recognition": 0.2,
+     "identification": 0.13
+    },
+    "day_fog": {
+     "detection": 0.58,
+     "recognition": 0.23,
+     "identification": 0.17
+    },
+    "night_fog": {
+     "detection": 0.58,
+     "recognition": 0.2,
+     "identification": 0.13
+    }
+   }
+  },
+  "radars": {
+   "X": {
+    "ref_range_km": 14.0,
+    "ref_rcs_m2": 10.0,
+    "what": "X-band ARPA, 8 ft array: small craft, the collision avoidance's tracks",
+    "antenna_m": 8.5,
+    "skiff_km_by_hs": {
+     "0.5": 7.5,
+     "1.0": 6.7,
+     "2.0": 5.1,
+     "2.5": 4.3
+    },
+    "fishing_km_by_hs": {
+     "0.5": 22.1,
+     "1.0": 21.2,
+     "2.0": 16.2,
+     "2.5": 13.7
+    }
+   },
+   "S": {
+    "ref_range_km": 12.0,
+    "ref_rcs_m2": 10.0,
+    "what": "S-band ARPA: through rain and heavy clutter, ships at range",
+    "antenna_m": 8.5,
+    "skiff_km_by_hs": {
+     "0.5": 6.4,
+     "1.0": 5.7,
+     "2.0": 4.4,
+     "2.5": 3.7
+    },
+    "fishing_km_by_hs": {
+     "0.5": 20.3,
+     "1.0": 18.1,
+     "2.0": 13.9,
+     "2.5": 11.7
+    }
+   }
+  },
+  "ais_km": {
+   "class_a": 28.7,
+   "class_b": 15.0
+  },
+  "lidar_m": {
+   "skiff": 200,
+   "swimmer": 60,
+   "note": "the 360 deg lidar ring's class ranges (assumed)"
+  },
+  "sonar": {
+   "fitted": false,
+   "what": "hull-mounted diver-detection sonar, ~70 kHz, 360 deg",
+   "open_circuit_diver_m": 700,
+   "closed_circuit_diver_m": 350,
+   "small_uuv_m": 400,
+   "on_dp_near_the_jacket": "thrusters' noise and the jacket's reverberation roughly halve those ranges",
+   "mass_t": 0.6,
+   "power_kW": 1.5,
+   "price_eur": 380000.0,
+   "verdict": "not worth it on the carrier: it moves with the guard picture and works on DP, noisy, beside a steel jacket that clutters it; the underwater layer is Squilla's (resident at the jacket). If the platform's owner wants diver detection it belongs fixed on the jacket (task 5's dock is a candidate), not on Esmeralda."
+  }
+ },
+ "effectors": {
+  "hailer": {
+   "what": "long-range acoustic hailer, 160 dB class at 1 m, 15 deg beam at 2 kHz, on the mast's pan-tilt",
+   "spl_1m_db": 160.0,
+   "mass_t": 0.1,
+   "power_kW": 1.0,
+   "price_eur": 90000.0,
+   "intelligible_m": {
+    "skiff_at_speed": 368,
+    "skiff_idling": 1283,
+    "quiet_deck": 2283
+   },
+   "audible_m": 3036
+  },
+  "searchlights": {
+   "what": "two LED searchlights on the mast's wings, remote pan-tilt, slaved to the turret",
+   "count": 2,
+   "lumens": 35000.0,
+   "beam_deg": 2.5,
+   "mass_t": 0.12,
+   "power_kW": 1.6,
+   "price_eur": 50000.0,
+   "peak_cd": 14044681,
+   "range_m": 2839,
+   "haze_range_m": 1831
+  },
+  "water_cannon": {
+   "what": "bow monitor on a 1.5 m pedestal; electric pump off the gensets' bus in the starboard hull's fore peak, its own sea chest",
+   "flow_l_min": 3000.0,
+   "pressure_bar": 12.0,
+   "mass_t": 1.25,
+   "price_eur": 120000.0,
+   "nozzle_m_s": 48.4,
+   "throw_m": 79,
+   "vacuum_range_m": 215,
+   "reaction_N": 2480,
+   "hydraulic_kW": 60.0,
+   "shaft_kW": 80.0,
+   "sea_water": true,
+   "motor_kW": 84.2
+  },
+  "flare_launcher": {
+   "fitted": false,
+   "space_reserved": "a 0.5 x 0.5 m foundation on the mast house roof, 60 kg",
+   "why_not": "pyrotechnics from a civilian unmanned vessel: distress signals are reserved (COLREGs Annex IV); illuminating or warning flares near a craft are a rules-of-engagement question for the flag state and the platform's operator - not assumed. Non-pyrotechnic alternative: self-locating datum marker buoys (a light and an AIS/GNSS beacon) dropped to mark a contact's track - also not fitted until agreed."
+  },
+  "vhf_hail": "DSC and voice on ch 16, AIS safety messages (Zarco's radios)"
+ },
+ "flight_deck": {
+  "z_m": 5.85,
+  "pads": [
+   [
+    -6.2,
+    2.4
+   ],
+   [
+    -6.2,
+    -2.4
+   ],
+   [
+    -2.6,
+    2.4
+   ],
+   [
+    -2.6,
+    -2.4
+   ]
+  ],
+  "pad_cycle_s": 170.0,
+  "land_lock_s": 40.0,
+  "payload_load_s": 40.0,
+  "swap_s": 90.0,
+  "launch_s": 30.0,
+  "catapult": {
+   "at": [
+    -0.2,
+    0.0
+   ],
+   "cycle_s": 240.0,
+   "stroke_m": 7.0
+  },
+  "net": {
+   "at": [
+    -9.1,
+    0.0
+   ],
+   "cycle_s": 300.0,
+   "size_m": [
+    6.0,
+    4.0
+   ]
+  },
+  "deck_hs_limit_m": 2.0,
+  "hangar": {
+   "gannet": 4,
+   "fulmar": 2
+  },
+  "hangar_bays": {
+   "side_bay_width_m": 2.5,
+   "length_m": 12.0,
+   "bays": {
+    "port": {
+     "gannet": 4,
+     "plus": "the payload workshop (EO/IR and cargo pods), the payload loader's track"
+    },
+    "starboard": {
+     "fulmar": 2,
+     "plus": "the battery room with the chargers"
+    }
+   },
+   "gannet_fits": true,
+   "fulmar_fits": true,
+   "fulmar_stowage": "wing along the bay, fuselage athwartships (2.1 m in a 2.5 m bay)"
+  },
+  "packs": {
+   "gannet": 12,
+   "fulmar": 6
+  },
+  "chargers": 6,
+  "charging_kW": 8.48
+ },
+ "rates": {
+  "vtol_launches_per_h": 240.0,
+  "vtol_recoveries_per_h": 84.7,
+  "fixed_wing_launches_per_h": 15.0,
+  "fixed_wing_recoveries_per_h": 12.0,
+  "boat_launch_s": 90.0,
+  "boat_recovery_s": 240.0
+ },
+ "sea_state_limits": {
+  "deck_hs_m": 2.0,
+  "boat_ramp_hs_m": 1.95
+ },
+ "changed_vs_zarco": {
+  "mass_t": [
+   96.75,
+   94.01
+  ],
+  "draught_m": [
+   1.39,
+   1.363
+  ],
+  "trim_deg": [
+   0.0,
+   -0.3
+  ],
+  "gm_t_m": [
+   12.45,
+   13.03
+  ],
+  "station_load_kW": [
+   82.0,
+   61.5
+  ],
+  "endurance_days": [
+   15.6,
+   20.7
+  ],
+  "hangar": [
+   {
+    "gannet": 8,
+    "fulmar": 3
+   },
+   {
+    "gannet": 4,
+    "fulmar": 2
+   }
+  ],
+  "chargers": [
+   12,
+   6
+  ],
+  "davits": [
+   4,
+   0
+  ],
+  "price_eur": [
+   4153780,
+   4805320
+  ],
+  "unchanged": "hulls, propulsion (service 10 kn, max 14.6 kn), autonomy mast, flight deck (4 pads, catapult, net), deck closure Hs 2.0 m"
+ },
+ "price_eur": 4805320,
+ "price_with_barracuda_eur": 5747320.0,
+ "day_rate_eur": 1400.0,
+ "class_values": true
+}
