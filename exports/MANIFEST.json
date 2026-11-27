@@ -1,6 +1,38 @@
 {
  "format": "vegeta-exports/1",
  "machines": {
+  "alien_ship": {
+   "bytes": 40525,
+   "consumers": {
+    "ketos": true,
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": false
+   },
+   "file": "alien_ship.yx2",
+   "joints": 0,
+   "lab": "marine",
+   "links": 1,
+   "mass_kg": 5346400.0,
+   "sha256": "8cfedd63d4191155a739284ceb203873c66396328ff2b386bc0bb04f2f4012b5",
+   "visual_triangles": 997
+  },
+  "alien_submarine": {
+   "bytes": 40253,
+   "consumers": {
+    "ketos": true,
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": false
+   },
+   "file": "alien_submarine.yx2",
+   "joints": 0,
+   "lab": "marine",
+   "links": 1,
+   "mass_kg": 5758700.0,
+   "sha256": "10bbdbf83da5e38fe66459e1890dd03741ca6bb84f45744f4448d6c462a3859b",
+   "visual_triangles": 934
+  },
   "barracuda": {
    "bytes": 212957,
    "consumers": {
@@ -314,10 +346,10 @@
    "visual_triangles": 5052
   }
  },
- "published": "2026-11-27T15:43:08Z",
+ "published": "2026-11-27T15:50:15Z",
  "vegeta": {
   "branch": "dev_sea_game_machines",
-  "commit": "adf98e6fa8fe9761ed64592148630e8f2da76d35",
+  "commit": "8419f59db914a7cdf0b91451d5b2eeff6361175a",
   "dirty": false,
   "repo": "technolog-spectrumai/vegeta"
  },
