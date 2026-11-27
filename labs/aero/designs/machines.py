@@ -43,3 +43,10 @@ def _ketos_card(name):
 
 machines.register("gannet", "carrier_drone_robots:gannet", parts=lambda m: _ketos_card("gannet")(m), visual="gannet:Gannet")
 machines.register("fulmar", "carrier_drone_robots:fulmar", parts=lambda m: _ketos_card("fulmar")(m), visual="fulmar:Fulmar")
+
+# The alien pirates' UFOs (ufo.py): fictional game craft - rigid bodies of their collision primitives, their Ketos card
+# (kinematics, collision, signatures, flak, the flag's texture) as part data.
+import ufo_robots  # noqa: E402
+
+machines.register("saucer", "ufo_robots:saucer", parts=lambda m: _ketos_card("saucer")(m), visual=ufo_robots.visual("saucer"))
+machines.register("cigar", "ufo_robots:cigar", parts=lambda m: _ketos_card("cigar")(m), visual=ufo_robots.visual("cigar"))

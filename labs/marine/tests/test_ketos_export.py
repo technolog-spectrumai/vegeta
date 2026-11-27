@@ -210,3 +210,22 @@ def test_small_craft_export(tmp_path):
         ms = _meshes(tmp_path, c)
         xs = [x for m in ms for x in m["vertices"][0::3]]
         assert abs(max(xs) + min(xs)) < 0.01 and min(z for m in ms for z in m["vertices"][2::3]) < 0   # under the waterline
+
+
+def test_ufo_export(tmp_path):
+    names = {"saucer", "cigar"}
+    ketos_export.export(str(tmp_path), names)
+    assert (tmp_path / "alien_jolly_roger.png").exists()
+    for n in names:
+        c = json.load(open(tmp_path / f"{n}.card.json"))
+        assert c["kind"] == "craft" and c["airborne"] and c["fictional"] and c["weapons"] is None and c["ais"] is False and c["basis"]
+        assert {"beam", "bow", "stern"} <= set(c["rcs_m2"]) and [r["hs_m"] for r in c["speed_vs_hs"]] == [0.0, 0.5, 1.0, 1.5, 2.0, 2.5]
+        assert c["max_speed_m_s"] > 0 and c["turning_circle_m"] and c["turn_rate_deg_s"] > 0 and c["flag"]["texture"]
+        assert c["kinematics"]["model"] == c["model"] and c["collision"] and c["flak"]["passes"]
+        flag = [p for p in c["parts"] if p.get("texture")]
+        assert len(flag) == 1 and flag[0]["texture"] == "alien_jolly_roger.png"
+        m = json.load(open(tmp_path / f"{flag[0]['model']}.json"))
+        assert len(m["uv"]) == 2 * len(m["vertices"]) // 3
+        ms = _meshes(tmp_path, c)
+        xs = [x for q in ms for x in q["vertices"][0::3]]
+        assert abs(max(xs) + min(xs)) < 0.1
