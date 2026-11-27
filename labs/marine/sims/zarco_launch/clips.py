@@ -2,8 +2,8 @@
 writes ``<name>.mp4`` (1280x720, 30 fps, H.264) and a few PNG stills, and returns a summary (duration, the numbers
 the run produced: touch-down speed, release speed, peak g, catch speed, depth, ...).
 
-    python -m pinna_launch all --out DIR          # every clip
-    python -m pinna_launch gannet_launch fulmar_net --out DIR --stills 3
+    python -m zarco_launch all --out DIR          # every clip
+    python -m zarco_launch gannet_launch fulmar_net --out DIR --stills 3
 """
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ import numpy as np
 
 from . import video, world
 
-FOOT = "Pinna drone carrier (Vegeta, labs/marine) - MuJoCo {mj} - {sea}"
+FOOT = "Zarco drone carrier (Vegeta, labs/marine) - MuJoCo {mj} - {sea}"
 
 
 def _lerp(a, b, s):
@@ -190,7 +190,7 @@ def _oil_hud(sim, ag):
     from .oil_platform_sim import ARRIVE
     pin = "arriving from the west at 4 m/s" if t < ARRIVE[2] else "on DP station off the jacket's south-west corner"
     p, v, R, w = g.state()
-    return [f"Pinna: {pin}   carrying one Squilla AUV and one Gannet quad   {sim.sea.describe()}",
+    return [f"Zarco: {pin}   carrying one Squilla AUV and one Gannet quad   {sim.sea.describe()}",
             f"Gannet {g.c['mass']:.1f} kg (empty, inspection)   alt {p[2]:5.1f} m   speed {np.linalg.norm(v):4.1f} m/s   phase: {g.mission.phase(t, g.landed)}",
             sq.hud(sim)[0] + ("   davit: MRU + AHC (uprated 3 kN winch)" if sq.released is None else "")]
 
@@ -240,7 +240,7 @@ def _sum_all(sim, ag):
 
 
 CLIPS = {
-    "gannet_launch": Clip("gannet_launch", "Gannet: vertical take-off from Pinna's pad with a 5 kg crate", 0.0, 18.0, _gannet, cam_gannet_launch,
+    "gannet_launch": Clip("gannet_launch", "Gannet: vertical take-off from Zarco's pad with a 5 kg crate", 0.0, 18.0, _gannet, cam_gannet_launch,
                           stills=(1.0, 6.0, 15.0), summary=_sum_gannet),
     "gannet_landing": Clip("gannet_landing", "Gannet: back from the circuit, landing on the moving deck", 60.0, 82.0, _gannet, cam_gannet_landing,
                            stills=(66.0, 76.0, 80.5), summary=_sum_gannet),
@@ -252,10 +252,10 @@ CLIPS = {
                           stills=(4.5, 11.0, 13.5, 21.0), summary=_sum_walrus, tau=1.0, sea=world.Sea.heavy),
     "walrus_launch_uncompensated": Clip("walrus_launch_uncompensated", "Walrus over the side: compensation OFF (heavy sea)", 0.0, 25.0, _walrus_off,
                                         cam_walrus, stills=(11.0, 13.5), summary=_sum_walrus, tau=1.0, sea=world.Sea.heavy),
-    "oil_platform_deploy": Clip("oil_platform_deploy", "Pinna at an oil platform: a Gannet inspection pass and a Squilla AUV over the compensated davit",
+    "oil_platform_deploy": Clip("oil_platform_deploy", "Zarco at an oil platform: a Gannet inspection pass and a Squilla AUV over the compensated davit",
                                 0.0, 40.0, _oil, cam_oil, stills=(5.0, 11.0, 16.0, 21.0, 24.0, 28.0, 36.0), summary=_sum_oil, tau=0.5,
                                 hud=_oil_hud),
-    "overview": Clip("overview", "Pinna: Gannet, Fulmar and Walrus launched together", 0.0, 20.0, _all, cam_overview,
+    "overview": Clip("overview", "Zarco: Gannet, Fulmar and Walrus launched together", 0.0, 20.0, _all, cam_overview,
                      stills=(9.0, 12.0), summary=_sum_all),
 }
 
@@ -324,7 +324,7 @@ def compare(out_dir: Path, use_meshes: bool = True) -> dict:
     tmp = out_dir / "_compare"
     tmp.mkdir(parents=True, exist_ok=True)
     for n in ("walrus_launch", "walrus_launch_uncompensated"):
-        subprocess.run([sys.executable, "-m", "pinna_launch", n, "--out", str(tmp), "--size", "640x720", "--no-stills"]
+        subprocess.run([sys.executable, "-m", "zarco_launch", n, "--out", str(tmp), "--size", "640x720", "--no-stills"]
                        + ([] if use_meshes else ["--no-meshes"]), check=True, stdout=subprocess.DEVNULL)
     out = out_dir / "walrus_compare.mp4"
     subprocess.run([shutil.which("ffmpeg"), "-y", "-loglevel", "error", "-i", str(tmp / "walrus_launch.mp4"), "-i", str(tmp / "walrus_launch_uncompensated.mp4"),
@@ -339,9 +339,9 @@ def compare(out_dir: Path, use_meshes: bool = True) -> dict:
 
 def main(argv=None):
     import argparse
-    ap = argparse.ArgumentParser(prog="python -m pinna_launch", description=__doc__.split("\n")[0])
+    ap = argparse.ArgumentParser(prog="python -m zarco_launch", description=__doc__.split("\n")[0])
     ap.add_argument("clips", nargs="*", default=["all"], help=f"clip names ({', '.join(CLIPS)}) or 'all'")
-    ap.add_argument("--out", default=str(world.meshes.ROOT / "labs" / "marine" / "sims" / "output" / "pinna_launch" / "videos"))
+    ap.add_argument("--out", default=str(world.meshes.ROOT / "labs" / "marine" / "sims" / "output" / "zarco_launch" / "videos"))
     ap.add_argument("--no-meshes", action="store_true", help="boxes instead of the CAD meshes")
     ap.add_argument("--no-stills", action="store_true")
     ap.add_argument("--size", default=f"{video.W}x{video.H}", help="WxH of the frames")
@@ -355,7 +355,7 @@ def main(argv=None):
         import subprocess
         import sys
         for n in names:
-            subprocess.run([sys.executable, "-m", "pinna_launch", n, "--out", a.out] + (["--no-meshes"] if a.no_meshes else [])
+            subprocess.run([sys.executable, "-m", "zarco_launch", n, "--out", a.out] + (["--no-meshes"] if a.no_meshes else [])
                            + (["--no-stills"] if a.no_stills else []), check=True)
         return
     s = make(names[0], Path(a.out), use_meshes=not a.no_meshes, stills=not a.no_stills, size=size)

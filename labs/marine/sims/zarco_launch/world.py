@@ -1,4 +1,4 @@
-"""The world every Pinna launch clip shares: the carrier on dynamic positioning in a simple sea, the wind, the water,
+"""The world every Zarco launch clip shares: the carrier on dynamic positioning in a simple sea, the wind, the water,
 and the simulator that steps it with the drones (the agents: ``gannet_sim``, ``fulmar_sim``, ``walrus_sim``).
 
 * **the sea** (``Sea``): the carrier's heave, roll and pitch as sums of sines (a long swell and a shorter sea; Hs
@@ -8,7 +8,7 @@ and the simulator that steps it with the drones (the agents: ``gannet_sim``, ``f
   a translucent slab that heaves with the swell (the carrier rides the swell; the local wave is not modelled).
 * **the wind** (``Wind``): a mean wind from the bow (the carrier heads into it on DP) and gusts as a first-order
   (Ornstein-Uhlenbeck) process per axis, seeded; the drones' aerodynamic forces use the air's velocity.
-* **the carrier** (``carrier_xml``): Pinna's CAD parts as visual meshes (``meshes``), the surfaces drones touch as
+* **the carrier** (``carrier_xml``): Zarco's CAD parts as visual meshes (``meshes``), the surfaces drones touch as
   simple collision boxes and cylinders (flight deck, pads, main deck, hangar, house, hulls, the mast pole), the
   catapult rail, the recovery net (a panel on a sprung slide joint between two masts) and the four davits (one, the
   aft port davit, has a slewing and luffing boom the Walrus clip drives: motion-compensated, ``walrus_sim``). The directional light casts no shadows (MuJoCo's shadow
@@ -32,10 +32,10 @@ G = 9.81
 RHO_AIR, RHO_SW = 1.225, 1025.0
 
 
-def _pinna_geometry() -> dict:
-    """Where things are on Pinna (m), from its design's parameters and CAD layout (``pinna.Pinna``)."""
-    from pinna import Pinna
-    d, p = Pinna(), Pinna.p()
+def _zarco_geometry() -> dict:
+    """Where things are on Zarco (m), from its design's parameters and CAD layout (``zarco.Zarco``)."""
+    from zarco import Zarco
+    d, p = Zarco(), Zarco.p()
     z_deck = d._z_deck(p) / 1000                         # main deck top
     z_fd = z_deck + 3.6 + 0.15                           # flight deck top
     return {"length": p["length"] / 1000, "beam": p["beam"] / 1000, "hull_beam": p["hull_beam"] / 1000, "draught": p["draught"] / 1000,
@@ -53,7 +53,7 @@ GEO = None
 def geometry() -> dict:
     global GEO
     if GEO is None:
-        GEO = _pinna_geometry()
+        GEO = _zarco_geometry()
     return GEO
 
 
@@ -179,7 +179,7 @@ def _f(v) -> str:
     return " ".join(f"{x:.6g}" for x in np.atleast_1d(v))
 
 
-BASE_DESIGNS = ("pinna", "gannet", "fulmar", "walrus")
+BASE_DESIGNS = ("zarco", "gannet", "fulmar", "walrus")
 
 
 def mesh_assets(use_meshes: bool, designs=BASE_DESIGNS) -> tuple:
@@ -210,10 +210,10 @@ def carrier_xml(use_meshes: bool, extra: str = "", reels: bool = True) -> str:
          '<joint name="c_pitch" type="hinge" axis="0 1 0"/>',
          '<inertial pos="0 0 1.5" mass="60000" diaginertia="6e5 2.9e6 3.2e6"/>']
     if use_meshes:
-        for part in meshes.PINNA_PARTS:
+        for part in meshes.ZARCO_PARTS:
             if part in ("net", "catapult"):                     # drawn below: the net panel moves, the rail is yawed
                 continue
-            s.append(_vis_mesh(f"pinna_{part}", col[f"pinna_{part}"]))
+            s.append(_vis_mesh(f"zarco_{part}", col[f"zarco_{part}"]))
     else:
         s.append(f'<geom class="visual" type="box" size="11 5 0.2" pos="-0.96 0 {zd - 0.2:.3f}" rgba="0.58 0.65 0.65 1"/>')
         s.append(f'<geom class="visual" type="box" size="6.25 4.8 0.075" pos="-3 0 {zf - 0.075:.3f}" rgba="0.45 0.5 0.52 1"/>')
@@ -261,9 +261,9 @@ def carrier_xml(use_meshes: bool, extra: str = "", reels: bool = True) -> str:
     for k in range(-4, 5):
         s.append(f'<geom type="box" size="0.012 {w / 2} 0.012" pos="0 0 {k * h / 8:.3f}" rgba="0.15 0.17 0.2 0.9" class="visual"/>')
     s.append('</body>')
-    # the compensated davits (``pinna.DAVIT_AHC``): slewing ring, post, MRU, AHC drum, a boom at its working luff; the
+    # the compensated davits (``zarco.DAVIT_AHC``): slewing ring, post, MRU, AHC drum, a boom at its working luff; the
     # aft port one is a robot: ``davit_slew`` (about the post) and ``davit_luff`` (the boom), both prescribed
-    from pinna import DAVIT_AHC
+    from zarco import DAVIT_AHC
     Lb, ph = DAVIT_AHC["boom_m"], math.radians(DAVIT_AHC["working_luff_deg"])
     H = DAVIT_AHC["post_m"]
     org, grey = "0.9 0.49 0.13 1", "0.25 0.25 0.27 1"
@@ -302,7 +302,7 @@ def scene_xml(agents, use_meshes: bool = True, timestep: float = 0.001, seabed: 
     for a in agents:
         for k, v in a.xml(use_meshes).items():
             frag[k] += v
-    return f"""<mujoco model="pinna_launch">
+    return f"""<mujoco model="zarco_launch">
 <compiler angle="radian" autolimits="true"/>
 <option timestep="{timestep}" integrator="implicitfast" gravity="0 0 -{G}" density="0" viscosity="0"/>
 <size memory="64M"/>

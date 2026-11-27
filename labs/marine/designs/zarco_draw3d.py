@@ -1,5 +1,5 @@
-"""Pinna in 3D (matplotlib, from the CadQuery tessellation): the autonomous drone carrier with Gannets on its pads,
-a Fulmar on the catapult and the Walrus davits aft; Gannet and Fulmar on their own.   python pinna_draw3d.py [out.png]"""
+"""Zarco in 3D (matplotlib, from the CadQuery tessellation): the autonomous drone carrier with Gannets on its pads,
+a Fulmar on the catapult and the Walrus davits aft; Gannet and Fulmar on their own.   python zarco_draw3d.py [out.png]"""
 import os
 import sys
 
@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
-from pinna import Pinna
+from zarco import Zarco
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "aero", "designs"))
 from fulmar import Fulmar  # noqa: E402
@@ -43,7 +43,7 @@ def _flush(ax):
 
 
 def draw_vessel(ax, elev, azim, title):
-    d, p = Pinna(), Pinna.p()
+    d, p = Zarco(), Zarco.p()
     for name, c in COLOURS.items():
         col, alpha = (c, 1.0) if isinstance(c, str) else c
         _add(ax, _tris(d.build({**p, "part": name})), col, alpha)
@@ -65,7 +65,7 @@ def draw_drone(ax, shape, col, lim, title):
     ax.set_box_aspect((1, 1, 0.5), zoom=1.3); ax.view_init(elev=25, azim=-60); ax.set_axis_off(); ax.set_title(title, fontsize=10)
 
 
-def main(out="pinna_3d.png"):
+def main(out="zarco_3d.png"):
     fig = plt.figure(figsize=(20, 12))
     draw_vessel(fig.add_axes([0.0, 0.38, 0.5, 0.55], projection="3d"), 28, -135, "from aft quarter: the motion-compensated Walrus davits (MRU, AHC winch, luff + slew), the basket gantry, the net, the pads (robots green)")
     draw_vessel(fig.add_axes([0.5, 0.38, 0.5, 0.55], projection="3d"), 32, 35, "from the bow: the autonomy mast, the catapult, the crate loader's rail; no wheelhouse, no crew")
@@ -74,8 +74,8 @@ def main(out="pinna_3d.png"):
                f"Gannet: {gs['mtow_kg']} kg cargo quad, 5 kg crate, radius {gs['radius_km']} km, hover {gs['hover_W']} W, deck Hs {gs['deck_hs_limit_m']} m")
     draw_drone(fig.add_axes([0.55, 0.0, 0.4, 0.38], projection="3d"), Fulmar().build(Fulmar.p()), "#f39c12", 2000,
                f"Fulmar: {fs['mtow_kg']} kg, 3.6 m fixed-wing, 5 kg, radius {fs['radius_km']} km, {fs['wh_per_km']} Wh/km, catapult + net")
-    s = Pinna.sizing()
-    fig.suptitle(f"Pinna — unmanned, robot-run drone-carrier catamaran ({s['robots']} robots, no crew): {s['length_m']:.0f} x {s['beam_m']:.0f} m, {s['displacement_t']:.0f} t, "
+    s = Zarco.sizing()
+    fig.suptitle(f"Zarco — unmanned, robot-run drone-carrier catamaran ({s['robots']} robots, no crew): {s['length_m']:.0f} x {s['beam_m']:.0f} m, {s['displacement_t']:.0f} t, "
                  f"{s['service_kn']:.0f} kn ({s['service_kW']} kW), {s['bed_load_kW']:.0f} kW on the bed; 4 pads ({s['vtol_recoveries_per_h']:.0f} recoveries/h), "
                  f"catapult {s['fixed_wing_launches_per_h']:.0f}/h, net {s['fixed_wing_recoveries_per_h']:.0f}/h; packs {s['pack_kg_h']} kg/h; davits Hs {s['davit_hs_limit_m']} m (compensated); €{s['price_eur']/1e6:.2f}M", fontsize=12)
     fig.savefig(out, dpi=90)

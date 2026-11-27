@@ -1,4 +1,4 @@
-"""Walrus in MuJoCo: the 35 kg clam crawler (``labs/marine/designs/walrus.py``) launched by Pinna's aft port davit
+"""Walrus in MuJoCo: the 35 kg clam crawler (``labs/marine/designs/walrus.py``) launched by Zarco's aft port davit
 robot: hoisted off its deck chocks, swung over the side by the luffing boom, lowered through the splash zone on the
 winch, released under water, and its eight ducted thrusters (layout C: four vectored 140 mm, four vertical 120 mm)
 taking over to dive away from the hull towards the bed.
@@ -55,14 +55,14 @@ def card() -> dict:
 
 
 class CompensatedDavit:
-    """The aft port davit robot (``pinna.DAVIT_AHC``): slew, luff and the AHC winch, each a servo with the card's rate
+    """The aft port davit robot (``zarco.DAVIT_AHC``): slew, luff and the AHC winch, each a servo with the card's rate
     limit and lag behind its command. The nominal job: hoist, luff outboard, pay out. With ``compensated`` the MRU's
     measurement of the deck (the true motion ``latency_s`` late, plus a slowly wandering error of the card's accuracy)
     gives the deck's pose, the controller solves the slew and luff that put the sheave back on its earth-fixed point
     and pays the rope out or in by the sheave's remaining vertical error, so the hook holds its earth-frame path."""
 
     def __init__(self, agent, compensated: bool, seed: int = 3):
-        from pinna import DAVIT_AHC
+        from zarco import DAVIT_AHC
         self.a, self.ag, self.on = DAVIT_AHC, agent, compensated
         self.Lb = DAVIT_AHC["boom_m"]
         g = world.geometry()
@@ -184,7 +184,7 @@ class WalrusAgent:
 
     def xml(self, use_meshes):
         c = self.c
-        col = __import__("pinna_launch.meshes", fromlist=["colours"]).colours()
+        col = __import__("zarco_launch.meshes", fromlist=["colours"]).colours()
         vis = ""
         if use_meshes:
             for part in ("tracks", "frame", "housing", "gantry", "basket", "thrusters", "lights", "arms"):

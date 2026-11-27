@@ -616,17 +616,17 @@ def clam_boat():
     return card, []
 
 
-def pinna():
-    """Pinna, the autonomous drone-carrier catamaran (Ketos Clams stages 6-8): Walrus davits and reels, the basket
+def zarco():
+    """Zarco, the autonomous drone-carrier catamaran (Ketos Clams stages 6-8): Walrus davits and reels, the basket
     robot and the packer, four VTOL pads, the catapult and the recovery net, the autonomy mast. z = 0 the waterline."""
-    from pinna import AUTONOMY, LOADS, ROBOTS, Pinna, davit_card
-    d, p, s = Pinna(), Pinna.p(), Pinna.sizing()
-    parts = [("pinna_hulls", "hulls", "#34495e"), ("pinna_deck", "deck", "#95a5a6"), ("pinna_house", "house", "#ecf0f1"),
-             ("pinna_flight_deck", "flight_deck", "#7f8c8d"), ("pinna_pads", "pads", "#f1c40f"), ("pinna_catapult", "catapult", "#c0392b"),
-             ("pinna_net", "net", "#2c3e50"), ("pinna_mast", "mast", "#d0d3d4"), ("pinna_davits", "davits", "#e67e22"), ("pinna_robots", "robots", "#27ae60")]
+    from zarco import AUTONOMY, LOADS, ROBOTS, Zarco, davit_card
+    d, p, s = Zarco(), Zarco.p(), Zarco.sizing()
+    parts = [("zarco_hulls", "hulls", "#34495e"), ("zarco_deck", "deck", "#95a5a6"), ("zarco_house", "house", "#ecf0f1"),
+             ("zarco_flight_deck", "flight_deck", "#7f8c8d"), ("zarco_pads", "pads", "#f1c40f"), ("zarco_catapult", "catapult", "#c0392b"),
+             ("zarco_net", "net", "#2c3e50"), ("zarco_mast", "mast", "#d0d3d4"), ("zarco_davits", "davits", "#e67e22"), ("zarco_robots", "robots", "#27ae60")]
     models = [_mesh(d.build(p | {"part": k}), n, _hex(c), 40.0) for n, k, c in parts]
     z_fd = (d._z_deck(p) + 3600 + 150) / 1000
-    card = CARD | {"name": "pinna", "kind": "boat", "autonomous": True, "crew": 0, "operators_ashore": round(s["operators_ashore"], 3),
+    card = CARD | {"name": "zarco", "kind": "boat", "autonomous": True, "crew": 0, "operators_ashore": round(s["operators_ashore"], 3),
                    "parts": [{"model": m["name"], "color": m["color"]} for m in models],
                    "size": [s["length_m"], s["beam_m"], round(p["hull_depth"] / 1000 + 7.8, 1)], "draught_m": s["draught_m"],
                    "displacement_t": s["displacement_t"], "mass_kg": round(1000 * (s["lightship_t"] + s["deadweight_t"])),
@@ -707,7 +707,7 @@ MACHINES = {"cyclopterus": cyclopterus, "shrimp": shrimp, "workboat": workboat, 
             "squilla": squilla, "resident_dock": resident_dock, "riser_clamp": riser_clamp, "debris": debris,
             "nephro": nephro, "trencher": trencher, "cable_vessel": cable_vessel, "cable": cable, "cable_joint": cable_joint,
             "walrus": walrus, "clam_basket": clam_basket, "clam_boat": clam_boat,
-            "pinna": pinna, "gannet": gannet, "fulmar": fulmar}
+            "zarco": zarco, "gannet": gannet, "fulmar": fulmar}
 
 
 def export(out, only=None):

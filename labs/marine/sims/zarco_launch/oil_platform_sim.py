@@ -1,4 +1,4 @@
-"""Pinna at an oil platform: the carrier, carrying only one submarine and one quadcopter, arrives at a fixed steel
+"""Zarco at an oil platform: the carrier, carrying only one submarine and one quadcopter, arrives at a fixed steel
 jacket (``labs/marine/designs/oil_platform.py``: ~110 m of water, 4 battered legs, X-braces, risers, the topsides),
 holds station on DP off its south-west corner, flies the quad on a visual inspection pass and puts the submarine
 over the side on its motion-compensated davit; the submarine dives towards the nearest leg.
@@ -8,12 +8,12 @@ over the side on its motion-compensated davit; the submarine dives towards the n
   (CP stab, UT, close visual, cut and clear) are its job, and at 139 kg it is the only one of the two candidates a
   davit can launch. Homarus, the work-class ROV, is 4.2 t on a lift umbilical and a TMS: it needs a support vessel's
   A-frame LARS, not a davit. Squilla is still over the Walrus davit's 60 kg rating: the aft port davit is fitted with
-  the uprated AHC winch (``pinna.DAVIT_UPRATED``: 3 kN line pull) for this job.
-* **the quad: Gannet, flying empty** (11.4 kg): it is the quad Pinna's pads, locks and swap robot serve; without
+  the uprated AHC winch (``zarco.DAVIT_UPRATED``: 3 kN line pull) for this job.
+* **the quad: Gannet, flying empty** (11.4 kg): it is the quad Zarco's pads, locks and swap robot serve; without
   the crate it hovers ~35 min and holds station in 14 m/s of wind - an offshore topsides/flare inspection needs the
   wind margin and the endurance more than a small frame (Drongo, a 250-class quad, has minutes of hover and no
   margin in offshore wind). Its downward camera and lidar are the inspection sensors here.
-* **the scene**: the jacket's centre 42 m north of Pinna's station, so its nearest leg (A1) is ~25 m from the
+* **the scene**: the jacket's centre 42 m north of Zarco's station, so its nearest leg (A1) is ~25 m from the
   launching davit (a compressed stand-off for the clip; a real 500 m safety zone needs the platform's permit). The
   carrier comes in from the west at ~4 m/s and stops on station (``track``).
 
@@ -30,13 +30,13 @@ from .gannet_sim import GannetAgent
 from .walrus_sim import WalrusAgent, _ramp
 from .world import G, RHO_SW, min_jerk
 
-STATION = np.array([30.0, 0.0])            # Pinna's DP station (it starts at the origin, where its locks were made)
+STATION = np.array([30.0, 0.0])            # Zarco's DP station (it starts at the origin, where its locks were made)
 JACKET_AT = STATION + np.array([0.0, 42.0])   # the jacket's centre (m, world), 42 m north of the station
 ARRIVE = (0.0, 30.0, 8.0)                  # 30 m in from the west in 8 s
 
 
 def track(t):
-    """Pinna's way over the ground: in from the west, stopped on station."""
+    """Zarco's way over the ground: in from the west, stopped on station."""
     x, v, _ = min_jerk(t, 0.0, ARRIVE[2], [ARRIVE[0]], [ARRIVE[1]])
     return float(x[0]), 0.0, float(v[0]), 0.0
 

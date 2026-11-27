@@ -1,6 +1,6 @@
-"""The Pinna launch clips' MuJoCo models (labs/marine/sims/pinna_launch): each builds and steps; the locked Gannet
+"""The Zarco launch clips' MuJoCo models (labs/marine/sims/zarco_launch): each builds and steps; the locked Gannet
 rides its pad and climbs once released; the catapult gives the card's launch speed; the davit lifts the Walrus;
-the Fulmar flies its approach. No rendering (that needs OpenGL): ``python -m pinna_launch`` makes the videos."""
+the Fulmar flies its approach. No rendering (that needs OpenGL): ``python -m zarco_launch`` makes the videos."""
 import math
 
 import numpy as np
@@ -8,10 +8,10 @@ import pytest
 
 mujoco = pytest.importorskip("mujoco")
 
-from pinna_launch import world  # noqa: E402
-from pinna_launch.fulmar_sim import FulmarLaunchAgent, FulmarNetAgent  # noqa: E402
-from pinna_launch.gannet_sim import GannetAgent  # noqa: E402
-from pinna_launch.walrus_sim import WalrusAgent  # noqa: E402
+from zarco_launch import world  # noqa: E402
+from zarco_launch.fulmar_sim import FulmarLaunchAgent, FulmarNetAgent  # noqa: E402
+from zarco_launch.gannet_sim import GannetAgent  # noqa: E402
+from zarco_launch.walrus_sim import WalrusAgent  # noqa: E402
 
 
 def _finite(sim):
@@ -90,10 +90,10 @@ def test_compensated_davit_holds_the_hook():
 
 
 def test_oil_platform_scene_builds():
-    from pinna_launch import clips
+    from zarco_launch import clips
     sim, ag = clips.build("oil_platform_deploy", use_meshes=False)
     _, g, sq = ag
     sim.run(2.0)
     _finite(sim)
-    assert g.locked and not g.crate and sq.name == "squilla" and sim.data.qpos[0] > 0.5          # Pinna under way, Gannet locked
+    assert g.locked and not g.crate and sq.name == "squilla" and sim.data.qpos[0] > 0.5          # Zarco under way, Gannet locked
     assert abs(g.c["mass"] - g.c["s"]["empty_kg"]) < 1e-9 and sq.c["mass"] > 100

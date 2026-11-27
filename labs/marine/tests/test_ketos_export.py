@@ -140,8 +140,8 @@ def test_walrus_clams_export(tmp_path):
 
 
 def test_carrier_and_drones_export(tmp_path):
-    ketos_export.export(str(tmp_path), {"pinna", "gannet", "fulmar"})
-    c = json.load(open(tmp_path / "pinna.card.json"))
+    ketos_export.export(str(tmp_path), {"zarco", "gannet", "fulmar"})
+    c = json.load(open(tmp_path / "zarco.card.json"))
     assert c["kind"] == "boat" and c["autonomous"] and c["crew"] == 0 and len(c["flight_deck"]["pads"]) == 4
     assert c["haul_min_per_basket"] < 3.0 and c["packing"]["crate_kg"] == 5.0 and "colregs" in c["autonomy"]
     assert c["unmanned"] and {"swap_robot", "crate_loader", "basket_gantry"} <= set(c["robots"])

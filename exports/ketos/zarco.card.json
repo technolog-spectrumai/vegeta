@@ -1,14 +1,14 @@
 {
  "schema": "ketos.card",
  "version": "1.0",
- "name": "pinna",
+ "name": "zarco",
  "kind": "boat",
  "autonomous": true,
  "crew": 0,
  "operators_ashore": 0.333,
  "parts": [
   {
-   "model": "pinna_hulls",
+   "model": "zarco_hulls",
    "color": [
     0.204,
     0.286,
@@ -16,7 +16,7 @@
    ]
   },
   {
-   "model": "pinna_deck",
+   "model": "zarco_deck",
    "color": [
     0.584,
     0.647,
@@ -24,7 +24,7 @@
    ]
   },
   {
-   "model": "pinna_house",
+   "model": "zarco_house",
    "color": [
     0.925,
     0.941,
@@ -32,7 +32,7 @@
    ]
   },
   {
-   "model": "pinna_flight_deck",
+   "model": "zarco_flight_deck",
    "color": [
     0.498,
     0.549,
@@ -40,7 +40,7 @@
    ]
   },
   {
-   "model": "pinna_pads",
+   "model": "zarco_pads",
    "color": [
     0.945,
     0.769,
@@ -48,7 +48,7 @@
    ]
   },
   {
-   "model": "pinna_catapult",
+   "model": "zarco_catapult",
    "color": [
     0.753,
     0.224,
@@ -56,7 +56,7 @@
    ]
   },
   {
-   "model": "pinna_net",
+   "model": "zarco_net",
    "color": [
     0.173,
     0.243,
@@ -64,7 +64,7 @@
    ]
   },
   {
-   "model": "pinna_mast",
+   "model": "zarco_mast",
    "color": [
     0.816,
     0.827,
@@ -72,7 +72,7 @@
    ]
   },
   {
-   "model": "pinna_davits",
+   "model": "zarco_davits",
    "color": [
     0.902,
     0.494,
@@ -80,7 +80,7 @@
    ]
   },
   {
-   "model": "pinna_robots",
+   "model": "zarco_robots",
    "color": [
     0.153,
     0.682,

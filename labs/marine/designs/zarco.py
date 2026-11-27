@@ -1,5 +1,5 @@
-"""Pinna: an autonomous drone-carrier catamaran for the clam bed (Ketos Clams stages 6-8), named after *Pinna
-nobilis*, the noble pen shell of the Mediterranean that grows pearls and spins sea silk. It replaces the crewed
+"""Zarco: an autonomous drone-carrier catamaran for the clam bed (Ketos Clams stages 6-8). Formerly Pinna
+(renamed 2026-11), after *Pinna nobilis*, the noble pen shell of the Mediterranean that grows pearls and spins sea silk. It replaces the crewed
 ``clam_boat`` (the farm workboat with davits): a fully **unmanned surface vessel** - no crew at any time, not even in transit: every task aboard is a robot's
 (``ROBOTS``) - that lies over the bed on dynamic
 positioning, runs four Walrus crawlers on automatic davits and tether reels, hauls their baskets with a robot,
@@ -124,7 +124,7 @@ SEA_RESPONSE = {"heave_m": 0.5, "roll_deg": 2.5, "pitch_deg": 1.2, "period_s": 7
 
 def davit_head(over=None):
     """The aft port davit's sheave at its working luff (m, ship frame; the motion's centre at the waterline amidships)."""
-    p = Pinna.p(over)
+    p = Zarco.p(over)
     a = DAVIT_AHC
     z0 = (p["hull_depth"] - p["draught"] + 400) / 1000 + a["post_m"]
     y0 = p["beam"] / 2000 - 0.45
@@ -200,7 +200,7 @@ AUTONOMY = {"radar": "X- and S-band ARPA: targets out to 12 nm, the collision av
             "supervision": "one shore operator per 3 vessels: alarms, a remote takeover (teleop) when a fault asks"}
 
 
-class Pinna(Design):
+class Zarco(Design):
     parameters = [
         Parameter("part", "vessel", choices=("vessel", "hulls", "deck", "house", "flight_deck", "pads", "catapult", "net", "mast", "davits", "robots")),
         Parameter("length", 24000.0, "mm"),
@@ -232,7 +232,7 @@ class Pinna(Design):
 
     @staticmethod
     def p(over=None):
-        return {q.name: q.default for q in Pinna.parameters} | (over or {})
+        return {q.name: q.default for q in Zarco.parameters} | (over or {})
 
     @classmethod
     def sizing(cls, over=None):
@@ -385,7 +385,7 @@ class Pinna(Design):
 
     def build(self, p):
         if cq is None:
-            raise ImportError("Pinna's CAD needs CadQuery")
+            raise ImportError("Zarco's CAD needs CadQuery")
         parts = {"robots": self._robots, "hulls": self._hulls, "deck": self._deck, "house": self._house, "flight_deck": self._flight_deck, "pads": self._pads,
                  "catapult": self._catapult, "net": self._net, "mast": self._mast, "davits": self._davits}
         if p["part"] in parts:
@@ -395,4 +395,4 @@ class Pinna(Design):
 
 if __name__ == "__main__":
     import json
-    print(json.dumps(Pinna.sizing(), indent=1))
+    print(json.dumps(Zarco.sizing(), indent=1))

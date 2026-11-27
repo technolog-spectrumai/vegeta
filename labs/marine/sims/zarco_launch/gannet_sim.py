@@ -1,5 +1,5 @@
 """Gannet in MuJoCo: the 16.4 kg cargo quad (``labs/aero/designs/gannet.py``) with its 5 kg crate, locked on a pad of
-Pinna's flight deck by the harpoon probe, taking off, climbing to 30 m, transitioning to a 15 m/s cruise, flying a
+Zarco's flight deck by the harpoon probe, taking off, climbing to 30 m, transitioning to a 15 m/s cruise, flying a
 circuit and coming back to land on the moving pad (the probe locks again on touch-down).
 
 * **the airframe**: one free body with the card's mass (empty + crate) and an estimated inertia; drawn with the CAD
@@ -13,7 +13,7 @@ circuit and coming back to land on the moving pad (the probe locks again on touc
 * **the controller** (``Controller``): the geometric (Lee) position and attitude controller the lab's quads fly
   (``drongo_controller`` / ``races.flight``): a PID on the position error gives the force vector (tilt-limited), the
   attitude error on SO(3) the moments, a mixer the four thrusts. The guidance (``Mission``) gives the reference: a
-  minimum-jerk lift-off that follows the pad (the deck's motion comes from Pinna's INS), the climb, the transition
+  minimum-jerk lift-off that follows the pad (the deck's motion comes from Zarco's INS), the climb, the transition
   as a speed ramp, the circuit at 15 m/s, the approach from astern into the wind, a hover 5 m over the pad tracking
   its heave and roll, and the descent at 0.6 m/s relative to the deck down to the touch-down.
 """
@@ -28,7 +28,7 @@ from .world import G, RHO_AIR, min_jerk
 
 MOTOR_TAU = 0.07          # s, 28 in props on 6 kW-peak motors (assumed)
 K_Q = 0.018               # m, reaction torque per newton of thrust (assumed for a 28 in prop)
-PAD = 3                   # Pinna's pad (-2.6, -2.4): the starboard forward one
+PAD = 3                   # Zarco's pad (-2.6, -2.4): the starboard forward one
 
 
 def card() -> dict:
@@ -211,7 +211,7 @@ class GannetAgent:
 
     def xml(self, use_meshes: bool) -> dict:
         c, (x, y), z = self.c, self.pad_xy, world.geometry()["z_pad"]
-        col = __import__("pinna_launch.meshes", fromlist=["colours"]).colours()
+        col = __import__("zarco_launch.meshes", fromlist=["colours"]).colours()
         vis = ""
         if use_meshes:
             for part in ("body", "arms", "rotors", "skids") + (("crate",) if self.crate else ()):

@@ -1,4 +1,4 @@
-"""python -m pinna_launch [clip ...|all] [--out DIR]  (from labs/marine/sims, or with it on PYTHONPATH)."""
+"""python -m zarco_launch [clip ...|all] [--out DIR]  (from labs/marine/sims, or with it on PYTHONPATH)."""
 import sys
 from pathlib import Path
 
@@ -9,6 +9,6 @@ except ImportError:                      # not under activate.sh: the Vegeta lib
     for _d in ("libs/vegeta-core/src", "libs/labkit/src", "libs/ogma/src", "libs/vegeta-cli/src"):
         sys.path.insert(0, str(_ROOT / _d))
 
-from pinna_launch.clips import main  # noqa: E402
+from zarco_launch.clips import main  # noqa: E402
 
 main()

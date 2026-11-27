@@ -1,5 +1,5 @@
 """Fulmar in MuJoCo: the 20.2 kg, 3.6 m cargo fixed-wing (``labs/aero/designs/fulmar.py`` on ``fixed_wing.FixedWing``)
-shot off Pinna's pneumatic catapult and, in the recovery clip, flown into the net at the flight deck's aft edge.
+shot off Zarco's pneumatic catapult and, in the recovery clip, flown into the net at the flight deck's aft edge.
 
 * **the airframe**: one free body with the card's mass and an estimated inertia (the wing's mass spread over the
   span, the pack and the crate in the pod), drawn with the CAD mesh (the FixedWing airframe and the cargo pod; its
@@ -158,7 +158,7 @@ class _FulmarBase:
 
     def body_xml(self, use_meshes, pos, quat, extra=""):
         c = self.c
-        col = __import__("pinna_launch.meshes", fromlist=["colours"]).colours()
+        col = __import__("zarco_launch.meshes", fromlist=["colours"]).colours()
         if use_meshes:      # the CAD frame (x aft, z up, LE at 0) turned 180 deg about z, the CG at the body origin
             vis = world._vis_mesh("fulmar_aircraft", col["fulmar_aircraft"], pos=(X_CG, 0.0, -Z_CG), quat=(0, 0, 0, 1))
         else:

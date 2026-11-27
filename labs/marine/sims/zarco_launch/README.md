@@ -1,6 +1,6 @@
-# pinna_launch: MuJoCo clips of the launches from Pinna
+# zarco_launch: MuJoCo clips of the launches from Zarco
 
-Pinna, the unmanned drone-carrier catamaran (`labs/marine/designs/pinna.py`), launches three machines (and, at an oil platform, a Squilla AUV). These
+Zarco, the unmanned drone-carrier catamaran (`labs/marine/designs/zarco.py`), launches three machines (and, at an oil platform, a Squilla AUV). These
 clips simulate each launch in MuJoCo with the CAD as meshes, the cards' masses and thrusts, a controller, and the
 carrier's deck moving in a simple sea and wind:
 
@@ -13,16 +13,16 @@ carrier's deck moving in a simple sea and wind:
 | `walrus_launch` | 0-25 s | in a heavy sea (heave +/-1 m, roll +/-5 deg, pitch +/-2.5 deg: about Hs 2 m), the aft port **motion-compensated davit** hoists Walrus into its latch cradle, luffs out, switches the compensation on (the MRU's deck motion in, slew + luff + AHC winch out) and lowers it through the splash zone with the hook standing still in the earth frame; released under water, its 8 thrusters dive it away from the hull. A strip chart shows the deck's vertical motion at the davit against the hook's |
 | `walrus_launch_uncompensated` | 0-25 s | the same sea and job with the plain davit: the hook goes up and down and sways with the deck |
 | `walrus_compare` | 0-25 s | the two side by side (each 640x720) |
-| `oil_platform_deploy` | 0-40 s | Pinna carrying only a Squilla AUV and a Gannet arrives at the oil platform's jacket (`oil_platform.py`, 110 m of water), holds station off its south-west corner; Gannet (empty) flies an inspection pass down to the splash zone of leg A1, up the leg and up the west face to the flare tower; the compensated davit (uprated 3 kN winch) lowers Squilla through the splash zone, releases it, and it dives to 12 m off leg A1 |
+| `oil_platform_deploy` | 0-40 s | Zarco carrying only a Squilla AUV and a Gannet arrives at the oil platform's jacket (`oil_platform.py`, 110 m of water), holds station off its south-west corner; Gannet (empty) flies an inspection pass down to the splash zone of leg A1, up the leg and up the west face to the flare tower; the compensated davit (uprated 3 kN winch) lowers Squilla through the splash zone, releases it, and it dives to 12 m off leg A1 |
 | `overview` | 0-20 s | all three at once: Gannet off its pad, Fulmar off the catapult at 7 s, Walrus over the side |
 
-Run (from `labs/marine/sims`, after `source activate.sh`; `python -m pinna_launch` also finds the Vegeta libraries
+Run (from `labs/marine/sims`, after `source activate.sh`; `python -m zarco_launch` also finds the Vegeta libraries
 from the source tree itself):
 
-    python -m pinna_launch all --out /some/dir             # every clip: <clip>.mp4, <clip>.json, PNG stills
-    python -m pinna_launch gannet_launch walrus_launch     # some; default out: labs/marine/sims/output/pinna_launch/videos
-    python -m pinna_launch fulmar_net --no-meshes          # boxes instead of the CAD
-    python -m pinna_launch walrus_compare                  # the compensated and the plain davit side by side
+    python -m zarco_launch all --out /some/dir             # every clip: <clip>.mp4, <clip>.json, PNG stills
+    python -m zarco_launch gannet_launch walrus_launch     # some; default out: labs/marine/sims/output/zarco_launch/videos
+    python -m zarco_launch fulmar_net --no-meshes          # boxes instead of the CAD
+    python -m zarco_launch walrus_compare                  # the compensated and the plain davit side by side
 
 The videos are 1280x720, 30 fps, H.264 (yuv420p); each clip renders in 1-2 minutes on 4 CPU cores (software GL).
 Rendering needs an offscreen OpenGL: `MUJOCO_GL=egl` (Mesa's surfaceless EGL works: `apt install libegl1`) or
@@ -31,10 +31,10 @@ numbers (touch-down speed, release speed, peak g, catch speed, net travel, cable
 
 ## The model
 
-* `meshes.py`: each design's CAD parts (Pinna's hulls, deck, house, flight deck, pads, mast, robots; Gannet's body,
+* `meshes.py`: each design's CAD parts (Zarco's hulls, deck, house, flight deck, pads, mast, robots; Gannet's body,
   arms, rotor discs, skids, crate; Fulmar's FixedWing airframe and pod; Walrus's tracks, frame, housing, gantry,
   basket, thrusters, lights, arms) tessellated from CadQuery to binary STL (mm), cached in
-  `labs/marine/sims/output/pinna_launch/meshes` (ignored by git) by a hash of the design's source and parameters.
+  `labs/marine/sims/output/zarco_launch/meshes` (ignored by git) by a hash of the design's source and parameters.
 * `world.py`: the carrier is a body on heave/roll/pitch joints whose position and velocity are prescribed every
   step from a sum of sines (heave +/-0.52 m, roll +/-3.2 deg, pitch +/-1.5 deg; Hs about 1.2 m), so contacts and
   welds see the deck's velocity. The meshes are drawn; simple boxes and cylinders collide (flight deck, pads, main
@@ -61,7 +61,7 @@ numbers (touch-down speed, release speed, peak g, catch speed, net travel, cable
   sets every step from the boom's sheave, the boom's luffing angle is prescribed (the davit robot's trajectory). The
   eight thrusters are the card's (`walrus.thruster_layout`, layout C) and the controller allocates the PD wrench
   with the card's allocation matrix (`walrus.allocation`, pseudo-inverse), each thrust clipped to its maximum.
-* the **compensated davit** (`walrus_sim.CompensatedDavit`, the design in `pinna.DAVIT_AHC`): the aft port davit
+* the **compensated davit** (`walrus_sim.CompensatedDavit`, the design in `zarco.DAVIT_AHC`): the aft port davit
   has a slew joint (about the post) and a luff joint (the boom), both servos with the card's rate limits and lag,
   and the AHC winch's rope (the tendon's length). The MRU reports the deck's heave, roll and pitch 10 ms late with
   a slowly wandering error of its card's accuracy (5 cm, 0.02 deg); the controller puts the sheave back on its
@@ -70,12 +70,12 @@ numbers (touch-down speed, release speed, peak g, catch speed, net travel, cable
   sheave through the swing-out, so it leaves the cradle still. `WalrusAgent.residual()` measures the hook's and the
   sheave's earth-frame motion during the lowering in air.
 * `oil_platform_sim.py`: the jacket (drawn), Gannet's `InspectionMission`, `SquillaAgent` (the Walrus launch with
-  Squilla's body, then a body-axis wrench limited by its card's thrust), Pinna's arrival (`track`: the carrier's
+  Squilla's body, then a body-axis wrench limited by its card's thrust), Zarco's arrival (`track`: the carrier's
   x/y joints, prescribed).
 * `video.py`: the free camera, a PIL overlay (title, clock, the HUD lines each agent writes, the sea and wind), a
   blue fog and tint when the camera is under water, H.264 through ffmpeg. `clips.py`: the clips and their cameras.
 
-Test: `labs/marine/tests/test_pinna_launch.py` builds each model, steps it and checks the lock, the climb, the
+Test: `labs/marine/tests/test_zarco_launch.py` builds each model, steps it and checks the lock, the climb, the
 catapult's launch speed, the davit's lift and the approach (no rendering).
 
 ## What the simulation found, and what it leaves out
@@ -84,15 +84,15 @@ catapult's launch speed, the davit's lift and the approach (no rendering).
   0.47 m rms vertically (0.79 m peak) and 0.37 m horizontally; the hook moves 2.4 cm rms vertically (14 cm peak,
   the cradle's release) and 11 cm horizontally (23 cm peak) with the compensation on, against 45 cm and 60 cm
   (71 and 89 cm peak) with it off. The sheave holds its point within 3.4 cm horizontally. The design's own
-  estimate (`pinna.davit_compensation(2.0)`) is 12.5 cm vertical / 6 cm horizontal: the sim does better vertically
+  estimate (`zarco.davit_compensation(2.0)`) is 12.5 cm vertical / 6 cm horizontal: the sim does better vertically
   (its MRU error is a slow drift, not white) and worse horizontally (the pendulum the residual sheave motion leaves).
 * Squilla (139 kg) is over the Walrus davit's 60 kg rating and the 1.2 kN winch cannot lift it at all
   (`davit_hs_limit(payload_kg=139) == 0`): the oil platform clip assumes the uprated 3 kN winch
-  (`pinna.DAVIT_UPRATED`, Hs 2.8 m with 150 kg). Homarus (4.2 t) needs a vessel's A-frame LARS.
+  (`zarco.DAVIT_UPRATED`, Hs 2.8 m with 150 kg). Homarus (4.2 t) needs a vessel's A-frame LARS.
 * The jacket stand-off is compressed for the clip (the jacket's centre 42 m from the station, leg A1 ~25 m from
   the davit): a real platform's 500 m zone needs its permit.
 
-* **The catapult points the Fulmar at the autonomy mast.** In `pinna.py` the rail lies on the centreline and the
+* **The catapult points the Fulmar at the autonomy mast.** In `zarco.py` the rail lies on the centreline and the
   mast's pole stands on the centreline 8.4 m ahead of the rail's end, 4.7-10.2 m high; the Fulmar leaves the rail at
   7 m and cannot climb over it in 0.5 s; yawed 12-15 deg its starboard wing still meets the radar bar. The sim yaws
   the rail 18 deg to port (`world.CATAPULT_YAW_DEG`); the CAD should move the mast off the centreline or turn the rail.
