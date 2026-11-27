@@ -38,5 +38,7 @@ Made by `labs/marine/designs/ketos_export.py` from the CadQuery models and the d
 | pilot_boat | `small_craft.py` | a contact: 16 m pilot boat, 27 t, 22 kn, AIS class A, white over red |
 | yacht | `small_craft.py` | a contact: 12 m sloop, 12 t, 8 kn under engine (4-8 sailing), often no AIS |
 | skiff | `small_craft.py` | a contact: 7 m open skiff, 1.65 t, 35 kn in calm (15 kn in Hs 1 m: its crew's impacts), RCS ~1 m2, no AIS, often no lights |
+| alien_ship | `alien_vessels.py` `AlienShip` | fictional (kind `vessel`): a 140 x 17 m alien raider, 31 m high, faceted superstructure, sensor tower, the alien-head-and-bones flag and hull emblem; a mesh per component; displacement only |
+| alien_submarine | `alien_vessels.py` `AlienSubmarine` | fictional: a 95 m alien submarine, 10 m hull, 12 x 4 x 7 m swept sail, fins, masts, the emblem on the sail, a flag when surfaced |
 | gannet | aero `gannet.py` `Gannet` | the cargo quad (air card, `air: vtol`): 16.4 kg with a 5 kg crate, 28" rotors, 1150 Wh, radius 13.5 km, deck Hs 2 m; `payloads`: cargo, or the EO/IR surveillance pod (`eoir_payload.py`: 2.2 kg, 42 min loiter, DRI by altitude and weather) |
 | fulmar | aero `fulmar.py` `Fulmar` (on `fixed_wing.FixedWing`) | the long-haul fixed-wing (air card, `air: fixed_wing`): 3.6 m, 20 kg with 5 kg, 8.5 Wh/km, radius 65 km, catapult + net; `payloads`: cargo, or the cooled EO/IR pod (3.8 kg, 150 min loiter; a radar weighed and not fitted) |

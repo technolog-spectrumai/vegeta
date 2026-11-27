@@ -12,6 +12,8 @@
   ],
   "note": "Ketos (the sea game; technolog-spectrumai/ketos): each machine's rigid body (mass, centre, inertia), its looks (the CAD design, the root link's visual 'cad') and its published Ketos card (data['ketos']['card'], tagged 'ketos': speeds by sea state, sensors, effectors, limits; the card's own meshes stay in exports/ketos). Its own physics (Tiamat) moves the units. A Yax requirements file of tag codes: python tools/export.py <machine> --to out/<machine>.yx2 --consumer tools/consumers/ketos.json (Ketos takes them from exports/, published by tools/publish.py)",
   "machines": [
+    "alien_ship",
+    "alien_submarine",
     "barracuda",
     "esmeralda",
     "fishing_boat",
