@@ -157,3 +157,17 @@ def test_carrier_and_drones_export(tmp_path):
     assert g["power_hover_W"] > g["power_cruise_W"] and g["recovery"] == "pad"
     f = json.load(open(tmp_path / "fulmar.card.json"))
     assert f["power_hover_W"] is None and f["launch"] == "catapult" and f["wh_per_km"] < g["wh_per_km"]
+
+
+def test_barracuda_export(tmp_path):
+    ketos_export.export(str(tmp_path), {"barracuda"})
+    c = json.load(open(tmp_path / "barracuda.card.json"))
+    assert c["kind"] == "boat" and c["role"] == "interceptor" and c["unmanned"] and c["crew"] == 0
+    assert c["max_kn"] >= 35 and c["range_nm"] >= 150 and c["loiter_h"] >= 10 and c["class_values"]
+    assert [r["hs_m"] for r in c["speed_vs_hs"]] == [0.0, 0.5, 1.0, 1.5, 2.0, 2.5]
+    assert {"hailer", "searchlight", "strobe", "water_cannon"} <= set(c["effectors"])
+    assert {"eoir", "radar", "ais", "microphones"} <= set(c["sensors"]) and c["launch_recovery"]["hs_limit_m"] > 1
+    ms = _meshes(tmp_path, c)
+    zs = [z for m in ms for z in m["vertices"][2::3]]
+    xs = [x for m in ms for x in m["vertices"][0::3]]
+    assert -0.8 < min(zs) < -0.5 and 4.0 < max(zs) < 5.5 and abs(max(xs) + min(xs)) < 0.01   # z = 0 the waterline

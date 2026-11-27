@@ -650,6 +650,44 @@ def zarco():
     return card, models
 
 
+def barracuda():
+    """Barracuda, the guard carrier's unmanned interceptor boat (``barracuda.py``): a ``boat`` card with its speeds by
+    sea state, fuel by speed band, manoeuvres, sensors with their ranges, the escalation ladder's effectors, the
+    collar's blocking limit and the carrier ramp's numbers. z = 0 the waterline, x = 0 amidships."""
+    from barracuda import DRAUGHT_CAD_MM, Barracuda
+    d, p, s = Barracuda(), Barracuda.p(), Barracuda.sizing()
+    parts = [("barracuda_hull", "hull", "#7f8c8d"), ("barracuda_collar", "collar", "#e67e22"), ("barracuda_jets", "jets", "#2c3e50"),
+             ("barracuda_console", "console", "#ecf0f1"), ("barracuda_mast", "mast", "#bdc3c7"), ("barracuda_cannon", "cannon", "#c0392b"),
+             ("barracuda_effectors", "effectors", "#2980b9")]
+    models = [_mesh(d.build(p | {"part": k}), n, _hex(c), 15.0) for n, k, c in parts]
+    for m in models:
+        m["vertices"][2::3] = [round(z - DRAUGHT_CAD_MM / 1000, 4) for z in m["vertices"][2::3]]
+    _x_centre(models)
+    m = s["manoeuvres"]
+    card = CARD | {"name": "barracuda", "kind": "boat", "role": "interceptor", "autonomous": True, "unmanned": True, "crew": 0,
+                   "parts": [{"model": mm["name"], "color": mm["color"]} for mm in models],
+                   "size": [s["length_overall_m"], s["beam_overall_m"], s["air_draught_mast_up_m"] + s["draught_m"]],
+                   "draught_m": s["draught_m"], "freeboard_m": s["freeboard_m"], "air_draught_m": {"mast_up": s["air_draught_mast_up_m"], "mast_folded": s["air_draught_mast_folded_m"]},
+                   "mass_kg": s["mass_full_kg"], "mass_half_load_kg": s["mass_half_kg"], "lightship_kg": s["lightship_kg"],
+                   "fuel_L": s["fuel_L"], "propulsion": {"engines": 2, "engine_kW": s["engine_kW"], "fuel": "diesel", "propulsors": "2 waterjets with reversing buckets"},
+                   "max_speed_m_s": round(s["sprint_kn_full_load"] * 0.5144, 2), "max_kn": s["sprint_kn_full_load"], "cruise_kn": s["cruise_kn"], "loiter_kn": s["loiter_kn"],
+                   "thrust_N": round(m["bollard_thrust_kN"] * 1000), "reverse_thrust_N": round(m["reverse_thrust_kN"] * 1000), "cd": [0.35, 1.2, 1.0],
+                   "speed_vs_hs": s["speed_vs_hs"], "fuel_bands": s["fuel_bands"], "range_nm": s["range_nm_at_cruise"], "loiter_h": s["loiter_h"],
+                   "manoeuvres": m, "sensors": s["sensors"], "effectors": s["effectors"], "blocking": s["blocking"],
+                   "launch_recovery": s["carrier"], "sea_state_limits": {"sustained_g": p["g_sustained"], "sprint_g": p["g_sprint"],
+                                                                         "launch_recovery_hs_m": s["carrier"]["hs_limit_m"], "operating_hs_m": 2.5},
+                   "autonomy": {"colregs": "rules 8-17 with radar/EO-IR/AIS fused tracks; a CPA limit of 50 m while shadowing; suspended only by the operator, "
+                                           "inside a geofence round the protected platform, for a block (legal basis: flag; not settled)",
+                                "links": {"radio": "MANET 4.9 GHz (video) + UHF command, line of sight to the carrier's mast: ~20 km",
+                                          "satcom": "LEO broadband (global, ~50 ms) + L-band backup (~0.7 Mbit/s, ~1 s)"},
+                                "lost_link": ["0-10 s: hold; the water cannon and the strobe stop at once, the hailer stops, lights stay",
+                                              "10-60 s: open to >= 100 m from any contact and keep shadowing; switch to satcom",
+                                              "> 5 min without any link: return to the carrier's rendezvous at 15 kn under COLREGs",
+                                              "never climbs the ladder above step 1 (hail) without a live operator"]},
+                   "price_eur": s["price_eur"], "class_values": True}
+    return card, models
+
+
 def _aero():
     aero = os.path.join(HERE, "..", "..", "aero", "designs")
     if aero not in sys.path:
@@ -707,7 +745,7 @@ MACHINES = {"cyclopterus": cyclopterus, "shrimp": shrimp, "workboat": workboat, 
             "squilla": squilla, "resident_dock": resident_dock, "riser_clamp": riser_clamp, "debris": debris,
             "nephro": nephro, "trencher": trencher, "cable_vessel": cable_vessel, "cable": cable, "cable_joint": cable_joint,
             "walrus": walrus, "clam_basket": clam_basket, "clam_boat": clam_boat,
-            "zarco": zarco, "gannet": gannet, "fulmar": fulmar}
+            "zarco": zarco, "gannet": gannet, "fulmar": fulmar, "barracuda": barracuda}
 
 
 def export(out, only=None):

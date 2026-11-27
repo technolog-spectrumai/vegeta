@@ -1,0 +1,485 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "barracuda",
+ "kind": "boat",
+ "role": "interceptor",
+ "autonomous": true,
+ "unmanned": true,
+ "crew": 0,
+ "parts": [
+  {
+   "model": "barracuda_hull",
+   "color": [
+    0.498,
+    0.549,
+    0.553
+   ]
+  },
+  {
+   "model": "barracuda_collar",
+   "color": [
+    0.902,
+    0.494,
+    0.133
+   ]
+  },
+  {
+   "model": "barracuda_jets",
+   "color": [
+    0.173,
+    0.243,
+    0.314
+   ]
+  },
+  {
+   "model": "barracuda_console",
+   "color": [
+    0.925,
+    0.941,
+    0.945
+   ]
+  },
+  {
+   "model": "barracuda_mast",
+   "color": [
+    0.741,
+    0.765,
+    0.78
+   ]
+  },
+  {
+   "model": "barracuda_cannon",
+   "color": [
+    0.753,
+    0.224,
+    0.169
+   ]
+  },
+  {
+   "model": "barracuda_effectors",
+   "color": [
+    0.161,
+    0.502,
+    0.725
+   ]
+  }
+ ],
+ "size": [
+  8.98,
+  2.88,
+  5.2299999999999995
+ ],
+ "draught_m": 0.63,
+ "freeboard_m": 0.77,
+ "air_draught_m": {
+  "mast_up": 4.6,
+  "mast_folded": 2.02
+ },
+ "mass_kg": 3475,
+ "mass_half_load_kg": 3340,
+ "lightship_kg": 3118,
+ "fuel_L": 320,
+ "propulsion": {
+  "engines": 2,
+  "engine_kW": 220.0,
+  "fuel": "diesel",
+  "propulsors": "2 waterjets with reversing buckets"
+ },
+ "max_speed_m_s": 23.97,
+ "max_kn": 46.6,
+ "cruise_kn": 25.0,
+ "loiter_kn": 8.0,
+ "thrust_N": 22300,
+ "reverse_thrust_N": 10000,
+ "cd": [
+  0.35,
+  1.2,
+  1.0
+ ],
+ "speed_vs_hs": [
+  {
+   "hs_m": 0.0,
+   "sustained_kn": 46.9,
+   "sprint_kn": 46.9,
+   "at_crewed_1_5g_kn": 46.9,
+   "power_kn": 46.9,
+   "sustained_limited_by": "propulsion",
+   "sprint_limited_by": "propulsion",
+   "g_at_sprint": 0.0,
+   "outside_savitsky_brown": false
+  },
+  {
+   "hs_m": 0.5,
+   "sustained_kn": 45.3,
+   "sprint_kn": 45.3,
+   "at_crewed_1_5g_kn": 40.0,
+   "power_kn": 45.3,
+   "sustained_limited_by": "propulsion",
+   "sprint_limited_by": "propulsion",
+   "g_at_sprint": 1.73,
+   "outside_savitsky_brown": true
+  },
+  {
+   "hs_m": 1.0,
+   "sustained_kn": 29.3,
+   "sprint_kn": 43.9,
+   "at_crewed_1_5g_kn": 22.3,
+   "power_kn": 43.9,
+   "sustained_limited_by": "slamming",
+   "sprint_limited_by": "propulsion",
+   "g_at_sprint": 2.84,
+   "outside_savitsky_brown": false
+  },
+  {
+   "hs_m": 1.5,
+   "sustained_kn": 21.1,
+   "sprint_kn": 30.9,
+   "at_crewed_1_5g_kn": 17.5,
+   "power_kn": 42.5,
+   "sustained_limited_by": "slamming",
+   "sprint_limited_by": "slamming",
+   "g_at_sprint": 3.0,
+   "outside_savitsky_brown": true
+  },
+  {
+   "hs_m": 2.0,
+   "sustained_kn": 17.8,
+   "sprint_kn": 23.7,
+   "at_crewed_1_5g_kn": 15.3,
+   "power_kn": 41.2,
+   "sustained_limited_by": "slamming",
+   "sprint_limited_by": "slamming",
+   "g_at_sprint": 3.0,
+   "outside_savitsky_brown": true
+  },
+  {
+   "hs_m": 2.5,
+   "sustained_kn": 15.9,
+   "sprint_kn": 20.1,
+   "at_crewed_1_5g_kn": 13.8,
+   "power_kn": 40.0,
+   "sustained_limited_by": "slamming",
+   "sprint_limited_by": "slamming",
+   "g_at_sprint": 3.0,
+   "outside_savitsky_brown": true
+  }
+ ],
+ "fuel_bands": {
+  "drift (engines off, hotel on the battery and an alternator run)": {
+   "kn": 0.0,
+   "kW": 2.29,
+   "l_h": 2.0,
+   "load": 0.0,
+   "hours_on_tank": 143
+  },
+  "loiter": {
+   "kn": 8.0,
+   "hs_m": 0.5,
+   "kW": 21,
+   "l_h": 7.0,
+   "load": 0.1,
+   "nm_per_l": 1.143,
+   "hours_on_tank": 41.6,
+   "range_nm": 333
+  },
+  "transit below the hump": {
+   "kn": 12.0,
+   "hs_m": 0.5,
+   "kW": 79,
+   "l_h": 24.3,
+   "load": 0.18,
+   "nm_per_l": 0.495,
+   "hours_on_tank": 12.0,
+   "range_nm": 144
+  },
+  "cruise": {
+   "kn": 25.0,
+   "hs_m": 1.0,
+   "kW": 178,
+   "l_h": 47.7,
+   "load": 0.41,
+   "nm_per_l": 0.524,
+   "hours_on_tank": 6.1,
+   "range_nm": 152
+  },
+  "sprint": {
+   "kn": 38.0,
+   "hs_m": 0.0,
+   "kW": 273,
+   "l_h": 68.4,
+   "load": 0.62,
+   "nm_per_l": 0.556,
+   "hours_on_tank": 4.3,
+   "range_nm": 162
+  },
+  "water cannon (on top of the speed's fuel)": {
+   "kW": 35.7,
+   "l_h": 9.2
+  }
+ },
+ "range_nm": 152,
+ "loiter_h": 41.6,
+ "manoeuvres": {
+  "turning_circle": {
+   "5kn": {
+    "diameter_m": 20,
+    "half_turn_s": 12.1
+   },
+   "10kn": {
+    "diameter_m": 20,
+    "half_turn_s": 6.0
+   },
+   "20kn": {
+    "diameter_m": 43,
+    "half_turn_s": 6.6
+   },
+   "30kn": {
+    "diameter_m": 97,
+    "half_turn_s": 9.9
+   }
+  },
+  "lateral_g": 0.5,
+  "accel_0_30kn_s": 5.2,
+  "accel_0_30kn_m": 44,
+  "bollard_thrust_kN": 22.3,
+  "crash_stop_from_kn": 46.9,
+  "crash_stop_s": 5.8,
+  "crash_stop_m": 67,
+  "crash_stop_lengths": 7.4,
+  "reverse_thrust_kN": 10.0,
+  "station_keeping": {
+   "offset_hold_m": 2.0,
+   "relative_fix_m": 0.5,
+   "how": "the target's track from the radar, the gimbal's laser range and bearing (+-0.5 m at 50 m) and our RTK fix; speed and heading loops on both jets; to get ahead of a target to block it needs >= 5 kn over its speed",
+   "pace_target_up_to_kn_by_hs": {
+    "0.0": 44.9,
+    "0.5": 43.3,
+    "1.0": 27.3,
+    "1.5": 19.1,
+    "2.0": 15.8,
+    "2.5": 13.9
+   },
+   "block_target_up_to_kn_by_hs": {
+    "0.0": 41.9,
+    "0.5": 40.3,
+    "1.0": 38.9,
+    "1.5": 25.9,
+    "2.0": 18.7,
+    "2.5": 15.1
+   }
+  }
+ },
+ "sensors": {
+  "mast_m": 4.0,
+  "eoir": {
+   "channels": [
+    {
+     "band": "visible",
+     "pixels_h": 1920,
+     "hfov_narrow_deg": 2.0,
+     "hfov_wide_deg": 60.0,
+     "zoom": 30
+    },
+    {
+     "band": "ir",
+     "pixels_h": 640,
+     "hfov_narrow_deg": 2.2,
+     "hfov_wide_deg": 25.0,
+     "zoom": 11
+    }
+   ],
+   "lrf_km": 10.0,
+   "jitter_urad": 25.0,
+   "dri_skiff_km": {
+    "day_clear": {
+     "detection": 11.86,
+     "recognition": 9.16,
+     "identification": 6.76
+    },
+    "night_clear": {
+     "detection": 11.86,
+     "recognition": 5.16,
+     "identification": 3.23
+    },
+    "day_haze": {
+     "detection": 11.86,
+     "recognition": 5.16,
+     "identification": 3.23
+    },
+    "night_haze": {
+     "detection": 11.86,
+     "recognition": 5.16,
+     "identification": 3.23
+    },
+    "day_fog": {
+     "detection": 0.58,
+     "recognition": 0.43,
+     "identification": 0.36
+    },
+    "night_fog": {
+     "detection": 0.58,
+     "recognition": 0.43,
+     "identification": 0.36
+    }
+   },
+   "dri_fishing_km": {
+    "day_clear": {
+     "detection": 17.04,
+     "recognition": 17.04,
+     "identification": 13.17
+    },
+    "night_clear": {
+     "detection": 17.04,
+     "recognition": 17.04,
+     "identification": 13.17
+    },
+    "day_haze": {
+     "detection": 17.04,
+     "recognition": 13.39,
+     "identification": 11.41
+    },
+    "night_haze": {
+     "detection": 17.04,
+     "recognition": 13.39,
+     "identification": 11.41
+    },
+    "day_fog": {
+     "detection": 0.64,
+     "recognition": 0.5,
+     "identification": 0.42
+    },
+    "night_fog": {
+     "detection": 0.64,
+     "recognition": 0.5,
+     "identification": 0.42
+    }
+   }
+  },
+  "radar": {
+   "what": "X-band solid-state navigation radar, 4 ft array, Doppler target separation",
+   "ref_range_km": 9.0,
+   "ref_rcs_m2": 10.0,
+   "antenna_m": 4.3,
+   "skiff_km_by_hs": {
+    "0.5": 4.8,
+    "1.0": 4.3,
+    "2.0": 3.3,
+    "2.5": 2.8
+   },
+   "fishing_km_by_hs": {
+    "0.5": 15.2,
+    "1.0": 13.6,
+    "2.0": 10.4,
+    "2.5": 8.8
+   },
+   "note": "ref range: 10 m2 at Pd 0.5 in calm sea (class value, assumed); rain shortens it further (not modelled)"
+  },
+  "ais": {
+   "receive_class_a_km": 24.7,
+   "receive_class_b_km": 15.0,
+   "note": "VHF line of sight (4/3 earth); class B at 2 W also power-limited to ~15 km (class value)"
+  },
+  "vhf_km": 15.9,
+  "microphones": {
+   "outboard_at_speed_m": 767,
+   "outboard_idle_m": 97,
+   "with_own_engines_running_m": 31,
+   "note": "8-mic array, 10 dB array gain; a bearing to an outboard when we drift or loiter on one engine; listens for the reply to the hailer. Own engines at speed drown it (assumed noise levels)"
+  }
+ },
+ "effectors": {
+  "hailer": {
+   "spl_1m_db": 150.0,
+   "intelligible_m": {
+    "skiff_at_speed": 150,
+    "skiff_idling": 750,
+    "quiet_deck": 1595
+   },
+   "audible_m": 2283,
+   "what": "directional (30 deg at 2 kHz), pre-recorded and live voice, on the pan-tilt head"
+  },
+  "searchlight": {
+   "lumens": 14000.0,
+   "beam_deg": 4.0,
+   "peak_cd": 2194617,
+   "range_m": 1304,
+   "haze_range_m": 1001
+  },
+  "strobe": {
+   "peak_cd": 2000000.0,
+   "flash_ms": 5.0,
+   "hz": 6.0,
+   "effective_cd": 48780,
+   "dazzle_m": 429,
+   "visible_km": 29.0,
+   "laser": false,
+   "what": "white LED, 6 Hz; disorients, does not blind (non-laser; to be checked against IEC 62471 at its closest use)"
+  },
+  "vhf_hail": "DSC call and voice on ch 16 and the working channel; an AIS safety message",
+  "water_cannon": {
+   "flow_l_min": 1500.0,
+   "pressure_bar": 10.0,
+   "nozzle_m_s": 44.2,
+   "throw_m": 59,
+   "vacuum_range_m": 179,
+   "reaction_N": 1132,
+   "hydraulic_kW": 25.0,
+   "shaft_kW": 35.7,
+   "sea_water": true,
+   "fuel_l_h": 9.2,
+   "drive": "starboard engine's front PTO, clutched; sea water from its own sea chest and strainer"
+  }
+ },
+ "blocking": {
+  "collar_energy_kJ": 5.6,
+  "collar_crush_m": 0.22,
+  "safe_closing_m_s": 3.27,
+  "safe_closing_kn": 6.4,
+  "against_kg": 1500.0,
+  "how": "blocks by parallel contact at matched speed, collar to hull, closing under the safe speed; never bow-on"
+ },
+ "launch_recovery": {
+  "system": "stern ramp between the demihulls: a capture hook for the bow eye, a haul-in winch, a cradle with keel guides at its top",
+  "ramp_deg": 8.0,
+  "ramp_length_m": 11.0,
+  "ramp_width_m": 3.38,
+  "clear_height_m": 2.9,
+  "winch_kN": 15.0,
+  "haul_pull_kN": 8.1,
+  "max_boat_kg": 6419,
+  "system_mass_kg": 2900.0,
+  "system_price_eur": 260000.0,
+  "power_kW": 22.0,
+  "launch_s": 90.0,
+  "recovery_s": 240.0,
+  "refuel_l_min": 100.0,
+  "hs_limit_m": 1.95,
+  "relative_motion_tolerance_m": 1.0,
+  "cycle": {
+   "launch": "release the lashings 20 s, slack the winch and slide down the wet ramp 40 s, jets on and away 30 s",
+   "recovery": "line up astern at 4 kn 60 s, drive into the ramp's mouth, the hook takes the bow eye 30 s, haul in 90 s, cradle, lash, refuel and shore power couple 60 s"
+  }
+ },
+ "sea_state_limits": {
+  "sustained_g": 2.0,
+  "sprint_g": 3.0,
+  "launch_recovery_hs_m": 1.95,
+  "operating_hs_m": 2.5
+ },
+ "autonomy": {
+  "colregs": "rules 8-17 with radar/EO-IR/AIS fused tracks; a CPA limit of 50 m while shadowing; suspended only by the operator, inside a geofence round the protected platform, for a block (legal basis: flag; not settled)",
+  "links": {
+   "radio": "MANET 4.9 GHz (video) + UHF command, line of sight to the carrier's mast: ~20 km",
+   "satcom": "LEO broadband (global, ~50 ms) + L-band backup (~0.7 Mbit/s, ~1 s)"
+  },
+  "lost_link": [
+   "0-10 s: hold; the water cannon and the strobe stop at once, the hailer stops, lights stay",
+   "10-60 s: open to >= 100 m from any contact and keep shadowing; switch to satcom",
+   "> 5 min without any link: return to the carrier's rendezvous at 15 kn under COLREGs",
+   "never climbs the ladder above step 1 (hail) without a live operator"
+  ]
+ },
+ "price_eur": 942000.0,
+ "class_values": true
+}
