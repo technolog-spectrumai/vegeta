@@ -739,10 +739,12 @@ def gannet():
     from gannet import Gannet
     d, p, s = Gannet(), Gannet.p(), Gannet.sizing()
     parts = [("gannet_body", "body", "#1f618d"), ("gannet_arms", "arms", "#17202a"), ("gannet_rotors", "rotors", "#aab7b8"),
-             ("gannet_skids", "skids", "#566573"), ("gannet_crate", "crate", "#f5f5f5")]
+             ("gannet_skids", "skids", "#566573"), ("gannet_crate", "crate", "#f5f5f5"), ("gannet_gimbal", "gimbal", "#16a085")]
     models = [_mesh(d.build(p | {"part": k}), n, _hex(c), 6.0) for n, k, c in parts]
     _x_centre(models)
-    card = CARD | {"name": "gannet", "kind": "air", "air": "vtol", "parts": [{"model": m["name"], "color": m["color"]} for m in models],
+    e = Gannet.eoir_sizing()
+    drawn = [m for m in models if m["name"] != "gannet_gimbal"]
+    card = CARD | {"name": "gannet", "kind": "air", "air": "vtol", "parts": [{"model": m["name"], "color": m["color"]} for m in drawn],
                    "size": [round(2 * p["arm"] / math.sqrt(2) / 1000 + p["prop_in"] * 0.0254, 2)] * 2 + [0.55],
                    "mass_kg": s["empty_kg"], "mtow_kg": s["mtow_kg"], "payload_kg": p["payload_kg"], "battery_Wh": p["battery_wh"],
                    "usable_Wh": s["usable_Wh"], "cruise_m_s": p["cruise"], "climb_m_s": 4.0, "cruise_alt_m": 60.0,
@@ -750,7 +752,12 @@ def gannet():
                    "power_hover_W": s["hover_W"], "power_hover_empty_W": s["hover_empty_W"],
                    "wh_per_km": s["wh_per_km"], "wh_per_km_empty": s["wh_per_km_empty"], "range_km": s["range_km"], "radius_km": s["radius_km"],
                    "endurance_min": s["endurance_hover_min"], "wind_limit_m_s": s["wind_limit_m_s"], "deck_hs_limit_m": s["deck_hs_limit_m"],
-                   "launch": "pad", "recovery": "pad", "swap_s": s["swap_s"], "reserve": 0.15, "price_eur": s["price_eur"]}
+                   "launch": "pad", "recovery": "pad", "swap_s": s["swap_s"], "reserve": 0.15, "price_eur": s["price_eur"],
+                   "payloads": {"cargo": {"what": "a 5 kg crate on the hook", "payload_kg": p["payload_kg"], "mtow_kg": s["mtow_kg"],
+                                          "power_hover_W": s["hover_W"], "power_cruise_W": s["cruise_W"], "endurance_min": s["endurance_hover_min"],
+                                          "range_km": s["range_km"], "radius_km": s["radius_km"], "parts": [m["name"] for m in drawn]},
+                                "eoir": {k: v for k, v in e.items() if k != "payload"} | {"what": "the surveillance pod (eoir_payload.py) on the crate hook's mount",
+                                         "payload_kg": e["pod"]["mass_kg"], "parts": [m["name"] for m in models if m["name"] != "gannet_crate"]}}}
     return card, models
 
 
@@ -760,7 +767,9 @@ def fulmar():
     _aero()
     from fulmar import Fulmar
     d, p, s = Fulmar(), Fulmar.p(), Fulmar.sizing()
-    models = [_mesh(d.build(p | {"part": "aircraft"}), "fulmar_body", _hex("#f39c12"), 6.0)]
+    models = [_mesh(d.build(p | {"part": "aircraft"}), "fulmar_body", _hex("#f39c12"), 6.0),
+              _mesh(d.build(p | {"part": "aircraft", "payload": "eoir"}), "fulmar_body_eoir", _hex("#f39c12"), 6.0),
+              _mesh(d.build(p | {"part": "gimbal"}), "fulmar_gimbal", _hex("#16a085"), 6.0)]
     for m in models:
         m["vertices"][0::3] = [-x for x in m["vertices"][0::3]]
         m["vertices"][1::3] = [-y for y in m["vertices"][1::3]]
@@ -774,6 +783,12 @@ def fulmar():
                    "endurance_min": s["endurance_min"], "wind_limit_m_s": s["wind_limit_m_s"], "deck_hs_limit_m": s["deck_hs_limit_m"],
                    "launch": "catapult", "launch_m_s": s["launch_m_s"], "recovery": "net", "swap_s": 120.0, "reserve": 0.15,
                    "price_eur": s["price_eur"]}
+    e = Fulmar.eoir_sizing()
+    card["payloads"] = {"cargo": {"what": "a 5 kg cargo pod", "payload_kg": p["payload_kg"], "mtow_kg": s["mtow_kg"], "power_cruise_W": s["cruise_W"],
+                                  "endurance_min": s["endurance_min"], "range_km": s["range_km"], "radius_km": s["radius_km"],
+                                  "launch_m_s": s["launch_m_s"], "parts": ["fulmar_body"]},
+                        "eoir": {k: v for k, v in e.items() if k != "payload"} | {"what": "the surveillance pod (eoir_payload.py) in the cargo bay",
+                                 "payload_kg": e["pod"]["mass_kg"], "parts": ["fulmar_body_eoir"], "gimbal_model": "fulmar_gimbal"}}
     return card, models
 
 

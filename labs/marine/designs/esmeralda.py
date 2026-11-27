@@ -65,7 +65,7 @@ TURRET = {"what": "long-range EO/IR turret: HD day 1920 px (0.5 deg narrow), coo
                        {"band": "ir", "pixels_h": 1280, "hfov_narrow_deg": 0.9, "hfov_wide_deg": 25.0, "zoom": 28}],
           "lrf_km": 20.0, "jitter_urad": 10.0, "mass_t": 0.12, "power_kW": 0.6, "price_eur": 450000.0}
 #: Zarco's own situational cameras (kept): a ring of day 4K and uncooled LWIR 640 cameras, 60 deg each (class).
-RING = {"channels": [{"band": "visible", "pixels_h": 3840, "hfov_narrow_deg": 60.0}, {"band": "ir", "pixels_h": 640, "hfov_narrow_deg": 60.0}]}
+RING = {"channels": [{"band": "visible", "pixels_h": 3840, "hfov_narrow_deg": 60.0}, {"band": "ir", "pixels_h": 640, "hfov_narrow_deg": 60.0, "netd_mK": 50.0}]}
 RADARS = {"X": {"ref_range_km": 14.0, "ref_rcs_m2": 10.0, "what": "X-band ARPA, 8 ft array: small craft, the collision avoidance's tracks"},
           "S": {"ref_range_km": 12.0, "ref_rcs_m2": 10.0, "what": "S-band ARPA: through rain and heavy clutter, ships at range"}}
 #: The guard effectors on the carrier (mass t, power kW while in use, price EUR; class values, assumed).
@@ -105,6 +105,23 @@ ROBOTS["boat_ramp"] = {"count": 1, "what": "the stern ramp's capture hook, haul-
                        "reach_m": 11.0, "payload_kg": 6400.0, "cycle_s": 240.0, "power_kW": 22.0, "faults_per_day": 0.1, "fix_min": 15.0, "price_eur": 260000.0}
 
 
+def eoir_pods(p) -> dict:
+    """The drones' surveillance pods (``labs/aero/designs/eoir_payload.py``): one per drone aboard."""
+    import os
+    import sys
+    aero = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "aero", "designs")
+    if aero not in sys.path:
+        sys.path.insert(0, aero)
+    import eoir_payload as ep
+    from fulmar import Fulmar
+    from gannet import Gannet
+    g, f = ep.pod_totals("gannet"), ep.pod_totals("fulmar")
+    return {"endurance_min": {"gannet": Gannet.eoir_sizing()["endurance_loiter_min"], "fulmar": Fulmar.eoir_sizing()["endurance_loiter_min"]},
+            "count": {"gannet": p["hangar_gannets"], "fulmar": p["hangar_fulmars"]},
+            "mass_kg": p["hangar_gannets"] * g["mass_kg"] + p["hangar_fulmars"] * f["mass_kg"],
+            "price_eur": p["hangar_gannets"] * g["price_eur"] + p["hangar_fulmars"] * f["price_eur"]}
+
+
 class Esmeralda(Zarco):
     parameters = [q for q in Zarco.parameters if q.name not in ("part", "davits", "hangar_gannets", "hangar_fulmars", "gannet_packs", "fulmar_packs")] + [
         Parameter("part", "vessel", choices=("vessel", "hulls", "deck", "house", "flight_deck", "pads", "catapult", "net", "mast", "robots",
@@ -117,8 +134,6 @@ class Esmeralda(Zarco):
         Parameter("bay_length", 14000.0, "mm", description="from the transom forward, into the hangar's centre"),
         Parameter("ramp_length", 13500.0, "mm", description="longer than Barracuda's minimum (its length + 2 m) so the stowed boat's transom keel sits clear of the water"),
         Parameter("bay_structure_t", 3.0, "t", description="the box girder that bridges the cross deck's slot (assumed)"),
-        Parameter("eoir_payload_eur", 40000.0, "EUR", description="a drone's EO/IR payload (task 3 sizes it)"),
-        Parameter("eoir_payloads", 6, ""),
         Parameter("turret_z", 9.0, "m", description="the turret above the waterline (on the mast)"),
         Parameter("radar_z", 8.5, "m"),
     ]
@@ -148,8 +163,9 @@ class Esmeralda(Zarco):
         rl = p["ramp_length"] / 1000
         boat_x = bay_x0 + rl * math.cos(math.radians(ramp["ramp_deg"])) - bs["length_overall_m"] / 2 - 0.3
         bow_keel = surface(boat_x + bs["length_overall_m"] / 2)
+        pods = eoir_pods(p)
         drones_t = (p["hangar_gannets"] * 11.44 + p["hangar_fulmars"] * 15.2 + p["gannet_packs"] * 4.6 + p["fulmar_packs"] * 6.4
-                    + p["eoir_payloads"] * 3.0) / 1000
+                    + pods["mass_kg"]) / 1000
         w |= {"boat bay box girder (reinforcement)": (p["bay_structure_t"], bay_x0 + p["bay_length"] / 2000, 3.5),
               "stern ramp, cradle, winch, capture hook": (ramp["system_mass_kg"] / 1000 * rl / ramp["ramp_length_m"], bay_x0 + rl / 2, 1.0),
               "Barracuda (full load)": (bs["mass_full_kg"] / 1000, boat_x, surface(boat_x) + 0.9),
@@ -202,8 +218,9 @@ class Esmeralda(Zarco):
                                        "boat_transom_keel_z_m": geo["boat_transom_keel_z_m"], "boat_bow_keel_z_m": geo["cradle_keel_z_m"]}
         # electrical loads on station (kW): Zarco's DP, autonomy and hotel; the guard's sensors, the drones' chargers,
         # the ramp; and the peak with the water cannon, the lights and the hailer on.
-        g_chargers = math.ceil(60 / 22.4 * 1.1) + 1                                    # packs a Gannet on station uses an hour x 1.1 h charge, + 1
-        f_chargers = math.ceil(60 / 82.4 * 1.1) + 1
+        g_end, f_end = eoir_pods(p)["endurance_min"]["gannet"], eoir_pods(p)["endurance_min"]["fulmar"]
+        g_chargers = math.ceil(60 / g_end * 1.1) + 1                                   # packs a drone on station uses an hour x 1.1 h charge, + 1
+        f_chargers = math.ceil(60 / f_end * 1.1) + 1
         chargers_kW = (g_chargers * 1.15 + f_chargers * 1.6) / 0.92
         loads = {"DP (two pods, a tunnel, 0.5 m/s tide, 8 m/s wind)": zarco.LOADS["DP (two pods, a tunnel, 0.5 m/s tide, 8 m/s wind)"],
                  f"drone chargers ({g_chargers} Gannet + {f_chargers} Fulmar at 1C)": round(chargers_kW, 2),
@@ -257,7 +274,7 @@ class Esmeralda(Zarco):
             price.pop(k)
         price.pop("drones: 8 Gannet, 3 Fulmar, packs")
         price |= {"drones: 4 Gannet, 2 Fulmar, packs": p["hangar_gannets"] * 9800 + p["hangar_fulmars"] * 21000 + p["gannet_packs"] * 450 + p["fulmar_packs"] * 620,
-                  "EO/IR payloads": p["eoir_payloads"] * p["eoir_payload_eur"], "boat bay (cut and box girder)": 180000.0,
+                  "EO/IR payloads (one per drone)": eoir_pods(p)["price_eur"], "boat bay (cut and box girder)": 180000.0,
                   "long-range EO/IR turret": TURRET["price_eur"], **{f"effector: {k}": v["price_eur"] for k, v in EFFECTORS.items()}}
         price_eur = round(sum(price.values()))
         return {"length_m": z["length_m"], "beam_m": z["beam_m"], "displacement_t": z["displacement_t"],

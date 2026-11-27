@@ -184,3 +184,16 @@ def test_esmeralda_export(tmp_path):
     assert {"hailer", "searchlights", "water_cannon", "flare_launcher"} <= set(e["effectors"]) and "turret" in e["sensors"]
     assert set(e["changed_vs_zarco"]) >= {"mass_t", "draught_m", "trim_deg", "price_eur"}
     _meshes(tmp_path, e)
+
+
+def test_drone_payloads_export(tmp_path):
+    ketos_export.export(str(tmp_path), {"gannet", "fulmar"})
+    for name in ("gannet", "fulmar"):
+        c = json.load(open(tmp_path / f"{name}.card.json"))
+        cargo, eoir = c["payloads"]["cargo"], c["payloads"]["eoir"]
+        assert cargo["payload_kg"] == c["payload_kg"] == 5.0 and cargo["range_km"] == c["range_km"]     # the cargo numbers kept
+        assert 0 < eoir["payload_kg"] < 5.0 and eoir["pod"]["power_W"] > 0
+        assert set(eoir["dri_km"]) == {"skiff_6m", "fishing_20m"} and eoir["datalink"] and eoir["fov"]["ir"]["pixels_h"] == 640
+        for m in eoir["parts"]:
+            assert (tmp_path / f"{m}.json").exists()
+    assert json.load(open(tmp_path / "fulmar.card.json"))["payloads"]["eoir"]["radar_option"]["fits_with_eoir"] is False

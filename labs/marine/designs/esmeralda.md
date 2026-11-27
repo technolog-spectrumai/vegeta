@@ -24,15 +24,15 @@ as in Zarco.
 |---|---|---|
 | aft deck | 4 AHC Walrus davits, tether reels, basket gantry, USBL | **the boat bay**: a 3.6 m slot down the centreline from the transom 14 m forward, under the flight deck, with a **13.5 m stern ramp at 8 deg**, a capture hook, a 15 kN winch and a cradle |
 | amidships | the processing house, packer, chiller, 2 t crate store | gone; the hangar's centre is the boat bay |
-| hangar | 8 Gannet, 3 Fulmar, 24 + 9 packs, 12 chargers | two 2.5 m side bays. Port: **4 Gannets** with the EO/IR payload, plus the payload workshop. Starboard: **2 Fulmars**, wings along the bay, plus the battery room. 12 + 6 packs, **6 chargers** |
+| hangar | 8 Gannet, 3 Fulmar, 24 + 9 packs, 12 chargers | two 2.5 m side bays. Port: **4 Gannets** with the EO/IR payload, plus the payload workshop. Starboard: **2 Fulmars**, wings along the bay, plus the battery room. 12 + 6 packs, **5 chargers** |
 | effectors | horn, lights | a **160 dB hailer** and **2 x 35 000 lm searchlights** on the mast, a **3000 L/min bow water cannon** |
 | sensors | radars, AIS, lidar, ring cameras | the same, plus a **long-range EO/IR turret** on the mast at 9 m |
 | mass | 96.75 t | **94.0 t** |
 | draught | 1.39 m | **1.36 m** |
 | trim | level (by assumption) | **0.3 deg by the stern** (0.12 m); moving the fuel's centre 2.1 m forward levels it |
 | GM transverse | 12.5 m | **13.0 m** (the boat sits low and on the centreline) |
-| station load | 82 kW, 15.6 days | **61.5 kW, 20.7 days**; peak 172 kW with the cannon, lights, hailer and ramp running (gensets 500 kW) |
-| price | EUR 4.15 M | **EUR 4.81 M**; EUR 5.75 M with Barracuda |
+| station load | 82 kW, 15.6 days | **60.2 kW, 21.2 days**; peak 171 kW with the cannon, lights, hailer and ramp running (gensets 500 kW) |
+| price | EUR 4.15 M | **EUR 4.83 M**; EUR 5.77 M with Barracuda |
 
 ## The boat bay
 
@@ -77,7 +77,7 @@ Fog takes all the optics down to about 0.6 km. Only the radar sees past that.
 
 **Zarco's camera ring** (kept; day 4K and uncooled LWIR, 60 deg each), for a skiff:
 - by day: detect 4.9 km, identify 0.8 km;
-- at night: detect 0.8 km, identify 0.13 km.
+- at night: detect 0.8 km, identify 0.13 km (an uncooled LWIR core); in fog, detect 0.47 km.
 
 It is for the deck, collision avoidance and close-in work.
 
@@ -104,13 +104,14 @@ The S-band is for rain, which is not modelled.
 
 ## The hangar and the deck
 
-- **Chargers**: 4 for the Gannets and 2 for the Fulmars, 8.5 kW, sized to keep one Gannet (22 min sorties) and one
-  Fulmar (82 min) in the air continuously: the packs a sortie uses an hour times a 1.1 h charge, plus one spare.
+- **Chargers**: 3 for the Gannets and 2 for the Fulmars, 7.2 kW, sized to keep one Gannet and one Fulmar with the
+  surveillance pod on station continuously (42 and 150 min a sortie, task 3): the packs a sortie uses an hour times a
+  1.1 h charge, plus one spare.
 - **Fit**: a Gannet (1.79 m square) fits the 2.5 m side bay, four of them in 8.4 m of its 12 m. A Fulmar stows with
   its 3.6 m wing along the bay and its 2.1 m fuselage across it.
 - **Rates**: unchanged from Zarco's pads, catapult and net: 240 VTOL launches and 84.7 recoveries an hour, 15
-  fixed-wing launches and 12 recoveries an hour. The EO/IR payload's mass and endurance are task 3's; the price here
-  is a placeholder (EUR 40k a payload, `eoir_payload_eur`).
+  fixed-wing launches and 12 recoveries an hour. The six surveillance pods (task 3, `labs/aero/designs/eoir_payload.py`:
+  4 Gannet pods at EUR 23.8k, 2 Fulmar pods at EUR 85.1k) cost EUR 265k and weigh 16 kg.
 
 ## Assumed or not modelled
 

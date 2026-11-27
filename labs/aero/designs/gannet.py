@@ -21,7 +21,7 @@ Sizing (first order, momentum theory; the numbers in ``sizing``):
 * deck: the skids' and the probe's grip against the deck's acceleration -> the landing sea-state limit (Hs).
 
 Frame: x forward, y left, z up, the skids' bottom at z = 0; mm. ``part``: ``aircraft``, ``body``, ``arms``,
-``rotors`` (the discs, thin), ``skids``, ``crate``.
+``rotors`` (the discs, thin), ``skids``, ``crate``, ``gimbal`` (the EO/IR pod: ``payload`` ``eoir`` draws it instead of the crate).
 """
 from __future__ import annotations
 
@@ -36,6 +36,11 @@ from vegeta.dedalus import Design, Parameter
 
 RHO = 1.225
 G = 9.81
+
+def sensing_horizon(h_m: float, h_target_m: float) -> float:
+    """The VHF (AIS) radio horizon, km (4/3 earth)."""
+    return 4.12 * (math.sqrt(h_m) + math.sqrt(h_target_m))
+
 
 #: Mass budget (kg): the parts that are bought or printed (class values, assumed).
 MASS = {"frame + arms (carbon tube)": 2.4, "motors 4x": 4 * 0.42, "propellers 4x 28 in": 4 * 0.14, "ESCs 4x": 4 * 0.15,
@@ -55,7 +60,7 @@ SURVEY = {
 
 class Gannet(Design):
     parameters = [
-        Parameter("part", "aircraft", choices=("aircraft", "body", "arms", "rotors", "skids", "crate")),
+        Parameter("part", "aircraft", choices=("aircraft", "body", "arms", "rotors", "skids", "crate", "gimbal")),
         Parameter("prop_in", 28.0, "in", description="propeller diameter"),
         Parameter("arm", 760.0, "mm", description="motor axis from the centre (diagonal)"),
         Parameter("body", 420.0, "mm", description="body square"),
@@ -69,6 +74,7 @@ class Gannet(Design):
         Parameter("avionics_w", 25.0, "W"),
         Parameter("skid_span", 900.0, "mm"),
         Parameter("price_eur", 9800.0, "EUR"),
+        Parameter("payload", "cargo", choices=("cargo", "eoir"), description="the crate (cargo) or the surveillance pod (eoir_payload.py)"),
     ]
 
     @staticmethod
@@ -129,6 +135,39 @@ class Gannet(Design):
                 "thrust_weight": round(thrust_max / (mtow * G), 2), "wind_limit_m_s": round(min(w_lim, 14.0), 1),
                 "deck_hs_limit_m": round(deck_hs, 1), "swap_s": 90.0, "price_eur": p["price_eur"]}
 
+    @classmethod
+    def eoir_sizing(cls, over=None):
+        """Gannet with the surveillance pod (``eoir_payload.POD["gannet"]``) instead of the crate, carried both ways:
+        its mass, drag and power on the same power model; the endurance hovering, at its loiter speed (least power)
+        and at cruise; the range; the time on station 5 km from the carrier; the wind limit; the sensors' DRI from
+        its altitudes, the field of view, the datalink. The deck limit is the cargo Gannet's (the pod is lighter than
+        the crate)."""
+        import eoir_payload as ep
+        pod = ep.pod_totals("gannet")
+        base = cls.p(over)
+        p = base | {"payload_kg": pod["mass_kg"], "drag_area": 0.7 * base["drag_area"] + ep.POD["gannet"]["cda_m2"],
+                    "avionics_w": base["avionics_w"] + pod["power_W"]}
+        usable = p["battery_wh"] * 0.8 * 0.85
+        speeds = [v * 0.5 for v in range(0, 50)]
+        loiter_v = min(speeds, key=lambda v: cls.power(p, v))
+        p_h, p_l, p_c = cls.power(p, 0.0), cls.power(p, loiter_v), cls.power(p, p["cruise"])
+        wh_km = p_c / p["cruise"] / 3.6
+        ends = p_h * 90.0 * 2 / 3600.0                                       # take-off and landing on the deck
+        d = 5.0
+        on_station = (usable - ends - 2 * d * wh_km) / p_l * 60
+        mtow = cls.empty_kg(p) + p["payload_kg"]
+        w_lim = math.sqrt(math.tan(math.radians(25.0)) * mtow * G / (0.5 * RHO * p["drag_area"]))
+        return {"payload": "eoir", "pod": pod, "pod_parts": {k: {"kg": m, "W": w, "eur": e} for k, (m, w, e) in ep.POD["gannet"]["parts"].items()},
+                "mtow_kg": round(mtow, 2), "hover_W": round(p_h), "loiter_m_s": loiter_v, "loiter_W": round(p_l), "cruise_W": round(p_c),
+                "endurance_hover_min": round(usable / p_h * 60, 1), "endurance_loiter_min": round(usable / p_l * 60, 1),
+                "endurance_cruise_min": round(usable / p_c * 60, 1), "wh_per_km": round(wh_km, 2), "range_km": round(usable / wh_km, 1),
+                "on_station_min_at_5km": round(on_station, 1), "wind_limit_m_s": round(min(w_lim, 14.0), 1),
+                "deck_hs_limit_m": cls.sizing(over)["deck_hs_limit_m"], "rain": "light to moderate rain (<= 4 mm/h; IP54-class motors and gimbal, assumed)",
+                "fov": ep.fov("gannet"), "lrf_km": ep.POD["gannet"]["lrf_km"], "jitter_urad": ep.POD["gannet"]["jitter_urad"],
+                "dri_km": {t: {f"{a:.0f}m": ep.ground_dri("gannet", t, a) for a in ep.POD["gannet"]["altitudes_m"]} for t in ep.TARGETS},
+                "datalink": {f"{a:.0f}m": ep.link("gannet", a) for a in ep.POD["gannet"]["altitudes_m"]},
+                "ais_km": round(min(sensing_horizon(ep.POD["gannet"]["altitudes_m"][0], 3.0), 40.0), 1)}
+
     # --- CAD ---------------------------------------------------------------------------------------------------
     def _rotor_at(self, p):
         a = p["arm"] / math.sqrt(2)
@@ -165,16 +204,26 @@ class Gannet(Design):
         solids.append(cq.Solid.makeCylinder(10, 230, cq.Vector(0, 0, 0)))                    # the harpoon probe
         return cq.Workplane("XY").newObject([cq.Compound.makeCompound(solids)])
 
+    def _gimbal(self, p):
+        """The EO/IR pod on the crate hook's mount: the plate, the damper, the yoke and the ball under the body."""
+        plate = cq.Workplane("XY").box(260, 200, 40).translate((60, 0, 250))
+        yoke = cq.Workplane("XY").box(70, 160, 60).translate((60, 0, 200))
+        ball = cq.Workplane("XY").sphere(85).translate((60, 0, 110))
+        mast = cq.Workplane("XY").add(cq.Solid.makeCylinder(8, 160, cq.Vector(-80, 0, 230), cq.Vector(0, 0, -1)))
+        return plate.union(yoke).union(ball).union(mast)
+
     def _crate(self, p):
         return cq.Workplane("XY").box(400, 300, 200).translate((0, 0, 130)).edges("|Z").fillet(15)
 
     def build(self, p):
         if cq is None:
             raise ImportError("Gannet's CAD needs CadQuery")
-        parts = {"body": self._body, "arms": self._arms, "rotors": self._rotors, "skids": self._skids, "crate": self._crate}
+        parts = {"body": self._body, "arms": self._arms, "rotors": self._rotors, "skids": self._skids, "crate": self._crate,
+                 "gimbal": self._gimbal}
         if p["part"] in parts:
             return parts[p["part"]](p)
-        return cq.Workplane("XY").newObject([cq.Compound.makeCompound([f(p).val() for f in parts.values()])])
+        drawn = [k for k in parts if k != ("crate" if p.get("payload", "cargo") == "eoir" else "gimbal")]
+        return cq.Workplane("XY").newObject([cq.Compound.makeCompound([parts[k](p).val() for k in drawn])])
 
 
 if __name__ == "__main__":

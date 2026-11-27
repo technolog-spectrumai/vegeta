@@ -44,5 +44,258 @@
  "recovery": "net",
  "swap_s": 120.0,
  "reserve": 0.15,
- "price_eur": 21000.0
+ "price_eur": 21000.0,
+ "payloads": {
+  "cargo": {
+   "what": "a 5 kg cargo pod",
+   "payload_kg": 5.0,
+   "mtow_kg": 20.2,
+   "power_cruise_W": 792,
+   "endurance_min": 82.4,
+   "range_km": 128.6,
+   "radius_km": 65.5,
+   "launch_m_s": 18.0,
+   "parts": [
+    "fulmar_body"
+   ]
+  },
+  "eoir": {
+   "pod": {
+    "mass_kg": 3.77,
+    "power_W": 72.0,
+    "price_eur": 85100.0
+   },
+   "pod_parts": {
+    "gimbal: HD day 30x zoom + cooled MWIR 640 (2.5 deg narrow) + laser rangefinder 5 km": {
+     "kg": 2.7,
+     "W": 45.0,
+     "eur": 75000.0
+    },
+    "AIS receiver (dual channel) + antenna": {
+     "kg": 0.17,
+     "W": 2.0,
+     "eur": 600.0
+    },
+    "video datalink 5 W + antennas (the carrier's tracking antenna)": {
+     "kg": 0.4,
+     "W": 25.0,
+     "eur": 8000.0
+    },
+    "pod: the cargo bay's mount, dampers, a retracting gimbal well": {
+     "kg": 0.5,
+     "W": 0.0,
+     "eur": 1500.0
+    }
+   },
+   "mtow_kg": 18.97,
+   "stall_m_s": 14.0,
+   "launch_m_s": 17.5,
+   "loiter_m_s": 17.0,
+   "loiter_W": 434,
+   "cruise_W": 810,
+   "endurance_loiter_min": 150.3,
+   "endurance_cruise_min": 80.6,
+   "wh_per_km": 8.65,
+   "range_km": 125.8,
+   "on_station_min_at_30km": 65.7,
+   "wind_limit_m_s": 15.0,
+   "deck_hs_limit_m": 3.0,
+   "rain": "light to moderate rain (<= 4 mm/h; sealed avionics, IP54-class motors and gimbal, assumed)",
+   "fov": {
+    "visible": {
+     "narrow_deg": 2.3,
+     "wide_deg": 63.0,
+     "zoom": 30,
+     "pixels_h": 1920
+    },
+    "ir": {
+     "narrow_deg": 2.5,
+     "wide_deg": 25.0,
+     "zoom": 10,
+     "pixels_h": 640,
+     "netd_mK": 25.0
+    }
+   },
+   "lrf_km": 5.0,
+   "jitter_urad": 30.0,
+   "dri_km": {
+    "skiff_6m": {
+     "300m": {
+      "day_clear": {
+       "detection": 18.01,
+       "recognition": 9.16,
+       "identification": 5.73
+      },
+      "day_haze": {
+       "detection": 15.54,
+       "recognition": 4.49,
+       "identification": 2.8
+      },
+      "day_fog": {
+       "detection": 1.12,
+       "recognition": 0.82,
+       "identification": 0.66
+      },
+      "night_clear": {
+       "detection": 18.01,
+       "recognition": 4.49,
+       "identification": 2.8
+      },
+      "night_haze": {
+       "detection": 15.54,
+       "recognition": 4.49,
+       "identification": 2.8
+      },
+      "night_fog": {
+       "detection": 1.12,
+       "recognition": 0.82,
+       "identification": 0.66
+      }
+     },
+     "900m": {
+      "day_clear": {
+       "detection": 17.99,
+       "recognition": 9.12,
+       "identification": 5.66
+      },
+      "day_haze": {
+       "detection": 15.51,
+       "recognition": 4.41,
+       "identification": 2.67
+      },
+      "day_fog": {
+       "detection": 3.35,
+       "recognition": 2.45,
+       "identification": 1.97
+      },
+      "night_clear": {
+       "detection": 17.99,
+       "recognition": 4.41,
+       "identification": 2.67
+      },
+      "night_haze": {
+       "detection": 15.51,
+       "recognition": 4.41,
+       "identification": 2.67
+      },
+      "night_fog": {
+       "detection": 3.35,
+       "recognition": 2.45,
+       "identification": 1.97
+      }
+     }
+    },
+    "fishing_20m": {
+     "300m": {
+      "day_clear": {
+       "detection": 29.34,
+       "recognition": 18.38,
+       "identification": 11.49
+      },
+      "day_haze": {
+       "detection": 17.25,
+       "recognition": 13.39,
+       "identification": 11.41
+      },
+      "day_fog": {
+       "detection": 1.25,
+       "recognition": 0.95,
+       "identification": 0.8
+      },
+      "night_clear": {
+       "detection": 29.34,
+       "recognition": 18.38,
+       "identification": 11.49
+      },
+      "night_haze": {
+       "detection": 17.25,
+       "recognition": 13.39,
+       "identification": 11.41
+      },
+      "night_fog": {
+       "detection": 1.25,
+       "recognition": 0.95,
+       "identification": 0.8
+      }
+     },
+     "900m": {
+      "day_clear": {
+       "detection": 29.32,
+       "recognition": 18.36,
+       "identification": 11.45
+      },
+      "day_haze": {
+       "detection": 17.23,
+       "recognition": 13.36,
+       "identification": 11.37
+      },
+      "day_fog": {
+       "detection": 3.75,
+       "recognition": 2.85,
+       "identification": 2.39
+      },
+      "night_clear": {
+       "detection": 29.32,
+       "recognition": 18.36,
+       "identification": 11.45
+      },
+      "night_haze": {
+       "detection": 17.23,
+       "recognition": 13.36,
+       "identification": 11.37
+      },
+      "night_fog": {
+       "detection": 3.75,
+       "recognition": 2.85,
+       "identification": 2.39
+      }
+     }
+    }
+   },
+   "datalink": {
+    "300m": {
+     "tx_W": 5.0,
+     "carrier_antenna": "tracking directional on the mast",
+     "class_range_km": 60.0,
+     "video_mbps": 3.0,
+     "capacity_mbps": 6.0,
+     "altitude_m": 300.0,
+     "horizon_km": 84.4,
+     "range_km": 60.0,
+     "limited_by": "link budget"
+    },
+    "900m": {
+     "tx_W": 5.0,
+     "carrier_antenna": "tracking directional on the mast",
+     "class_range_km": 60.0,
+     "video_mbps": 3.0,
+     "capacity_mbps": 6.0,
+     "altitude_m": 900.0,
+     "horizon_km": 136.6,
+     "range_km": 60.0,
+     "limited_by": "link budget"
+    }
+   },
+   "ais_km": 70.0,
+   "radar_option": {
+    "what": "lightweight maritime surveillance radar (X/Ku-band, 360 deg scan, small-target mode)",
+    "mass_kg": 3.6,
+    "power_W": 110.0,
+    "price_eur": 90000.0,
+    "skiff_km_from_900m": 12.0,
+    "with_eoir_kg": 7.37,
+    "radar_only_pod_kg": 4.67,
+    "payload_max_kg": 5.0,
+    "fits_with_eoir": false,
+    "fits_alone": true,
+    "verdict": "does not fit with the gimbal (7.4 kg against 5 kg); a radar-only pod (4.7 kg) would fit - a choice between seeing and finding, or a bigger aircraft"
+   },
+   "what": "the surveillance pod (eoir_payload.py) in the cargo bay",
+   "payload_kg": 3.77,
+   "parts": [
+    "fulmar_body_eoir"
+   ],
+   "gimbal_model": "fulmar_gimbal"
+  }
+ }
 }

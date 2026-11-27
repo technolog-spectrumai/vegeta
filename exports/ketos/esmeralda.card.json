@@ -132,12 +132,12 @@
  "service_kn": 10.0,
  "max_kn": 14.6,
  "service_kW": 170,
- "station_load_kW": 61.5,
- "power_W": 61500,
- "peak_kW": 171.9,
+ "station_load_kW": 60.2,
+ "power_W": 60200,
+ "peak_kW": 170.6,
  "loads_kW": {
   "DP (two pods, a tunnel, 0.5 m/s tide, 8 m/s wind)": 45.0,
-  "drone chargers (4 Gannet + 2 Fulmar at 1C)": 8.48,
+  "drone chargers (3 Gannet + 2 Fulmar at 1C)": 7.23,
   "autonomy: radars, lidar, cameras, compute, comms": 2.5,
   "long-range EO/IR turret": 0.6,
   "boat ramp, refuelling, Barracuda's shore power (average)": 2.5,
@@ -145,8 +145,8 @@
   "hotel": 2.0
  },
  "battery_kWh": 350.0,
- "endurance_days": 20.7,
- "fuel_l_h_on_station": 21.5,
+ "endurance_days": 21.2,
+ "fuel_l_h_on_station": 21.1,
  "autonomy": {
   "radar": "X- and S-band ARPA: targets out to 12 nm, the collision avoidance's tracks",
   "ais": "class A transponder: the others see it, it sees them",
@@ -385,12 +385,12 @@
      "identification": 0.13
     },
     "day_fog": {
-     "detection": 0.58,
+     "detection": 0.47,
      "recognition": 0.23,
      "identification": 0.17
     },
     "night_fog": {
-     "detection": 0.58,
+     "detection": 0.47,
      "recognition": 0.2,
      "identification": 0.13
     }
@@ -574,8 +574,8 @@
    "gannet": 12,
    "fulmar": 6
   },
-  "chargers": 6,
-  "charging_kW": 8.48
+  "chargers": 5,
+  "charging_kW": 7.23
  },
  "rates": {
   "vtol_launches_per_h": 240.0,
@@ -608,11 +608,11 @@
   ],
   "station_load_kW": [
    82.0,
-   61.5
+   60.2
   ],
   "endurance_days": [
    15.6,
-   20.7
+   21.2
   ],
   "hangar": [
    {
@@ -626,7 +626,7 @@
   ],
   "chargers": [
    12,
-   6
+   5
   ],
   "davits": [
    4,
@@ -634,12 +634,12 @@
   ],
   "price_eur": [
    4153780,
-   4805320
+   4830720
   ],
   "unchanged": "hulls, propulsion (service 10 kn, max 14.6 kn), autonomy mast, flight deck (4 pads, catapult, net), deck closure Hs 2.0 m"
  },
- "price_eur": 4805320,
- "price_with_barracuda_eur": 5747320.0,
+ "price_eur": 4830720,
+ "price_with_barracuda_eur": 5772720.0,
  "day_rate_eur": 1400.0,
  "class_values": true
 }

@@ -85,9 +85,10 @@ def ir_extinction_per_km(weather: str) -> float:
     return IR_MOLECULAR_PER_KM + w["ir_aerosol"] * 3.912 / w["visibility_km"]
 
 
-def ir_atm_range(weather: str, delta_T: float, task: str) -> float:
-    """The range at which the target's apparent temperature difference falls to the task's threshold (m)."""
-    dt_min = DELTA_T_MIN[task]
+def ir_atm_range(weather: str, delta_T: float, task: str, netd_mK: float = 25.0) -> float:
+    """The range at which the target's apparent temperature difference falls to the task's threshold (m); the
+    thresholds are a cooled core's (25 mK NETD) and scale with the core's NETD (an uncooled 50 mK core needs twice)."""
+    dt_min = DELTA_T_MIN[task] * netd_mK / 25.0
     if delta_T <= dt_min:
         return 0.0
     return 1000 * math.log(delta_T / dt_min) / ir_extinction_per_km(weather)
@@ -96,7 +97,7 @@ def ir_atm_range(weather: str, delta_T: float, task: str) -> float:
 def camera_dri(camera: dict, target: dict, h_observer: float, weather: str = "clear", night: bool = False,
                jitter_rad: float = 0.0) -> dict:
     """Detection, recognition and identification ranges (m, 50 %) of one camera channel at its narrowest field of
-    view. ``camera``: {"band": "visible"|"ir", "pixels_h": .., "hfov_narrow_deg": ..}. A visible channel sees
+    view. ``camera``: {"band": "visible"|"ir", "pixels_h": .., "hfov_narrow_deg": .., "netd_mK": .. (IR; default 25, cooled)}. A visible channel sees
     nothing at night (no illumination assumed: a searchlight or low-light core is another channel). Each range is
     the least of the Johnson range, the atmosphere's and the horizon's; ``limited_by`` says which."""
     ifov = math.radians(camera["hfov_narrow_deg"]) / camera["pixels_h"]
@@ -108,7 +109,7 @@ def camera_dri(camera: dict, target: dict, h_observer: float, weather: str = "cl
         if camera["band"] == "visible":
             atm = 0.0 if night else visible_atm_range(WEATHER[weather]["visibility_km"], target["contrast"], task)
         else:
-            atm = ir_atm_range(weather, target["delta_T_K"], task)
+            atm = ir_atm_range(weather, target["delta_T_K"], task, camera.get("netd_mK", 25.0))
         cand = {"pixels": geo, "atmosphere": atm, "horizon": hz}
         k = min(cand, key=cand.get)
         out[task], why[task] = round(cand[k]), k
