@@ -14,11 +14,15 @@
   "machines": [
     "barracuda",
     "esmeralda",
+    "fishing_boat",
     "fulmar",
     "gannet",
     "jacket",
+    "pilot_boat",
     "resident_dock",
+    "skiff",
     "squilla",
+    "yacht",
     "zarco"
   ]
 }

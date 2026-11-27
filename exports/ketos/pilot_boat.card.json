@@ -1,0 +1,95 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "pilot_boat",
+ "kind": "craft",
+ "what": "a 16 m pilot boat, aluminium, twin diesels on propellers, a wheelhouse amidships, fendered all round",
+ "parts": [
+  {
+   "model": "pilot_boat_hull",
+   "color": [
+    0.09,
+    0.125,
+    0.165
+   ]
+  },
+  {
+   "model": "pilot_boat_superstructure",
+   "color": [
+    0.902,
+    0.494,
+    0.133
+   ]
+  }
+ ],
+ "size": [
+  16.0,
+  5.0,
+  7.6
+ ],
+ "draught_m": 1.4,
+ "displacement_t": 26.64,
+ "mass_kg": 26640,
+ "power_kW": 900.0,
+ "max_kn": 22.4,
+ "max_speed_m_s": 11.52,
+ "cruise_kn": 20.0,
+ "speed_vs_hs": [
+  {
+   "hs_m": 0.0,
+   "kn": 22.4,
+   "limited_by": "propulsion"
+  },
+  {
+   "hs_m": 0.5,
+   "kn": 21.6,
+   "limited_by": "propulsion"
+  },
+  {
+   "hs_m": 1.0,
+   "kn": 21.0,
+   "limited_by": "propulsion"
+  },
+  {
+   "hs_m": 1.5,
+   "kn": 20.4,
+   "limited_by": "propulsion"
+  },
+  {
+   "hs_m": 2.0,
+   "kn": 19.9,
+   "limited_by": "propulsion"
+  },
+  {
+   "hs_m": 2.5,
+   "kn": 19.4,
+   "limited_by": "propulsion"
+  }
+ ],
+ "turning_circle_m": {
+  "5kn": 48,
+  "20kn": 62,
+  "22kn": 75
+ },
+ "accel_0_cruise_s": 6.0,
+ "rcs_m2": {
+  "beam": 30.0,
+  "bow": 8.0,
+  "stern": 12.0
+ },
+ "signature": {
+  "lights": "white over red all-round (pilot on duty), masthead, sidelights, sternlight; 'PILOT' on the wheelhouse",
+  "ir": "two diesel exhausts at the transom, warm wheelhouse (~5 K over the sea)",
+  "delta_T_K": 5.0
+ },
+ "ais": "class A, always on",
+ "ais_typical": true,
+ "crew": [
+  2,
+  3
+ ],
+ "behaviour": "fast, direct between the pilot station and the ship it serves; talks on VHF",
+ "weapons": null,
+ "class_values": true,
+ "basis": "15-17 m aluminium pilot boats with twin 400-600 kW diesels, 20-25 kn; RCS of an aluminium superstructure; AIS class A by duty"
+}

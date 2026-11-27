@@ -197,3 +197,15 @@ def test_drone_payloads_export(tmp_path):
         for m in eoir["parts"]:
             assert (tmp_path / f"{m}.json").exists()
     assert json.load(open(tmp_path / "fulmar.card.json"))["payloads"]["eoir"]["radar_option"]["fits_with_eoir"] is False
+
+
+def test_small_craft_export(tmp_path):
+    names = {"fishing_boat", "pilot_boat", "yacht", "skiff"}
+    ketos_export.export(str(tmp_path), names)
+    for n in names:
+        c = json.load(open(tmp_path / f"{n}.card.json"))
+        assert c["kind"] == "craft" and c["weapons"] is None and c["class_values"] and c["basis"]
+        assert [r["hs_m"] for r in c["speed_vs_hs"]] == [0.0, 0.5, 1.0, 1.5, 2.0, 2.5] and {"beam", "bow", "stern"} <= set(c["rcs_m2"])
+        ms = _meshes(tmp_path, c)
+        xs = [x for m in ms for x in m["vertices"][0::3]]
+        assert abs(max(xs) + min(xs)) < 0.01 and min(z for m in ms for z in m["vertices"][2::3]) < 0   # under the waterline

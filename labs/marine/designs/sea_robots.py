@@ -183,3 +183,26 @@ def jacket() -> Robot:
               sources={"mass": "oil_platform.Jacket steel tonnes (class)", "looks": "designs/oil_platform.py:Jacket"})
     r.validate()
     return r
+
+
+def craft(name: str) -> Robot:
+    """A small craft (``small_craft.py``): its hull as a box of its displacement (it floats at its waterline: the
+    simulator's buoyancy); the root at the waterline amidships."""
+    import small_craft as sc
+    c, s = sc.CRAFT[name], sc.sizing(name)
+    T = c.get("canoe_draught_m", c["draught_m"])
+    g = [Geom("hull", "box", (c["length_m"] * 0.45, c["beam_m"] * 0.4, c["depth_m"] / 2), pos=(0.0, 0.0, c["depth_m"] / 2 - T),
+              mass=s["displacement_t"] * 1000, role="body", rgba=(0.6, 0.6, 0.65, 1.0))]
+    r = Robot(name.replace("_", " ").title().replace(" ", ""), Link("hull", log=True, geoms=g),
+              notes=f"{s['what']}: a contact, a rigid body of its displacement (class values; no weapons)",
+              sources={"mass": "small_craft.sizing displacement (class values, basis on the card)", "looks": "designs/small_craft.py"})
+    r.validate()
+    return r
+
+
+def craft_visual(name: str):
+    """The craft's CAD for ``machines.register(visual=...)``."""
+    def build():
+        import small_craft as sc
+        return sc.build(name)
+    return build

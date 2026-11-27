@@ -1,0 +1,96 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "fishing_boat",
+ "kind": "craft",
+ "what": "a 20 m stern trawler / longliner, steel, wheelhouse forward, gantry aft, gear in the water when fishing",
+ "parts": [
+  {
+   "model": "fishing_boat_hull",
+   "color": [
+    0.663,
+    0.196,
+    0.149
+   ]
+  },
+  {
+   "model": "fishing_boat_superstructure",
+   "color": [
+    0.925,
+    0.941,
+    0.945
+   ]
+  }
+ ],
+ "size": [
+  20.0,
+  6.2,
+  11.7
+ ],
+ "draught_m": 2.6,
+ "displacement_t": 156.97,
+ "mass_kg": 156970,
+ "power_kW": 300.0,
+ "max_kn": 9.7,
+ "max_speed_m_s": 4.99,
+ "cruise_kn": 8.0,
+ "speed_vs_hs": [
+  {
+   "hs_m": 0.0,
+   "kn": 9.7,
+   "limited_by": "hull speed"
+  },
+  {
+   "hs_m": 0.5,
+   "kn": 9.3,
+   "limited_by": "hull speed"
+  },
+  {
+   "hs_m": 1.0,
+   "kn": 9.0,
+   "limited_by": "hull speed"
+  },
+  {
+   "hs_m": 1.5,
+   "kn": 8.7,
+   "limited_by": "hull speed"
+  },
+  {
+   "hs_m": 2.0,
+   "kn": 8.4,
+   "limited_by": "hull speed"
+  },
+  {
+   "hs_m": 2.5,
+   "kn": 8.0,
+   "limited_by": "hull speed"
+  }
+ ],
+ "turning_circle_m": {
+  "5kn": 70,
+  "8kn": 70,
+  "10kn": 70
+ },
+ "accel_0_cruise_s": 10.6,
+ "rcs_m2": {
+  "beam": 300.0,
+  "bow": 60.0,
+  "stern": 120.0
+ },
+ "signature": {
+  "lights": "trawling: green over white all-round, sidelights, sternlight, deck floodlights; masthead when steaming",
+  "ir": "warm exhaust stack and wheelhouse, a large hull: a big IR target (~6 K over the sea)",
+  "delta_T_K": 6.0
+ },
+ "ais": "class A (EU: fishing vessels >= 15 m must carry it)",
+ "ais_typical": true,
+ "crew": [
+  3,
+  8
+ ],
+ "behaviour": "slow, long dwell on the grounds, gear astern (it cannot manoeuvre freely while trawling)",
+ "weapons": null,
+ "class_values": true,
+ "basis": "dimensions, power and speeds typical of 18-24 m North Sea trawlers and longliners; RCS of a steel craft that size (tens to hundreds of m2); AIS per EU Regulation 2002/59 as amended (fishing >= 15 m)",
+ "fishing_kn": 3.0
+}

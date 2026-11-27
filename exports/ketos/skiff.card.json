@@ -1,0 +1,96 @@
+{
+ "schema": "ketos.card",
+ "version": "1.0",
+ "name": "skiff",
+ "kind": "craft",
+ "what": "a 7 m open fibreglass skiff, two outboards, low freeboard, no superstructure",
+ "parts": [
+  {
+   "model": "skiff_hull",
+   "color": [
+    0.839,
+    0.918,
+    0.973
+   ]
+  },
+  {
+   "model": "skiff_superstructure",
+   "color": [
+    0.337,
+    0.396,
+    0.451
+   ]
+  }
+ ],
+ "size": [
+  7.0,
+  2.0,
+  1.9
+ ],
+ "draught_m": 0.35,
+ "displacement_t": 1.65,
+ "mass_kg": 1650,
+ "power_kW": 150.0,
+ "max_kn": 35.2,
+ "max_speed_m_s": 18.11,
+ "cruise_kn": 25.0,
+ "speed_vs_hs": [
+  {
+   "hs_m": 0.0,
+   "kn": 35.2,
+   "limited_by": "propulsion"
+  },
+  {
+   "hs_m": 0.5,
+   "kn": 24.9,
+   "limited_by": "slamming (crew)"
+  },
+  {
+   "hs_m": 1.0,
+   "kn": 15.4,
+   "limited_by": "slamming (crew)"
+  },
+  {
+   "hs_m": 1.5,
+   "kn": 12.9,
+   "limited_by": "slamming (crew)"
+  },
+  {
+   "hs_m": 2.0,
+   "kn": 11.3,
+   "limited_by": "slamming (crew)"
+  },
+  {
+   "hs_m": 2.5,
+   "kn": 10.1,
+   "limited_by": "slamming (crew)"
+  }
+ ],
+ "turning_circle_m": {
+  "5kn": 18,
+  "25kn": 75,
+  "35kn": 147
+ },
+ "accel_0_cruise_s": 7.5,
+ "rcs_m2": {
+  "beam": 1.0,
+  "bow": 0.3,
+  "stern": 0.5
+ },
+ "signature": {
+  "lights": "often none",
+  "ir": "the outboards' cowls and exhausts, the crew (~4 K over the sea); the hull is cold",
+  "delta_T_K": 4.0
+ },
+ "ais": "none",
+ "ais_typical": false,
+ "crew": [
+  2,
+  8
+ ],
+ "behaviour": "fast and low, often no lights and no AIS; drifts or idles, then runs",
+ "weapons": null,
+ "class_values": true,
+ "basis": "6-8 m open fibreglass skiffs with one or two 40-100 kW outboards, 25-40 kn light; RCS of a GRP hull with outboards and people (~1 m2); no lights, no AIS (as reported of raiding skiffs)",
+ "max_kn_light": 36.3
+}

@@ -8,7 +8,7 @@ reads. The meshes come from the CadQuery models; the numbers from each design's 
 
 The card is the contract between Vegeta and Ketos (``ketos.card`` 1.0):
 
-    {"schema":"ketos.card","version":"1.0","name":"cyclopterus","kind":"rov"|"crawler"|"boat"|"hull"|"pen"|"barge"|"air",
+    {"schema":"ketos.card","version":"1.0","name":"cyclopterus","kind":"rov"|"crawler"|"boat"|"hull"|"pen"|"barge"|"air"|"craft",
      "parts":[{"model":"cyclopterus_hull","color":[r,g,b]}], "size":[L,W,H], "mass_kg":..., "displacement_L":...,
      "thrusters":[{"at":[x,y,z],"axis":[ax,ay,az],"max_N":...}], "battery_Wh":..., "hotel_W":..., "tools":{...}, ...}
 
@@ -726,6 +726,50 @@ def esmeralda():
     return card, models
 
 
+def _craft(name):
+    """A small craft (``small_craft.py``): a ``craft`` card - a contact round the platform, not a robot: its size,
+    displacement, speeds against the sea state, turning, acceleration, radar cross-section by aspect, lights, IR, AIS
+    and crew, every number a class value with its basis. z = 0 the waterline, x = 0 amidships. No weapons."""
+    import small_craft as sc
+    c = sc.CRAFT[name]
+    s = sc.sizing(name)
+    cols = {"fishing_boat": ("#a93226", "#ecf0f1"), "pilot_boat": ("#17202a", "#e67e22"), "yacht": ("#fdfefe", "#aab7b8"),
+            "skiff": ("#d6eaf8", "#566573")}[name]
+    models = [_mesh(sc.build(name, "hull"), f"{name}_hull", _hex(cols[0]), 15.0),
+              _mesh(sc.build(name, "superstructure"), f"{name}_superstructure", _hex(cols[1]), 15.0)]
+    wl = c.get("canoe_draught_m", c["draught_m"]) if name != "skiff" else c["draught_m"]
+    for m in models:
+        m["vertices"][2::3] = [round(z - wl, 4) for z in m["vertices"][2::3]]
+    _x_centre(models)
+    zs = [z for m in models for z in m["vertices"][2::3]]
+    card = CARD | {"name": name, "kind": "craft", "what": s["what"], "parts": [{"model": m["name"], "color": m["color"]} for m in models],
+                   "size": [s["length_m"], s["beam_m"], round(max(zs) - min(zs), 2)], "draught_m": s["draught_m"],
+                   "displacement_t": s["displacement_t"], "mass_kg": round(s["displacement_t"] * 1000), "power_kW": s["power_kW"],
+                   "max_kn": s["max_kn"], "max_speed_m_s": round(s["max_kn"] * 0.5144, 2), "cruise_kn": s["cruise_kn"],
+                   "speed_vs_hs": s["speed_vs_hs"], "turning_circle_m": s["turning_circle_m"], "accel_0_cruise_s": s["accel_0_cruise_s"],
+                   "rcs_m2": s["rcs_m2"], "signature": {"lights": s["lights"], "ir": s["ir"], "delta_T_K": s["delta_T_K"]},
+                   "ais": s["ais"], "ais_typical": s["ais_typical"], "crew": s["crew"], "behaviour": s["behaviour"],
+                   "weapons": None, "class_values": True, "basis": s["basis"],
+                   **{k: s[k] for k in ("max_kn_light", "fishing_kn", "sail_kn") if k in s}}
+    return card, models
+
+
+def fishing_boat():
+    return _craft("fishing_boat")
+
+
+def pilot_boat():
+    return _craft("pilot_boat")
+
+
+def yacht():
+    return _craft("yacht")
+
+
+def skiff():
+    return _craft("skiff")
+
+
 def _aero():
     aero = os.path.join(HERE, "..", "..", "aero", "designs")
     if aero not in sys.path:
@@ -802,7 +846,8 @@ MACHINES = {"cyclopterus": cyclopterus, "shrimp": shrimp, "workboat": workboat, 
             "squilla": squilla, "resident_dock": resident_dock, "riser_clamp": riser_clamp, "debris": debris,
             "nephro": nephro, "trencher": trencher, "cable_vessel": cable_vessel, "cable": cable, "cable_joint": cable_joint,
             "walrus": walrus, "clam_basket": clam_basket, "clam_boat": clam_boat,
-            "zarco": zarco, "gannet": gannet, "fulmar": fulmar, "barracuda": barracuda, "esmeralda": esmeralda}
+            "zarco": zarco, "gannet": gannet, "fulmar": fulmar, "barracuda": barracuda, "esmeralda": esmeralda,
+            "fishing_boat": fishing_boat, "pilot_boat": pilot_boat, "yacht": yacht, "skiff": skiff}
 
 
 def export(out, only=None):
