@@ -2,7 +2,8 @@
  "schema": "ketos.card",
  "version": "1.0",
  "name": "cigar",
- "kind": "ufo",
+ "kind": "craft",
+ "airborne": true,
  "fictional": true,
  "what": "an 18 m winged cigar (after the 1952 'winged cigar-shape' sketch): a smooth 2 m spindle, swept wings of 10 m span from mid-body, a dorsal fin with the flag on both sides, one glowing nozzle; flies like a jet",
  "model": "airplane",
@@ -55,6 +56,86 @@
   3.95
  ],
  "mass_kg": 8500.0,
+ "power_kW": null,
+ "max_kn": 418.0,
+ "max_speed_m_s": 215.0,
+ "cruise_kn": 388.8,
+ "cruise_m_s": 200.0,
+ "min_speed_m_s": 70.0,
+ "max_speed_high_m_s": 245.0,
+ "max_kn_high": 476.3,
+ "speed_vs_hs": [
+  {
+   "hs_m": 0.0,
+   "kn": 418.0,
+   "limited_by": "airborne (the sea state does not limit it)"
+  },
+  {
+   "hs_m": 0.5,
+   "kn": 418.0,
+   "limited_by": "airborne (the sea state does not limit it)"
+  },
+  {
+   "hs_m": 1.0,
+   "kn": 418.0,
+   "limited_by": "airborne (the sea state does not limit it)"
+  },
+  {
+   "hs_m": 1.5,
+   "kn": 418.0,
+   "limited_by": "airborne (the sea state does not limit it)"
+  },
+  {
+   "hs_m": 2.0,
+   "kn": 418.0,
+   "limited_by": "airborne (the sea state does not limit it)"
+  },
+  {
+   "hs_m": 2.5,
+   "kn": 418.0,
+   "limited_by": "airborne (the sea state does not limit it)"
+  }
+ ],
+ "turning_circle_m": {
+  "136kn": 436,
+  "389kn": 3559,
+  "418kn": 4113
+ },
+ "turn_rate_deg_s": 6.44,
+ "accel_0_cruise_s": 52.0,
+ "rcs_m2": {
+  "front": 1.5,
+  "side": 10.0,
+  "rear": 3.0,
+  "top": 30.0,
+  "bottom": 25.0,
+  "bow": 1.5,
+  "beam": 10.0,
+  "stern": 3.0
+ },
+ "signature": {
+  "lights": "a red glow at the nozzle, no navigation lights",
+  "ir": "the tail nozzle (a small turbofan's exhaust): ~700 K over 0.6 m2; skin +20.5 K (aerodynamic heating at 215 m/s: r v^2 / 2cp)",
+  "delta_T_K": 20.5,
+  "ir_hot_spots": [
+   {
+    "what": "the tail nozzle (a small turbofan's exhaust)",
+    "T_K": 700.0,
+    "area_m2": 0.6
+   }
+  ],
+  "sound": "a jet's roar on a low pass, heard after it has gone by"
+ },
+ "ais": false,
+ "ais_typical": false,
+ "crew": [
+  1,
+  3
+ ],
+ "behaviour": "moves like a jet: never below 70 m/s, turns by banking (2.5 g low); low passes at 200 m/s, transits high out of gun range; appears late in a mission",
+ "weapons": null,
+ "class_values": true,
+ "basis": "sized as a light-to-midsize business jet or a fast jet drone: 15-20 m long, MTOW ~8.5 t; Mach 0.6-0.8 (215 m/s low, 245 m/s high); a minimum speed of ~70 m/s (its stall, clean); load factor 2.5 at low level (transport-category limit), 1.5 sustainable near its ceiling; roll ~90 deg/s; climb ~25 m/s; thrust/weight ~0.35 (accelerating ~2.5 m/s2 at low speed). RCS of a bizjet (~1 m2 nose-on, ~10 beam); IR of a small turbofan's nozzle (~700 K). The winged spindle and its flight are fiction.",
  "kinematics": {
   "model": "airplane",
   "accel_m_s2": 2.5,
@@ -250,36 +331,6 @@
   }
  ],
  "bounding_radius_m": 9.47,
- "rcs_m2": {
-  "front": 1.5,
-  "side": 10.0,
-  "rear": 3.0,
-  "top": 30.0,
-  "bottom": 25.0
- },
- "signature": {
-  "rcs_m2": {
-   "front": 1.5,
-   "side": 10.0,
-   "rear": 3.0,
-   "top": 30.0,
-   "bottom": 25.0
-  },
-  "ir": {
-   "hot_spots": [
-    {
-     "what": "the tail nozzle (a small turbofan's exhaust)",
-     "T_K": 700.0,
-     "area_m2": 0.6
-    }
-   ],
-   "skin_dT_K": 20.5,
-   "skin_dT_note": "aerodynamic heating at 215 m/s: r v^2 / 2cp"
-  },
-  "lights": "a red glow at the nozzle, no navigation lights",
-  "sound": "a jet's roar on a low pass, heard after it has gone by",
-  "ais": null
- },
  "flak": {
   "guns": {
    "hmg_12_7": {
@@ -538,13 +589,5 @@
   "offset_m": 0.07500000000000001,
   "where": "painted on both sides of the dorsal fin",
   "texture": "alien_jolly_roger.png"
- },
- "crew": [
-  1,
-  3
- ],
- "ais": null,
- "weapons": null,
- "class_values": true,
- "basis": "sized as a light-to-midsize business jet or a fast jet drone: 15-20 m long, MTOW ~8.5 t; Mach 0.6-0.8 (215 m/s low, 245 m/s high); a minimum speed of ~70 m/s (its stall, clean); load factor 2.5 at low level (transport-category limit), 1.5 sustainable near its ceiling; roll ~90 deg/s; climb ~25 m/s; thrust/weight ~0.35 (accelerating ~2.5 m/s2 at low speed). RCS of a bizjet (~1 m2 nose-on, ~10 beam); IR of a small turbofan's nozzle (~700 K). The winged spindle and its flight are fiction."
+ }
 }

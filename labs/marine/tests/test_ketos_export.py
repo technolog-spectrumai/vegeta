@@ -218,7 +218,9 @@ def test_ufo_export(tmp_path):
     assert (tmp_path / "alien_jolly_roger.png").exists()
     for n in names:
         c = json.load(open(tmp_path / f"{n}.card.json"))
-        assert c["kind"] == "ufo" and c["fictional"] and c["weapons"] is None and c["ais"] is None and c["basis"]
+        assert c["kind"] == "craft" and c["airborne"] and c["fictional"] and c["weapons"] is None and c["ais"] is False and c["basis"]
+        assert {"beam", "bow", "stern"} <= set(c["rcs_m2"]) and [r["hs_m"] for r in c["speed_vs_hs"]] == [0.0, 0.5, 1.0, 1.5, 2.0, 2.5]
+        assert c["max_speed_m_s"] > 0 and c["turning_circle_m"] and c["turn_rate_deg_s"] > 0 and c["flag"]["texture"]
         assert c["kinematics"]["model"] == c["model"] and c["collision"] and c["flak"]["passes"]
         flag = [p for p in c["parts"] if p.get("texture")]
         assert len(flag) == 1 and flag[0]["texture"] == "alien_jolly_roger.png"

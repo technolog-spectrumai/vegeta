@@ -8,7 +8,7 @@ reads. The meshes come from the CadQuery models; the numbers from each design's 
 
 The card is the contract between Vegeta and Ketos (``ketos.card`` 1.0):
 
-    {"schema":"ketos.card","version":"1.0","name":"cyclopterus","kind":"rov"|"crawler"|"boat"|"hull"|"pen"|"barge"|"air"|"craft"|"ufo",
+    {"schema":"ketos.card","version":"1.0","name":"cyclopterus","kind":"rov"|"crawler"|"boat"|"hull"|"pen"|"barge"|"air"|"craft",
      "parts":[{"model":"cyclopterus_hull","color":[r,g,b]}], "size":[L,W,H], "mass_kg":..., "displacement_L":...,
      "thrusters":[{"at":[x,y,z],"axis":[ax,ay,az],"max_N":...}], "battery_Wh":..., "hotel_W":..., "tools":{...}, ...}
 
@@ -18,13 +18,12 @@ the pack), ``mtow_kg``, ``payload_kg``, ``battery_Wh`` / ``usable_Wh``, ``cruise
 ``endurance_min``, ``wind_limit_m_s``, ``deck_hs_limit_m`` (the landing on a deck's sea-state limit), ``launch`` and
 ``recovery`` ("pad" | "catapult" | "net"), ``swap_s``.
 
-A ``ufo`` card (the alien pirates' fictional craft: saucer, cigar; ``labs/aero/designs/ufo.py``) has ``fictional``
-true, ``model`` ("helicopter" | "airplane": how it moves), ``kinematics`` (the limits ``ufo.step`` applies: speeds,
-accelerations, climb/descent, bank, roll and yaw rates, the turn by speed), ``collision`` (primitives in the card's
-frame) and ``bounding_radius_m``, ``signature`` (``rcs_m2`` by aspect, ``ir``, ``lights``, ``sound``), ``flak`` (time
-in each gun's range on typical passes, tracking rate, lead), ``flag``; ``ais`` and ``weapons`` None. A part may carry
-``texture`` (an image file written beside the meshes); its model then has ``uv`` (two per vertex, (0, 0) the image's
-bottom left) and ``texture``.
+The UFOs (the alien pirates' fictional saucer and cigar; ``labs/aero/designs/ufo.py``) are ``craft`` cards with
+``airborne`` and ``fictional`` true: the craft fields as the boats' (``speed_vs_hs`` flat, ``ais`` False), and beside
+them ``model`` ("helicopter" | "airplane": how it moves), ``kinematics`` (the limits ``ufo.step`` applies),
+``collision`` (primitives in the card's frame) and ``bounding_radius_m``, ``flak`` (time in each gun's range on typical
+passes, tracking rate, lead), ``flag``. A part may carry ``texture`` (an image file written beside the meshes); its
+model then has ``uv`` (two per vertex, (0, 0) the image's bottom left) and ``texture``.
 """
 from __future__ import annotations
 
@@ -860,24 +859,52 @@ TEXTURES = {"alien_jolly_roger.png": os.path.join(HERE, "..", "..", "aero", "des
 
 
 def _ufo(name):
-    """A UFO (``labs/aero/designs/ufo.py``): a ``ufo`` card - fictional game craft that move like a helicopter (the
-    saucer) or a jet (the cigar), with their kinematic limits, collision primitives, signatures and flak figures; the
-    CAD parts and the flag, a textured panel with the owner's alien Jolly Roger. Saucer: z = 0 its pads' feet; cigar:
-    z = 0 its axis; both centred on x = 0. No weapons, no AIS."""
+    """A UFO (``labs/aero/designs/ufo.py``): a ``craft`` card like the small craft's, so the game takes it as it takes
+    a contact - fictional game craft (``fictional``, ``airborne``) that move like a helicopter (the saucer) or a jet
+    (the cigar). The craft fields (speeds in kn, ``speed_vs_hs`` - flat: the sea does not limit them - turning circles,
+    acceleration, RCS by bow/beam/stern, signature, ``ais`` False) and, beside them, the kinematic limits, collision
+    primitives, full signatures, flak figures and the flag (a textured panel with the owner's alien Jolly Roger).
+    Saucer: z = 0 its pads' feet; cigar: z = 0 its axis; both centred on x = 0. No weapons, no AIS."""
     _aero()
     import ufo
     s = ufo.sizing(name)
+    c = ufo.CRAFT[name]
     models = [_mesh(ufo.build(name, part), f"{name}_{part}", _hex(col), 10.0) for part, col in ufo.PART_COLOURS[name].items()]
     for m in models:
         m["source"] = "vegeta labs/aero/designs/ufo.py (CadQuery)"
     models.append(ufo.flag_mesh(name))
     parts = [{"model": m["name"], "color": m["color"]} | ({"texture": m["texture"]} if m.get("texture") else {}) for m in models]
-    k = s["kinematics"]
-    card = CARD | {"name": name, "kind": "ufo", "fictional": True, "what": s["what"], "model": k["model"], "parts": parts,
-                   "size": s["size"], "mass_kg": s["mass_kg"], "kinematics": k, "collision": s["collision"],
-                   "bounding_radius_m": s["bounding_radius_m"], "rcs_m2": s["signature"]["rcs_m2"], "signature": s["signature"],
-                   "flak": s["flak"], "flag": s["flag"], "crew": s["crew"], "ais": None, "weapons": None,
-                   "class_values": True, "basis": s["basis"]}
+    k, sig = s["kinematics"], s["signature"]
+    kn = lambda v: round(v / 0.5144, 1)
+    if k["model"] == "helicopter":
+        v_max, v_cruise, v_start = k["v_max_m_s"], k["v_cruise_m_s"], 0.0
+        turn_at = (20.0, v_cruise, v_max)
+        behaviour = ("moves like a helicopter: hovers, creeps sideways and backwards, turns on the spot; patrols low and slow, "
+                     "dashes at 78 m/s; appears late in a mission")
+        extra = {}
+    else:
+        v_max, v_cruise, v_start = k["v_max_m_s"]["low"], k["v_cruise_m_s"]["low"], k["v_min_m_s"]
+        turn_at = (k["v_min_m_s"], v_cruise, v_max)
+        behaviour = ("moves like a jet: never below 70 m/s, turns by banking (2.5 g low); low passes at 200 m/s, "
+                     "transits high out of gun range; appears late in a mission")
+        extra = {"min_speed_m_s": k["v_min_m_s"], "max_speed_high_m_s": k["v_max_m_s"]["high"], "max_kn_high": kn(k["v_max_m_s"]["high"])}
+    turning = {f"{kn(v):.0f}kn": round(2 * ufo.turn(name, v)["radius_m"]) for v in turn_at}       # diameters, as the boats'
+    rcs = sig["rcs_m2"] | {"bow": sig["rcs_m2"]["front"], "beam": sig["rcs_m2"]["side"], "stern": sig["rcs_m2"]["rear"]}
+    hot = sig["ir"]["hot_spots"][0]
+    signature = {"lights": sig["lights"], "ir": f"{hot['what']}: ~{hot['T_K']:g} K over {hot['area_m2']:g} m2; skin +{sig['ir']['skin_dT_K']:g} K "
+                 f"({sig['ir']['skin_dT_note']})", "delta_T_K": sig["ir"]["skin_dT_K"], "ir_hot_spots": sig["ir"]["hot_spots"],
+                 "sound": sig["sound"]}
+    card = CARD | {"name": name, "kind": "craft", "airborne": True, "fictional": True, "what": s["what"], "model": k["model"],
+                   "parts": parts, "size": s["size"], "mass_kg": s["mass_kg"], "power_kW": None,
+                   "max_kn": kn(v_max), "max_speed_m_s": v_max, "cruise_kn": kn(v_cruise), "cruise_m_s": v_cruise, **extra,
+                   "speed_vs_hs": [{"hs_m": hs, "kn": kn(v_max), "limited_by": "airborne (the sea state does not limit it)"}
+                                   for hs in (0.0, 0.5, 1.0, 1.5, 2.0, 2.5)],
+                   "turning_circle_m": turning, "turn_rate_deg_s": ufo.turn(name, v_cruise)["rate_deg_s"],
+                   "accel_0_cruise_s": round((v_cruise - v_start) / k["accel_m_s2"], 1),
+                   "rcs_m2": rcs, "signature": signature, "ais": False, "ais_typical": False, "crew": s["crew"],
+                   "behaviour": behaviour, "weapons": None, "class_values": True, "basis": s["basis"],
+                   "kinematics": k, "collision": s["collision"], "bounding_radius_m": s["bounding_radius_m"],
+                   "flak": s["flak"], "flag": s["flag"]}
     return card, models
 
 

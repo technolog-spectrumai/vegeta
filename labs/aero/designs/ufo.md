@@ -9,7 +9,7 @@ stands in for (`ufo.BASIS`, and `basis` on each card). **No weapons, no AIS.**
 - Flag: `ufo_flag.py` → `data/alien_jolly_roger.png`, redrawn from the owner's image at 1536 × 1024.
 - Render: `ufo_3d.png` (`ufo_draw3d.py`; the flags are drawn through their exported UVs).
 - Rigid bodies: `ufo_robots.py`, registered in `machines.py`.
-- Cards: `exports/ketos/{saucer,cigar}.card.json` (kind `ufo`), with the meshes and the texture.
+- Cards: `exports/ketos/{saucer,cigar}.card.json` (kind `craft`, `airborne` and `fictional`: the game takes them as it takes the boats; `ais: false`), with the meshes and the texture.
 - Yax files: `exports/{saucer,cigar}.yx2`.
 
 ![the UFOs](ufo_3d.png)

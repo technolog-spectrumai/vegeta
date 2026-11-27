@@ -2,7 +2,8 @@
  "schema": "ketos.card",
  "version": "1.0",
  "name": "saucer",
- "kind": "ufo",
+ "kind": "craft",
+ "airborne": true,
  "fictional": true,
  "what": "a 12 m flying saucer: a lens-shaped disc with a glass dome, a mast and flag on the dome, three landing pads; flies like a helicopter",
  "model": "helicopter",
@@ -47,6 +48,83 @@
   6.0
  ],
  "mass_kg": 6400.0,
+ "power_kW": null,
+ "max_kn": 151.6,
+ "max_speed_m_s": 78.0,
+ "cruise_kn": 132.2,
+ "cruise_m_s": 68.0,
+ "speed_vs_hs": [
+  {
+   "hs_m": 0.0,
+   "kn": 151.6,
+   "limited_by": "airborne (the sea state does not limit it)"
+  },
+  {
+   "hs_m": 0.5,
+   "kn": 151.6,
+   "limited_by": "airborne (the sea state does not limit it)"
+  },
+  {
+   "hs_m": 1.0,
+   "kn": 151.6,
+   "limited_by": "airborne (the sea state does not limit it)"
+  },
+  {
+   "hs_m": 1.5,
+   "kn": 151.6,
+   "limited_by": "airborne (the sea state does not limit it)"
+  },
+  {
+   "hs_m": 2.0,
+   "kn": 151.6,
+   "limited_by": "airborne (the sea state does not limit it)"
+  },
+  {
+   "hs_m": 2.5,
+   "kn": 151.6,
+   "limited_by": "airborne (the sea state does not limit it)"
+  }
+ ],
+ "turning_circle_m": {
+  "39kn": 82,
+  "132kn": 943,
+  "152kn": 1240
+ },
+ "turn_rate_deg_s": 8.27,
+ "accel_0_cruise_s": 22.7,
+ "rcs_m2": {
+  "front": 4.0,
+  "side": 6.0,
+  "rear": 4.0,
+  "top": 30.0,
+  "bottom": 40.0,
+  "bow": 4.0,
+  "beam": 6.0,
+  "stern": 4.0
+ },
+ "signature": {
+  "lights": "a ring of 24 cyan lights round the rim, a white light on the mast; can go dark",
+  "ir": "the belly's drive ring (where a helicopter's engine exhausts would be): ~520 K over 0.8 m2; skin +8 K (a warm hull from the drive inside it (class))",
+  "delta_T_K": 8.0,
+  "ir_hot_spots": [
+   {
+    "what": "the belly's drive ring (where a helicopter's engine exhausts would be)",
+    "T_K": 520.0,
+    "area_m2": 0.8
+   }
+  ],
+  "sound": "a low hum, about a medium helicopter's level at a distance (no rotor slap)"
+ },
+ "ais": false,
+ "ais_typical": false,
+ "crew": [
+  2,
+  4
+ ],
+ "behaviour": "moves like a helicopter: hovers, creeps sideways and backwards, turns on the spot; patrols low and slow, dashes at 78 m/s; appears late in a mission",
+ "weapons": null,
+ "class_values": true,
+ "basis": "sized as a medium twin helicopter of a 13-14 m rotor (the AW139 / Bell 412 class): MTOW ~6.4 t; max speed ~78 m/s (150 kn) and cruise ~68 m/s (130 kn); sideward and rearward flight limits 35 and 30 kn; climb ~10 m/s; a hover yaw rate of ~40 deg/s; 45 deg bank, 20 deg pitch in manoeuvres; accelerating at ~0.3 g (nose ~17 deg down), flaring at ~0.4 g. RCS of a helicopter that size (a few m2 nose-on); IR of its exhausts (~500 K) put at the belly. The disc, dome and its flight are fiction.",
  "kinematics": {
   "model": "helicopter",
   "accel_m_s2": 3.0,
@@ -232,36 +310,6 @@
   }
  ],
  "bounding_radius_m": 6.71,
- "rcs_m2": {
-  "front": 4.0,
-  "side": 6.0,
-  "rear": 4.0,
-  "top": 30.0,
-  "bottom": 40.0
- },
- "signature": {
-  "rcs_m2": {
-   "front": 4.0,
-   "side": 6.0,
-   "rear": 4.0,
-   "top": 30.0,
-   "bottom": 40.0
-  },
-  "ir": {
-   "hot_spots": [
-    {
-     "what": "the belly's drive ring (where a helicopter's engine exhausts would be)",
-     "T_K": 520.0,
-     "area_m2": 0.8
-    }
-   ],
-   "skin_dT_K": 8.0,
-   "skin_dT_note": "a warm hull from the drive inside it (class)"
-  },
-  "lights": "a ring of 24 cyan lights round the rim, a white light on the mast; can go dark",
-  "sound": "a low hum, about a medium helicopter's level at a distance (no rotor slap)",
-  "ais": null
- },
  "flak": {
   "guns": {
    "hmg_12_7": {
@@ -529,13 +577,5 @@
   "faces": "both",
   "where": "on the mast atop the dome, flying aft",
   "texture": "alien_jolly_roger.png"
- },
- "crew": [
-  2,
-  4
- ],
- "ais": null,
- "weapons": null,
- "class_values": true,
- "basis": "sized as a medium twin helicopter of a 13-14 m rotor (the AW139 / Bell 412 class): MTOW ~6.4 t; max speed ~78 m/s (150 kn) and cruise ~68 m/s (130 kn); sideward and rearward flight limits 35 and 30 kn; climb ~10 m/s; a hover yaw rate of ~40 deg/s; 45 deg bank, 20 deg pitch in manoeuvres; accelerating at ~0.3 g (nose ~17 deg down), flaring at ~0.4 g. RCS of a helicopter that size (a few m2 nose-on); IR of its exhausts (~500 K) put at the belly. The disc, dome and its flight are fiction."
+ }
 }
