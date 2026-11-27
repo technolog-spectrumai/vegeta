@@ -2,8 +2,9 @@
  "format": "vegeta-exports/1",
  "machines": {
   "barracuda": {
-   "bytes": 185279,
+   "bytes": 212957,
    "consumers": {
+    "ketos": true,
     "montezuma": true,
     "perkun": false,
     "piccolo": false
@@ -13,7 +14,7 @@
    "lab": "marine",
    "links": 1,
    "mass_kg": 3340.068,
-   "sha256": "c4fe9aeac9b23953535bf02889f9007d595f16e4f07507ca4eb9fdc88a0f84c4",
+   "sha256": "d069dd7f802c618fcb22437def059ed981d01c31c08b5d4fe29e3e0c3e5ea9b8",
    "visual_triangles": 4247
   },
   "drongo": {
@@ -32,8 +33,9 @@
    "visual_triangles": 4316
   },
   "esmeralda": {
-   "bytes": 200900,
+   "bytes": 237997,
    "consumers": {
+    "ketos": true,
     "montezuma": true,
     "perkun": false,
     "piccolo": false
@@ -42,9 +44,57 @@
    "joints": 0,
    "lab": "marine",
    "links": 1,
-   "mass_kg": 94011.8509,
-   "sha256": "79a9ec2b486d8f1bd03ce6f623dc5334d7f0f7e8ec2a9c5bff8c8a27e262b9ad",
+   "mass_kg": 94010.0709,
+   "sha256": "c47347bb385b948f52ad243935d4b5d5960196e611b821311af60b6ab61bb3c6",
    "visual_triangles": 5105
+  },
+  "fulmar": {
+   "bytes": 212390,
+   "consumers": {
+    "ketos": true,
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": false
+   },
+   "file": "fulmar.yx2",
+   "joints": 0,
+   "lab": "aero",
+   "links": 1,
+   "mass_kg": 15.2,
+   "sha256": "a559747dec5602fdeb08b93c90bd510454a98b6f410b1acb9b798b79a8d2e455",
+   "visual_triangles": 4844
+  },
+  "gannet": {
+   "bytes": 259694,
+   "consumers": {
+    "ketos": true,
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": false
+   },
+   "file": "gannet.yx2",
+   "joints": 0,
+   "lab": "aero",
+   "links": 1,
+   "mass_kg": 11.44,
+   "sha256": "1c819290e396bfe2036fca004abedb27dcea68de3cf920efe5c53b311d924e53",
+   "visual_triangles": 4247
+  },
+  "jacket": {
+   "bytes": 182401,
+   "consumers": {
+    "ketos": true,
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": false
+   },
+   "file": "jacket.yx2",
+   "joints": 0,
+   "lab": "marine",
+   "links": 1,
+   "mass_kg": 2639000.0,
+   "sha256": "f69541e2d2893cce30cfa5ffa85b43357654d0792913addd149fa23c28dfa576",
+   "visual_triangles": 4707
   },
   "onager": {
    "bytes": 262978,
@@ -136,6 +186,22 @@
    "sha256": "45d076504afc7daeb03f74d21fa46437963b0deb6e9190b464194f6a156b70d9",
    "visual_triangles": 5673
   },
+  "resident_dock": {
+   "bytes": 43498,
+   "consumers": {
+    "ketos": true,
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": false
+   },
+   "file": "resident_dock.yx2",
+   "joints": 0,
+   "lab": "marine",
+   "links": 1,
+   "mass_kg": 1800.0,
+   "sha256": "bc2b669c006240b13ed76e01a7da38c3177b7e5fa9d5be2adb33d84a7189dd55",
+   "visual_triangles": 752
+  },
   "rover": {
    "bytes": 196743,
    "consumers": {
@@ -151,9 +217,26 @@
    "sha256": "e9f858c84c6cf73b8acc3106a557bd057b10c6e30211e971347cc02097c1c53a",
    "visual_triangles": 4212
   },
-  "zarco": {
-   "bytes": 195446,
+  "squilla": {
+   "bytes": 236267,
    "consumers": {
+    "ketos": true,
+    "montezuma": true,
+    "perkun": false,
+    "piccolo": false
+   },
+   "file": "squilla.yx2",
+   "joints": 0,
+   "lab": "marine",
+   "links": 1,
+   "mass_kg": 138.6649,
+   "sha256": "5e306c40e335f3dbc404457c126a28952593d4dcb3296562e6f09b74a5d7114a",
+   "visual_triangles": 5884
+  },
+  "zarco": {
+   "bytes": 213618,
+   "consumers": {
+    "ketos": true,
     "montezuma": true,
     "perkun": false,
     "piccolo": false
@@ -163,14 +246,14 @@
    "lab": "marine",
    "links": 1,
    "mass_kg": 96750.0,
-   "sha256": "cf770693e4597526b4383e2d2b5b3a939e0e062012011ac182570734ee6abf74",
+   "sha256": "a5c0742bc06e926fe0081a9614863255e8b25dda8c78d99508c1ee9ee626affe",
    "visual_triangles": 5052
   }
  },
- "published": "2026-11-27T03:33:04Z",
+ "published": "2026-11-27T03:54:33Z",
  "vegeta": {
   "branch": "dev_sea_game_machines",
-  "commit": "7eeff489af1515ba06f89494ce87a78aea2cd4de",
+  "commit": "0e5e4bc0ef53e7f383512dc5efb7ad2ea1e08fb7",
   "dirty": false,
   "repo": "technolog-spectrumai/vegeta"
  },
