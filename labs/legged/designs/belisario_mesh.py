@@ -40,7 +40,7 @@ DARK = (0.22, 0.22, 0.24, 1.0)
 BAY = (0.33, 0.35, 0.39, 1.0)
 PLATE = (0.70, 0.60, 0.40, 1.0)
 STRUT = (0.28, 0.29, 0.31, 1.0)
-VERSION = 12
+VERSION = 14
 CACHE = Path(__file__).resolve().parents[1] / "sims" / "output" / "mesh_cache"
 mm = 1e-3
 
@@ -169,6 +169,11 @@ def _hand_pieces(p, side):
     d = p["arm_diameter"]
     palm = sk.rounded_box(pt, pw, pl, (0, 0, -pl / 2 - 4), fillet=12).union(sk.disc((0, 0, 0), d * 0.3, 24, axis="z"))
     palm = palm.union(sk.rounded_box(pt * 0.8, 26, pl * 0.55, (pt * 0.35, lay["thumb"]["base"][1] * 0.75, -pl * 0.45), fillet=8))
+    if p.get("simple_hands"):                                              # a mitten: the palm and the fingers one rounded block, a thumb nub
+        L, T, W = pl + p["finger_length"] * 0.8, 22.0, 45.0                 # a human hand at this size: ~90 mm long, 45 wide, 22 thick
+        mitt = sk.rounded_box(T, W, L, (0, 0, -L / 2 - 4), fillet=9.0).union(sk.disc((0, 0, 0), d * 0.3, 24, axis="z"))
+        mitt = mitt.union(sk.capsule((T * 0.3, sy * W * 0.4, -L * 0.25), (T * 0.6, sy * W * 0.62, -L * 0.6), 8.0))   # the thumb along the side
+        return [(f"{side}_hand", mitt)]
     out = [(f"{side}_hand", palm)]
     for k, f in enumerate(lay["fingers"]):
         r = f["radius"]
@@ -223,7 +228,7 @@ def build(casing: str = "plastic", tol: float = 4.0, P: dict | None = None) -> M
     """Every piece from the CAD (``casing``: 'none' | 'plastic' | 'lorica' - the plates for the latter two)."""
     P = dict(su.MARINE if P is None else P)
     p = sun.SpaceMarine().resolve()
-    p.update({k: v for k, v in P.items() if k in p})
+    p.update(P)                                                           # every key of the frame's spec (its hand_scale and thumb_scale too, not only the marine's)
     F = frames(p)
     hh, Hp, Ht = Humanoid.hip_height(p), p["pelvis_height"], p["torso_height"]
     z0, Wt, Dt, _, zs = sun._torso_frame(p)

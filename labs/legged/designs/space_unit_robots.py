@@ -533,6 +533,15 @@ def spider(casing: str = "plastic"):
 def footballer(casing: str = "plastic"):
     """The footballer (``space_unit_specs.FOOTBALLER``): the spider monkey's frame with no tail and toeless feet."""
     r = gibbon(casing, P=su.FOOTBALLER, name="Footballer")
+    for side in ("L", "R"):                                                # simplified hands: a mitten on the wrist, no finger or thumb joints
+        hand = _link(r.root, f"{side}_hand")
+        hand.children = [c for c in hand.children if "_finger_" not in c.name and "_thumb_" not in c.name]
+        lay = su.hand_layout(su.FOOTBALLER, 1.0 if side == "L" else -1.0)
+        pt, pw, pl = (v * mm for v in lay["palm"])
+        L = pl + su.FOOTBALLER["finger_length"] * mm * 0.8
+        hand.geoms = [g for g in hand.geoms if g.name != f"{side}_palm"] + [
+            bk.box(f"{side}_palm", (0.011, 0.0225, L / 2), (0.0, 0.0, -L / 2 - 0.004), role="link", rgba=bk.DARK)]
+    r.nominal_qpos = {k: v for k, v in r.nominal_qpos.items() if "_finger_" not in k and "_thumb_" not in k}
     r.notes = "The footballer: the spider monkey's frame, no tail, plain soles (design stage)."
     r.sources["geometry"] = r.sources["geometry"].replace("GIBBON", "FOOTBALLER")
     return r
