@@ -10,7 +10,8 @@ On one basis (``compare``: the same payloads, the same delivery range at 100 km/
 
 ``OFFICIAL`` is the family. Everything a script needs of a build goes through this module, whichever of the two
 studies it came from: ``ctx`` (the model at that build's scale), ``vehicle`` (mass, CG, inertia, speeds, thrust),
-``cad`` / ``cad_parameters``, ``card`` (results and the bill of materials), ``export_yx2`` (the Yax exchange file).
+``cad`` / ``cad_parameters``, ``card`` (results and the bill of materials), ``export_yx2`` (the Yax exchange file, with
+the build's ``DESCRIPTION``).
 ``RETIRED`` says what each dropped build was and why; they stay computable through ``BUILDS``.
 """
 from __future__ import annotations
@@ -40,6 +41,28 @@ RETIRED = {
               "as far for 20 km/h more top speed; its one reason was the 250 g line, which Cotesia is also under",
     "WASP-M": "Cotesia with a smaller pack: 40 g lighter, the same speed, less than half the range; nothing it does that Cotesia does not",
 }
+
+
+DESCRIPTION = {
+    "Cotesia": {
+        "title": "Cotesia",
+        "summary": "A very small speed quadcopter that carries a micro-load: a printed bullet-shaped body with four motors on arms, standing on its "
+                   "tail to take off and flying nose-first. ÉMERILLON's layout at about a sixth of its mass, with a payload bay behind the nose.",
+        "role": "Moves up to 20 g (a sensor tag, a sample vial, a memory card, a dose) a few kilometres at a quadcopter's speed; under 250 g with its load.",
+        "operation": "Vertical take-off and landing on its tail fins; can be carried on a STERNA or Talassa and released in flight.",
+        "name": "After the small parasitoid wasps (Cotesia) that deliver their load precisely. First called WASP-ML, then WASP-M2.",
+    },
+    "Vespula": {
+        "title": "Vespula",
+        "summary": "A small speed quadcopter: ÉMERILLON's bullet-with-four-motors at about a quarter of its mass, built for top speed and spare thrust.",
+        "role": "The fast member of the family; also the longer-ranged one with a payload, and the one for loads above 20 g.",
+        "operation": "Vertical take-off and landing on its tail fins; can be carried on a Talassa and released in flight.",
+        "name": "After the yellowjackets (Vespula). First called WASP-1F.",
+    },
+}
+BASIS = ("Mass: bought parts at their listed masses (shop and maker listings read through a web search, not orders; some values assumed and marked "
+         "in the bill of materials) and printed parts from a mass rule. Performance: ÉMERILLON's flight model at this size; the small "
+         "propellers' speed limits and blade shapes are assumed. Nothing is built or flight tested.")
 
 
 def slug(name: str) -> str:
@@ -140,10 +163,15 @@ def export_yx2(name: str, path, triangles: int = 20000) -> dict:
                       "cruise_power_W": None if cr is None else float(cr["electric_w"]), "range_m": None if r["range_km"] is None else float(r["range_km"]) * 1e3,
                       "hover_power_W": float(r["hover_w"])},
             "dimensions_m": {"length": L, "body_diameter": geo["d"], "across_propeller_tips": float(r["across_tips"]), "motor_axis_radius": geo["r_arm"]}}
+    desc = {**DESCRIPTION.get(name, {"title": name}), "basis": BASIS,
+            "key_figures": {"takeoff_kg": float(veh.mass), "payload_kg": pay / 1e3, "length_m": L, "across_propeller_tips_m": float(r["across_tips"]),
+                            "top_speed_km_h": round(float(veh.V_top) * 3.6, 0), "static_thrust_over_weight": round(float(r["static_tw"]), 2),
+                            "cruise_km_h": wm.CRUISE_KMH, "range_km_model": None if r["range_km"] is None else round(float(r["range_km"]), 1),
+                            "battery_Wh": round(bat.cells * 3.7 * bat.ah, 2), "parts_price_usd": round(float(r["price"]), 0)}}
     if pay:
         data["payload_bay"] = {"bore_m": wm.BAY_D, "pos": [float(veh.x_cg - geo["nose"]), 0.0, 0.0]}
     m = yax.Machine(name=slug(name), links=[link], joints=[],
-                    data={"wasp": data, "provenance": {"design": "labs/aero/designs/wasp_family.py", "notes": "mass and inertia from the mass budget (point masses at "
+                    data={"description": desc, "wasp": data, "provenance": {"design": "labs/aero/designs/wasp_family.py", "notes": "mass and inertia from the mass budget (point masses at "
                           "the parts' stations); performance from emerillon_flight's model on shop-listed parts; nothing built or tested"}},
                     producer={"tool": "vegeta labs/aero wasp_family", "machine": slug(name), "lab": "aero"})
     path = Path(path)
@@ -151,7 +179,7 @@ def export_yx2(name: str, path, triangles: int = 20000) -> dict:
     report = yax.save(m, path)
     back, _ = yax.read(path)
     return {"file": str(path), "bytes": path.stat().st_size, "report": str(report), "mass_kg": float(back.links[0].mass),
-            "triangles": int(len(back.links[0].shapes[0].faces)), "links": len(back.links)}
+            "triangles": int(len(back.links[0].shapes[0].faces)), "links": len(back.links), "description": bool(back.data.get("description"))}
 
 
 def compare(payloads=(0.0, 10.0), names=None) -> list:

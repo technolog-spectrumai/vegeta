@@ -12,7 +12,7 @@ The steps (a flag each; with no step flag, all of them):
 
 - ``--cad``        the aircraft, one arm and the nose as STEP                                   (CadQuery; seconds)
 - ``--bom``        the bill of materials as Markdown and CSV
-- ``--export``     the Yax exchange file ``<build>.yx2``: mass, inertia, the CAD mesh, the rotors
+- ``--export``     the Yax exchange file ``<build>.yx2`` with its description: mass, inertia, the CAD mesh, the rotors
 - ``--cfd``        the airframe without propellers: 3 axial cases (drag) and 8 at incidence     (OpenFOAM; minutes a case)
 - ``--fea``        one printed arm: thrust, manoeuvre, landing knock at x1.5, and its modes     (Gmsh + CalculiX)
 - ``--stability``  neutral point and margin by hand, and from the CFD when it has run; pitch dynamics; motor authority
