@@ -29,6 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import gibbon_scenarios  # noqa: E402,F401  (registers the gibbon's scenes)
 import legio  # noqa: E402,F401  (registers the legionary's march)
+import monkey_banner  # noqa: E402,F401  (registers the monkey's banner march)
 import space_unit_specs as su  # noqa: E402
 import mujoco  # noqa: E402
 import numpy as np  # noqa: E402
@@ -41,7 +42,7 @@ import space_unit_robots as sr  # noqa: E402
 from vegeta.chiron import SimOptions  # noqa: E402
 
 OUT = march_sim.OUT
-VIEWS = {"legio": (10.0, 320.0), "football": (8.0, 330.0), "fire": (14.0, 225.0), "heist": (14.0, 225.0), "heist_jump": (14.0, 225.0), "tree_spider": (10.0, 235.0), "chimney": (10.0, 240.0), "course": (18.0, 232.0), "brachiate": (16.0, 228.0), "brachiate_up": (14.0, 230.0), "wall": (12.0, 265.0), "tree": (12.0, 265.0), "hull": (12.0, 265.0), "rope": (12.0, 265.0), "window": (14.0, 230.0),
+VIEWS = {"banner": (8.0, 330.0), "legio": (10.0, 320.0), "football": (8.0, 330.0), "fire": (14.0, 225.0), "heist": (14.0, 225.0), "heist_jump": (14.0, 225.0), "tree_spider": (10.0, 235.0), "chimney": (10.0, 240.0), "course": (18.0, 232.0), "brachiate": (16.0, 228.0), "brachiate_up": (14.0, 230.0), "wall": (12.0, 265.0), "tree": (12.0, 265.0), "hull": (12.0, 265.0), "rope": (12.0, 265.0), "window": (14.0, 230.0),
          "window_hammer": (14.0, 230.0), "obstacles": (12.0, 265.0), "door": (14.0, 215.0)}
 
 
@@ -89,6 +90,16 @@ class ScenePlayer:
             else:                                                          # the gibbon's bipedal walk: short quick steps, the long arms held up and out
                 self.walk = hum.walk(self.kin, speed=0.6, stance=0.16, duty=0.6, step=0.04, crouch=0.03, arm=0.15, arm_offset=-2.2, elbow=-0.9)
             self.walk_h = hum.gait_height(self.kin, self.walk, self.q_quad)   # the walk's pelvis height: the soles on the ground, not in it
+            if scene == "banner":                                          # the banner held out in both fists: the arms in their carry
+                q_ = self.q_quad.copy()
+                for j, v in monkey_banner.carry(self.kin).items():
+                    q_[self.kin.index[j]] = v
+                for side in ("L", "R"):
+                    sr.set_curl(q_, self.kin, side, monkey_banner.CURL)
+                self._hold = {j: q_[self.kin.index[j]] for j in self.kin.names if j.startswith(("L_", "R_"))
+                              and not j.startswith(("L_hip", "R_hip", "L_knee", "R_knee", "L_ankle", "R_ankle", "L_toe", "R_toe", "L_hallux", "R_hallux"))}
+                self._banner, span = monkey_banner.worn(self.kin, q_)
+                params = dict(params or {}, span=span)
         else:
             self.robot = sr.bare(casing=casing)
             self.kin = mk.Kin(self.robot)
@@ -131,6 +142,11 @@ class ScenePlayer:
         self._pack = None
         self._kit = []                                                     # the footballer's worn pieces: (free joint's qpos address, body id)
         self._worn = []                                                    # what the hands hold: (free joint's qpos address, hand body, R_off, p_off)
+        if scene == "banner" and getattr(self, "_banner", None):
+            m = self.model
+            for prop, (hand, Ro, po) in self._banner.items():
+                j = [j for j in range(m.njnt) if m.jnt_type[j] == mujoco.mjtJoint.mjJNT_FREE and m.body(m.jnt_bodyid[j]).name == prop][0]
+                self._worn.append((m.jnt_qposadr[j], m.body(hand).id, Ro, po))
         if scene == "legio" and machine == "kerchak2":
             m = self.model
             for prop, (hand, Ro, po) in legio.worn(self.kin, self._carry_q).items():
