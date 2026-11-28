@@ -1,0 +1,289 @@
+{
+ "priced_on": "2026-11-24",
+ "targets_kmh": {
+  "ER1": 261.0,
+  "ER2": 383.0
+ },
+ "builds": {
+  "WASP-1": {
+   "label": "tm-f1404-4600 / apc41x41e / 4S1P gnb-4s-300 / geprc-f411-35",
+   "mass_g": 224.76,
+   "kmh": 224.4182481765747,
+   "static_tw": 4.221052594762672,
+   "rpm": 34896.3339131373,
+   "rpm_limit": 46341.46341463415,
+   "limit": "battery",
+   "electric_kw": 0.33057856476883746,
+   "passes": 2.1515912999036826,
+   "motor_dT": 76.83735551074895,
+   "t_accel": 5.795866021962392,
+   "d_accel": 219.27355548918865,
+   "field_length": 838.5471109783773,
+   "wh_pack": 4.44,
+   "price": 263.86,
+   "length": 0.29026311757029183,
+   "body_d": 0.034010882339705485,
+   "across_tips": 0.21427999999999997,
+   "prop_d": 0.10413999999999998,
+   "fails": [],
+   "mass_groups_g": {
+    "propulsion": 66.6,
+    "battery": 36.0,
+    "avionics": 16.6,
+    "airframe": 105.6
+   },
+   "printed_g": {
+    "petg-hf": 52.7,
+    "pa6-cf": 50.9,
+    "tpu": 2.0
+   },
+   "cad": {
+    "body_diameter": 34.0,
+    "nose_length": 88.4,
+    "bay_length": 93.0,
+    "tail_length": 108.8,
+    "arm_radius": 77.9,
+    "arm_chord": 29.9,
+    "arm_thickness": 6.6,
+    "pod_diameter": 21.9,
+    "pod_length": 77.9,
+    "motor_diameter": 17.9,
+    "motor_height": 16.6,
+    "prop_diameter": 104.1
+   },
+   "bom": [
+    {
+     "qty": 4,
+     "part": "T-Motor F1404 4600KV",
+     "g_each": 9.34,
+     "usd_each": 16.89,
+     "kind": "sourced",
+     "url": "https://www.racedayquads.com/products/t-motor-f1404-4600kv-micro-motor",
+     "note": "9.34 g with cable, 138 mOhm, 0.6 A idle at 10 V, 20 A peak (60 s), 316 W, 3-4S, 17.9 x 16.6 mm"
+    },
+    {
+     "qty": 4,
+     "part": "APC 4.1x4.1E + 4.1x4.1EP (Speed 400 electric)",
+     "g_each": 3.1,
+     "usd_each": 2.55,
+     "kind": "sourced",
+     "url": "https://motionrc.com/products/apc-4-1x4-1-speed-400-electric-propeller-lp04141e",
+     "note": "3.1 g; the reverse (EP) is listed at BuddyRC and ReadyMadeRC"
+    },
+    {
+     "qty": 1,
+     "part": "GEPRC GEP-F411-35A AIO, 2-6S",
+     "g_each": 8.8,
+     "usd_each": 62.99,
+     "kind": "partly",
+     "url": "https://www.racedayquads.com/products/geprc-f411-2-6s-aio-toothpick-whoop-flight-controller-w-35a-4in1-esc",
+     "note": "8.8 g, 35 A continuous (40 A burst), 2-6S; price assumed"
+    },
+    {
+     "qty": 1,
+     "part": "GNB 4S 300 mAh 80C HV",
+     "g_each": 36.0,
+     "usd_each": 11.99,
+     "kind": "partly",
+     "url": "https://racedayquads.com/products/gaoneng-gnb-15-2v-4s-300mah-80c-lihv-micro-battery-xt30",
+     "note": "36 g, 53 x 17 x 24 mm; price assumed"
+    },
+    {
+     "qty": 1,
+     "part": "RadioMaster RP1 V2 ExpressLRS receiver",
+     "g_each": 1.5,
+     "usd_each": 18.99,
+     "kind": "partly",
+     "url": "https://www.radiomasterrc.com/products/rp1-expresslrs-2-4ghz-nano-receiver",
+     "note": "as emerillon_market; left out when the board has a receiver"
+    },
+    {
+     "qty": 1,
+     "part": "HGLRC M100 Mini GPS",
+     "g_each": 2.6,
+     "usd_each": 16.99,
+     "kind": "partly",
+     "url": "https://www.getfpv.com/hglrc-m100-mini-gps.html",
+     "note": "2.6 g, 18.5 mm square; price assumed"
+    },
+    {
+     "qty": 1,
+     "part": "Caddx Ant nano camera",
+     "g_each": 2.0,
+     "usd_each": 15.99,
+     "kind": "partly",
+     "url": "https://caddxfpv.com/products/caddx-ant",
+     "note": "mass and price assumed (about 2 g)"
+    },
+    {
+     "qty": 1,
+     "part": "TBS Unify Pro32 Nano 5G8 video transmitter",
+     "g_each": 1.5,
+     "usd_each": 29.95,
+     "kind": "partly",
+     "url": "https://www.team-blacksheep.com/products/prod:unifypro32_nano",
+     "note": "mass and price assumed (about 1.5 g with its lead)"
+    },
+    {
+     "qty": 1,
+     "part": "wires, XT30, screws, antenna",
+     "g_each": 9.0,
+     "usd_each": 10.0,
+     "kind": "assumed",
+     "url": "",
+     "note": "an allowance"
+    }
+   ]
+  },
+  "Vespula": {
+   "label": "tm-f1507-3800 / apc41x41e / 4S1P tattu-r-4s-550 / geprc-f411-35",
+   "mass_g": 289.9,
+   "kmh": 287.6386442184448,
+   "static_tw": 5.607341296026631,
+   "rpm": 44611.90223994517,
+   "rpm_limit": 46341.46341463415,
+   "limit": "battery",
+   "electric_kw": 0.6604410412887826,
+   "passes": 2.504319246085916,
+   "motor_dT": 47.48092452485531,
+   "t_accel": 5.4021500113549,
+   "d_accel": 275.96085441938857,
+   "field_length": 951.9217088387771,
+   "wh_pack": 8.14,
+   "price": 280.21,
+   "length": 0.3289395220619881,
+   "body_d": 0.03843784863137726,
+   "across_tips": 0.21427999999999997,
+   "prop_d": 0.10413999999999998,
+   "fails": [],
+   "mass_groups_g": {
+    "propulsion": 89.2,
+    "battery": 60.0,
+    "avionics": 16.6,
+    "airframe": 124.1
+   },
+   "printed_g": {
+    "petg-hf": 64.8,
+    "pa6-cf": 57.3,
+    "tpu": 2.0
+   },
+   "cad": {
+    "body_diameter": 38.4,
+    "nose_length": 99.9,
+    "bay_length": 106.0,
+    "tail_length": 123.0,
+    "arm_radius": 77.9,
+    "arm_chord": 32.2,
+    "arm_thickness": 7.1,
+    "pod_diameter": 23.6,
+    "pod_length": 83.6,
+    "motor_diameter": 19.6,
+    "motor_height": 17.5,
+    "prop_diameter": 104.1
+   },
+   "bom": [
+    {
+     "qty": 4,
+     "part": "T-Motor F1507 3800KV",
+     "g_each": 15.0,
+     "usd_each": 19.9,
+     "kind": "partly",
+     "url": "https://pyrodrone.com/products/t-motor-f1507-3800kv-motor",
+     "note": "15 g with cable, 81 mOhm, 23 A peak (60 s), 372 W, 3-4S from T-Motor's table; idle current, can size and price assumed"
+    },
+    {
+     "qty": 4,
+     "part": "APC 4.1x4.1E + 4.1x4.1EP (Speed 400 electric)",
+     "g_each": 3.1,
+     "usd_each": 2.55,
+     "kind": "sourced",
+     "url": "https://motionrc.com/products/apc-4-1x4-1-speed-400-electric-propeller-lp04141e",
+     "note": "3.1 g; the reverse (EP) is listed at BuddyRC and ReadyMadeRC"
+    },
+    {
+     "qty": 1,
+     "part": "GEPRC GEP-F411-35A AIO, 2-6S",
+     "g_each": 8.8,
+     "usd_each": 62.99,
+     "kind": "partly",
+     "url": "https://www.racedayquads.com/products/geprc-f411-2-6s-aio-toothpick-whoop-flight-controller-w-35a-4in1-esc",
+     "note": "8.8 g, 35 A continuous (40 A burst), 2-6S; price assumed"
+    },
+    {
+     "qty": 1,
+     "part": "Tattu R-Line 4S 550 mAh 95C",
+     "g_each": 60.0,
+     "usd_each": 14.99,
+     "kind": "partly",
+     "url": "https://alofthobbies.com/products/tattu-r-line-4s-550mah-95c-xt30",
+     "note": "60 g (+-10), 66 x 19 x 28 mm; price assumed"
+    },
+    {
+     "qty": 1,
+     "part": "RadioMaster RP1 V2 ExpressLRS receiver",
+     "g_each": 1.5,
+     "usd_each": 18.99,
+     "kind": "partly",
+     "url": "https://www.radiomasterrc.com/products/rp1-expresslrs-2-4ghz-nano-receiver",
+     "note": "as emerillon_market; left out when the board has a receiver"
+    },
+    {
+     "qty": 1,
+     "part": "HGLRC M100 Mini GPS",
+     "g_each": 2.6,
+     "usd_each": 16.99,
+     "kind": "partly",
+     "url": "https://www.getfpv.com/hglrc-m100-mini-gps.html",
+     "note": "2.6 g, 18.5 mm square; price assumed"
+    },
+    {
+     "qty": 1,
+     "part": "Caddx Ant nano camera",
+     "g_each": 2.0,
+     "usd_each": 15.99,
+     "kind": "partly",
+     "url": "https://caddxfpv.com/products/caddx-ant",
+     "note": "mass and price assumed (about 2 g)"
+    },
+    {
+     "qty": 1,
+     "part": "TBS Unify Pro32 Nano 5G8 video transmitter",
+     "g_each": 1.5,
+     "usd_each": 29.95,
+     "kind": "partly",
+     "url": "https://www.team-blacksheep.com/products/prod:unifypro32_nano",
+     "note": "mass and price assumed (about 1.5 g with its lead)"
+    },
+    {
+     "qty": 1,
+     "part": "wires, XT30, screws, antenna",
+     "g_each": 9.0,
+     "usd_each": 10.0,
+     "kind": "assumed",
+     "url": "",
+     "note": "an allowance"
+    }
+   ]
+  },
+  "ER1": {
+   "label": "eco2807-1300 / apc6x6e / 6S1P cnhl-1300-100c / speedybee-f405v4-55",
+   "mass_g": 1104.3,
+   "kmh": 261.42112398147583,
+   "length": 0.5055219795164199,
+   "body_d": 0.06440034129593446,
+   "across_tips": 0.3113578457434055,
+   "price": 382.53,
+   "static_tw": 4.796046627541544
+  },
+  "ER2": {
+   "label": "eco2807-1300 / apc7x10 / 6S1P tattu-r6-1700-160c / speedybee-f405v4-55",
+   "mass_g": 1162.3000000000002,
+   "kmh": 383.14807319641113,
+   "length": 0.49352827083962325,
+   "body_d": 0.061901426006831586,
+   "across_tips": 0.3615999999999999,
+   "price": 403.81,
+   "static_tw": 5.257349469391278
+  }
+ }
+}

@@ -1,0 +1,266 @@
+{
+ "3 WASP-1F, camera, 2 modules": {
+  "k": 1.276560223059894,
+  "items": [
+   [
+    "wing panels",
+    601.7
+   ],
+   [
+    "fuselage shell, frames, hatches",
+    537.8
+   ],
+   [
+    "tailplane, fin and rudder",
+    132.1
+   ],
+   [
+    "joiner, root fittings, rails, nose ring",
+    163.0
+   ],
+   [
+    "drive: motor, ESC, propeller, wiring",
+    359.3
+   ],
+   [
+    "servos and linkages",
+    127.7
+   ],
+   [
+    "avionics and radios",
+    280.0
+   ],
+   [
+    "growth margin (5 %)",
+    110.1
+   ]
+  ],
+  "empty_g": 2311.6,
+  "battery_g": 616,
+  "battery_Wh": 121.0,
+  "pallet_g": 120.0,
+  "wasps_g": 870.0,
+  "racks_g": 75.0,
+  "takeoff_g": 3992.6,
+  "S_m2": 0.5099159404146147,
+  "loading_kg_m2": 7.829977628635345,
+  "after_release_g": 3122.6,
+  "n_wasps": 3,
+  "modules": 2,
+  "pallet": "daylight",
+  "span_mm": 1914.840334589841,
+  "length_mm": 1404.2162453658834,
+  "height_mm": 403.39303048692653,
+  "mac_mm": 273.7344727555631,
+  "x_cg_mm": 511.9006494470175,
+  "panel_length_mm": 893.5921561419258,
+  "prop_diameter_mm": 357.4368624567703,
+  "stall_loaded_m_s": 10.221044407154594,
+  "stall_after_release_m_s": 9.039107505111744,
+  "static_thrust_needed_N": 27.407821552999998,
+  "wasp_stations": {
+   "x_mm": 511.9006494470175,
+   "wing_y_mm": 319.1400557649735
+  },
+  "roll_moment_one_wing_wasp_Nm": 0.9076115000815973,
+  "joiner_moment_6g_Nm": 40.860675993063175
+ },
+ "3 WASP-1F, camera, 1 module": {
+  "k": 1.176214388901443,
+  "items": [
+   [
+    "wing panels",
+    510.8
+   ],
+   [
+    "fuselage shell, frames, hatches",
+    456.5
+   ],
+   [
+    "tailplane, fin and rudder",
+    112.2
+   ],
+   [
+    "joiner, root fittings, rails, nose ring",
+    138.3
+   ],
+   [
+    "drive: motor, ESC, propeller, wiring",
+    305.1
+   ],
+   [
+    "servos and linkages",
+    117.6
+   ],
+   [
+    "avionics and radios",
+    280.0
+   ],
+   [
+    "growth margin (5 %)",
+    96.0
+   ]
+  ],
+  "empty_g": 2016.6,
+  "battery_g": 308,
+  "battery_Wh": 60.5,
+  "pallet_g": 120.0,
+  "wasps_g": 870.0,
+  "racks_g": 75.0,
+  "takeoff_g": 3389.6,
+  "S_m2": 0.43290135842350186,
+  "loading_kg_m2": 7.829977628635347,
+  "after_release_g": 2519.6,
+  "n_wasps": 3,
+  "modules": 1,
+  "pallet": "daylight",
+  "span_mm": 1764.3215833521645,
+  "length_mm": 1293.8358277915872,
+  "height_mm": 371.68374689285594,
+  "mac_mm": 252.21718472606446,
+  "x_cg_mm": 471.6619699494786,
+  "panel_length_mm": 823.35007223101,
+  "prop_diameter_mm": 329.340028892404,
+  "stall_loaded_m_s": 10.22107133752904,
+  "stall_after_release_m_s": 8.812274031959056,
+  "static_thrust_needed_N": 23.268434587999998,
+  "wasp_stations": {
+   "x_mm": 471.6619699494786,
+   "wing_y_mm": 294.0535972253607
+  },
+  "roll_moment_one_wing_wasp_Nm": 0.8362674056767241,
+  "joiner_moment_6g_Nm": 31.962693911660573
+ },
+ "3 WASP-1F, no camera, 1 module": {
+  "k": 1.1346300057853005,
+  "items": [
+   [
+    "wing panels",
+    475.3
+   ],
+   [
+    "fuselage shell, frames, hatches",
+    424.8
+   ],
+   [
+    "tailplane, fin and rudder",
+    104.4
+   ],
+   [
+    "joiner, root fittings, rails, nose ring",
+    128.7
+   ],
+   [
+    "drive: motor, ESC, propeller, wiring",
+    283.9
+   ],
+   [
+    "servos and linkages",
+    113.5
+   ],
+   [
+    "avionics and radios",
+    280.0
+   ],
+   [
+    "growth margin (5 %)",
+    90.5
+   ]
+  ],
+  "empty_g": 1901.2,
+  "battery_g": 308,
+  "battery_Wh": 60.5,
+  "pallet_g": 0.0,
+  "wasps_g": 870.0,
+  "racks_g": 75.0,
+  "takeoff_g": 3154.2,
+  "S_m2": 0.40283250012324623,
+  "loading_kg_m2": 7.829977628635346,
+  "after_release_g": 2284.2,
+  "n_wasps": 3,
+  "modules": 1,
+  "pallet": "none",
+  "span_mm": 1701.9450086779507,
+  "length_mm": 1248.0930063638305,
+  "height_mm": 358.543081828155,
+  "mac_mm": 243.30019124503812,
+  "x_cg_mm": 454.9866323199055,
+  "panel_length_mm": 794.2410040497103,
+  "prop_diameter_mm": 317.6964016198841,
+  "stall_loaded_m_s": 10.221132802363933,
+  "stall_after_release_m_s": 8.698041610963879,
+  "static_thrust_needed_N": 21.652494801,
+  "wasp_stations": {
+   "x_mm": 454.9866323199055,
+   "wing_y_mm": 283.6575014463251
+  },
+  "roll_moment_one_wing_wasp_Nm": 0.8067016526019951,
+  "joiner_moment_6g_Nm": 28.6914124590472
+ },
+ "1 WASP-1F, camera, 1 module": {
+  "k": 1.0,
+  "items": [
+   [
+    "wing panels",
+    369.2
+   ],
+   [
+    "fuselage shell, frames, hatches",
+    330.0
+   ],
+   [
+    "tailplane, fin and rudder",
+    81.1
+   ],
+   [
+    "joiner, root fittings, rails, nose ring",
+    100.0
+   ],
+   [
+    "drive: motor, ESC, propeller, wiring",
+    205.4
+   ],
+   [
+    "servos and linkages",
+    100.0
+   ],
+   [
+    "avionics and radios",
+    280.0
+   ],
+   [
+    "growth margin (5 %)",
+    73.3
+   ]
+  ],
+  "empty_g": 1539.0,
+  "battery_g": 308,
+  "battery_Wh": 60.5,
+  "pallet_g": 120.0,
+  "wasps_g": 290.0,
+  "racks_g": 25.0,
+  "takeoff_g": 2282.0,
+  "S_m2": 0.3129075,
+  "loading_kg_m2": 7.292803593280569,
+  "after_release_g": 1992.0,
+  "n_wasps": 1,
+  "modules": 1,
+  "pallet": "daylight",
+  "span_mm": 1500.0,
+  "length_mm": 1100.0,
+  "height_mm": 316.0,
+  "mac_mm": 214.43130360072323,
+  "x_cg_mm": 401.0,
+  "panel_length_mm": 700.0,
+  "prop_diameter_mm": 280.0,
+  "stall_loaded_m_s": 9.864305225191883,
+  "stall_after_release_m_s": 9.21623094331762,
+  "static_thrust_needed_N": 15.665142709999998,
+  "wasp_stations": {
+   "x_mm": 401.0,
+   "wing_y_mm": 250.0
+  },
+  "roll_moment_one_wing_wasp_Nm": 0.7109821249999999,
+  "joiner_moment_6g_Nm": 18.294648807749997
+ }
+}
