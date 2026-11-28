@@ -446,13 +446,55 @@ def _rot_deg(axis, deg):
     return np.eye(3) + math.sin(a) * K + (1 - math.cos(a)) * K @ K
 
 
+#: A human's shoulder and elbow [deg] (the AAOS's normal ranges): flexion 180 (the arm raised forward) / extension
+#: 60, abduction 180 (out sideways) / adduction 30, the upper arm's internal rotation 70 / external 90, the elbow's
+#: flexion 0-145.
+SHOULDER = {"flexion": 180.0, "extension": 60.0, "abduction": 180.0, "adduction": 30.0, "internal": 70.0, "external": 90.0,
+            "elbow": 145.0}
+
+
+def arm_limits():
+    """{angle: (lo, hi)} [deg]: ``flex`` (forward +), ``abd`` (out +), ``rot`` (internal +: the forearm towards the
+    body), ``elbow`` (bent +)."""
+    S = SHOULDER
+    return {"flex": (-S["extension"], S["flexion"]), "abd": (-S["adduction"], S["abduction"]),
+            "rot": (-S["external"], S["internal"]), "elbow": (0.0, S["elbow"])}
+
+
+def arm_angles(p, sy):
+    """(flex, abd, rot, elbow) [deg] of the ``sy`` arm: ``p["arm_L"]`` / ``p["arm_R"]`` clipped to a human's ranges,
+    else the build pose (hanging, the elbow at ``elbow_bend_deg``)."""
+    a = p.get("arm_L" if sy > 0 else "arm_R") or (0.0, 0.0, 0.0, p["elbow_bend_deg"])
+    lim = arm_limits()
+    return tuple(min(max(v, lim[k][0]), lim[k][1]) for v, k in zip(a, ("flex", "abd", "rot", "elbow")))
+
+
+def shoulder_rot(p, sy):
+    """The upper arm's rotation at the shoulder (CadQuery's order: the twist, then the abduction, then the flexion)."""
+    fl, ab, ro, _ = arm_angles(p, sy)
+    return _rot_deg((0, 1, 0), -fl) @ _rot_deg((1, 0, 0), sy * ab) @ _rot_deg((0, 0, 1), -sy * ro)
+
+
+def shoulder_point(p, sy):
+    hh = Humanoid.hip_height(p)
+    zs = hh + p["pelvis_height"] / 2 + p["torso_height"] - p["arm_diameter"] * 0.6
+    return np.array([0.0, sy * (p["torso_width"] / 2 + 10 + p["arm_diameter"] * 0.5), zs])
+
+
+def elbow_point(p, sy):
+    return shoulder_point(p, sy) + shoulder_rot(p, sy) @ np.array([0.0, 0.0, -p["upper_arm_length"]])
+
+
 def hand_point(p, sy, local):
     """A point given in the gripper's own frame (``gripper``) where the built frame has it: the wrist's turn
-    (``wrist_angles``), the elbow's bend, the arm on its shoulder."""
+    (``wrist_angles``), the elbow's bend and the shoulder's (``arm_angles``), the arm on its shoulder."""
     pr, fl, dv = wrist_angles(p, sy)
-    R = _rot_deg((0, 1, 0), -p["elbow_bend_deg"]) @ _rot_deg((0, 0, 1), pr) @ _rot_deg((0, 1, 0), fl) @ _rot_deg((1, 0, 0), dv)
-    c, _, _ = hand_frame(p, sy)
-    return R @ np.asarray(local, dtype=float) + np.asarray(c)
+    e = arm_angles(p, sy)[3]
+    Rs = shoulder_rot(p, sy)
+    Re = _rot_deg((0, 1, 0), -e)
+    c = Rs @ (np.array([0.0, 0.0, -p["upper_arm_length"]]) + Re @ np.array([0.0, 0.0, -p["forearm_length"]]))
+    R = Rs @ Re @ _rot_deg((0, 0, 1), pr) @ _rot_deg((0, 1, 0), fl) @ _rot_deg((1, 0, 0), dv)
+    return R @ np.asarray(local, dtype=float) + c + shoulder_point(p, sy)
 
 
 def hand_axis(p, sy, local_dir):
@@ -460,11 +502,38 @@ def hand_axis(p, sy, local_dir):
     return hand_point(p, sy, local_dir) - hand_point(p, sy, (0.0, 0.0, 0.0))
 
 
-def fist_hole(p):
-    """(centre, axis) of the hollow the curled fingers close round, in the gripper's frame: ahead of the palm, across
-    the hand (y)."""
-    d = p["arm_diameter"]
-    return (d * 0.45, 0.0, -d * 0.55), (0.0, 1.0, 0.0)
+_HOLES = {}
+
+
+def fist_hole(p, curl=1.6):
+    """(centre, axis, radius) of the hollow the curled fingers close round, in the gripper's frame: the largest
+    circle (across the hand, along y) inside the palm's face and the middle finger's curled chain, clear of the palm,
+    of every finger's phalanges and of the thumb - what a held bar or handle fills."""
+    from matplotlib.path import Path
+    lay = su.hand_layout(p, 1.0)
+    key = (repr(lay), curl)
+    if key in _HOLES:
+        return _HOLES[key]
+    pt, pw, pl = lay["palm"]
+    ch = [np.array(q)[[0, 2]] for q in su.finger_chain(lay["fingers"][1], curl)]
+    segs = []
+    for f in lay["fingers"]:
+        pts = su.finger_chain(f, curl)
+        segs += [(np.array(pts[j])[[0, 2]], np.array(pts[j + 1])[[0, 2]], f["radius"] * (1.0, 0.95, 0.85)[j]) for j in range(3)]
+    th = lay["thumb"]                                                     # the thumb closes across the fingers: a held bar is inside it too
+    tp = su.thumb_chain(th, curl)
+    segs += [(np.array(tp[j])[[0, 2]], np.array(tp[j + 1])[[0, 2]], th["radius"] * (1.0, 0.95, 0.85)[j]) for j in range(3)]
+    X, Z = np.meshgrid(np.arange(0.0, pt / 2 + 2 * pl, 0.5), np.arange(-2.5 * pl, 0.0, 0.5))
+    P = np.c_[X.ravel(), Z.ravel()]
+    d = np.hypot(np.maximum(np.abs(P[:, 0]) - pt / 2, 0), np.maximum(np.maximum(-pl - 4 - P[:, 1], P[:, 1] + 4), 0))
+    for a_, b_, r in segs:
+        ab = b_ - a_
+        t = np.clip(((P - a_) @ ab) / (ab @ ab), 0, 1)
+        d = np.minimum(d, np.linalg.norm(P - (a_ + t[:, None] * ab), axis=1) - r)
+    inside = Path([(pt / 2, ch[0][1])] + [tuple(c) for c in ch[1:]] + [(pt / 2, ch[-1][1])]).contains_points(P)
+    i = int(np.argmax(np.where(inside, d, -1.0)))
+    _HOLES[key] = (float(P[i, 0]), 0.0, float(P[i, 1])), (0.0, 1.0, 0.0), float(d[i])
+    return _HOLES[key]
 
 
 def gripper(p, curl=1.6):
@@ -661,20 +730,24 @@ class SpaceMarine(Humanoid):
         return type(self).weapon_fn(p)
 
     def _arm(self, p, side):
-        """Talia's arm (the shoulder boss, the upper arm, the elbow, the bent forearm) ending in a gripping hand: a
-        palm block and four fingers of three phalanges each, curled round what the fist holds (``gripper``)."""
+        """Talia's arm (the shoulder boss, the upper arm, the elbow, the forearm) ending in a gripping hand: a palm
+        block and four fingers of three phalanges each, curled round what the fist holds (``gripper``); posed by
+        ``arm_angles`` (the shoulder and the elbow) and ``wrist_angles``, each within a human's ranges."""
         d, L1, L2 = p["arm_diameter"], p["upper_arm_length"], p["forearm_length"]
-        e = math.radians(p["elbow_bend_deg"])
+        fl_, ab, ro, e_deg = arm_angles(p, side)
+        e = math.radians(e_deg)
         shoulder = cq.Workplane("XZ").circle(d * 0.65).extrude(d * 0.45, both=True)
         upper = cq.Workplane("XY").circle(d / 2).extrude(-L1)
         elbow = cq.Workplane("XY").sphere(d * 0.48).translate((0, 0, -L1))
         fore = (cq.Workplane("XY").circle(d * 0.42).extrude(-L2)
-                .rotate((0, 0, 0), (0, 1, 0), -p["elbow_bend_deg"]).translate((0, 0, -L1)))
+                .rotate((0, 0, 0), (0, 1, 0), -e_deg).translate((0, 0, -L1)))
         hx, hz = L2 * math.sin(e), -L1 - L2 * math.cos(e)
-        pr, fl, dv = wrist_angles(p, side)
-        hand = (gripper(p).rotate((0, 0, 0), (1, 0, 0), dv).rotate((0, 0, 0), (0, 1, 0), fl).rotate((0, 0, 0), (0, 0, 1), pr)
-                .rotate((0, 0, 0), (0, 1, 0), -p["elbow_bend_deg"]).translate((hx, 0, hz)))
-        return shoulder.union(upper).union(elbow).union(fore).union(hand)
+        pr, wf, dv = wrist_angles(p, side)
+        hand = (gripper(p).rotate((0, 0, 0), (1, 0, 0), dv).rotate((0, 0, 0), (0, 1, 0), wf).rotate((0, 0, 0), (0, 0, 1), pr)
+                .rotate((0, 0, 0), (0, 1, 0), -e_deg).translate((hx, 0, hz)))
+        arm = upper.union(elbow).union(fore).union(hand)
+        arm = arm.rotate((0, 0, 0), (0, 0, 1), -side * ro).rotate((0, 0, 0), (1, 0, 0), side * ab).rotate((0, 0, 0), (0, 1, 0), -fl_)
+        return shoulder.union(arm)
 
     # the skeleton in place of Talia's shells: Humanoid.build places these parts (the hip, knee and ankle frames)
     def _trunk(self, p):
