@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import math
 
+import numpy as np
+
 import cadquery as cq
 from vegeta.dedalus import Parameter
 
@@ -412,6 +414,59 @@ def actuators(p):
     return {k: sk.union_all(v) for k, v in groups.items()}
 
 
+#: A human's wrist [deg] (Norkin and White; the AAOS's normal ranges): the forearm's twist, pronation 80 / supination
+#: 85 (the radius rolling round the ulna, about the forearm's axis); at the wrist flexion 80 (the palm towards the
+#: forearm's front) / extension 70, and the hand tilted in the palm's plane, radial 20 (towards the thumb) / ulnar 35.
+WRIST = {"pronation": 80.0, "supination": 85.0, "flexion": 80.0, "extension": 70.0, "radial": 20.0, "ulnar": 35.0}
+
+
+def wrist_limits(sy):
+    """{angle: (lo, hi)} [deg] of the ``sy`` hand (+1 left) in the gripper's frame (forearm up +z, palm face +x,
+    the thumb on +sy·y): ``pr`` about z (pronation turns the palm in, towards the body), ``fl`` about y (negative
+    flexes: the fingers towards the palm's face), ``dv`` about x (radial: the fingers towards the thumb)."""
+    W = WRIST
+    pr = (-W["supination"], W["pronation"]) if sy < 0 else (-W["pronation"], W["supination"])
+    dv = (-W["ulnar"], W["radial"]) if sy > 0 else (-W["radial"], W["ulnar"])
+    return {"pr": pr, "fl": (-W["flexion"], W["extension"]), "dv": dv}
+
+
+def wrist_angles(p, sy):
+    """(pr, fl, dv) [deg] of the ``sy`` hand: ``p["wrist_L"]`` / ``p["wrist_R"]`` if set, clipped to a human's
+    ranges (``wrist_limits``), else neutral."""
+    a = p.get("wrist_L" if sy > 0 else "wrist_R") or (0.0, 0.0, 0.0)
+    lim = wrist_limits(sy)
+    return tuple(min(max(v, lim[k][0]), lim[k][1]) for v, k in zip(a, ("pr", "fl", "dv")))
+
+
+def _rot_deg(axis, deg):
+    """CadQuery's rotation (right-handed about ``axis``) as a matrix."""
+    x, y, z = np.asarray(axis, dtype=float) / np.linalg.norm(axis)
+    K = np.array([[0.0, -z, y], [z, 0.0, -x], [-y, x, 0.0]])
+    a = math.radians(deg)
+    return np.eye(3) + math.sin(a) * K + (1 - math.cos(a)) * K @ K
+
+
+def hand_point(p, sy, local):
+    """A point given in the gripper's own frame (``gripper``) where the built frame has it: the wrist's turn
+    (``wrist_angles``), the elbow's bend, the arm on its shoulder."""
+    pr, fl, dv = wrist_angles(p, sy)
+    R = _rot_deg((0, 1, 0), -p["elbow_bend_deg"]) @ _rot_deg((0, 0, 1), pr) @ _rot_deg((0, 1, 0), fl) @ _rot_deg((1, 0, 0), dv)
+    c, _, _ = hand_frame(p, sy)
+    return R @ np.asarray(local, dtype=float) + np.asarray(c)
+
+
+def hand_axis(p, sy, local_dir):
+    """A direction in the gripper's frame in the built frame (``hand_point``'s rotation)."""
+    return hand_point(p, sy, local_dir) - hand_point(p, sy, (0.0, 0.0, 0.0))
+
+
+def fist_hole(p):
+    """(centre, axis) of the hollow the curled fingers close round, in the gripper's frame: ahead of the palm, across
+    the hand (y)."""
+    d = p["arm_diameter"]
+    return (d * 0.45, 0.0, -d * 0.55), (0.0, 1.0, 0.0)
+
+
 def gripper(p, curl=1.6):
     """A hand at the wrist (the forearm's end at the origin, the forearm up +z, the palm's face +x), closed to
     ``curl`` round a grip (the carbine's, the pole, the maul's shaft): the palm, four fingers of three phalanges on
@@ -616,7 +671,9 @@ class SpaceMarine(Humanoid):
         fore = (cq.Workplane("XY").circle(d * 0.42).extrude(-L2)
                 .rotate((0, 0, 0), (0, 1, 0), -p["elbow_bend_deg"]).translate((0, 0, -L1)))
         hx, hz = L2 * math.sin(e), -L1 - L2 * math.cos(e)
-        hand = gripper(p).rotate((0, 0, 0), (0, 1, 0), -p["elbow_bend_deg"]).translate((hx, 0, hz))
+        pr, fl, dv = wrist_angles(p, side)
+        hand = (gripper(p).rotate((0, 0, 0), (1, 0, 0), dv).rotate((0, 0, 0), (0, 1, 0), fl).rotate((0, 0, 0), (0, 0, 1), pr)
+                .rotate((0, 0, 0), (0, 1, 0), -p["elbow_bend_deg"]).translate((hx, 0, hz)))
         return shoulder.union(upper).union(elbow).union(fore).union(hand)
 
     # the skeleton in place of Talia's shells: Humanoid.build places these parts (the hip, knee and ankle frames)
@@ -684,7 +741,7 @@ class Kerchak2(SpaceMarine):
     """Kerchak2: Kerchak's bare frame with a human's limb proportions (``space_unit_specs.KERCHAK2``); drawn bare
     (its skeleton and joint modules), so the Marine's armour and weapons are not its own."""
 
-    SPECS, EXTRA, NAME = su.KERCHAK2, su.MARINE_EXTRA, "Kerchak2"
+    SPECS, EXTRA, NAME = su.KERCHAK2, dict(su.MARINE_EXTRA, human_wrist="a human's wrist: the forearm's twist, flexion and deviation in a human's ranges (WRIST)"), "Kerchak2"
 
 
 class Breacher(SpaceMarine):

@@ -81,7 +81,7 @@ def _reactuate(r):
     m_big, m_mid, m_arm = (act.get(k).mass_g / 1000.0 for k in ("cycloidal 1600 Nm, brake", "cycloidal 800 Nm, brake", "harmonic 150 Nm, brake"))
     for lk, _ in r.root.walk():
         for j in lk.joints:
-            if j.tag in ("spine_pitch", "spine_roll", "wrist_pitch", "wrist_roll", "finger_curl"):
+            if j.tag in ("spine_pitch", "spine_roll", "wrist_pitch", "wrist_roll", "wrist_yaw", "finger_curl"):
                 continue                                                   # the spine's and the hands' modules: their own
             j.servo = arm if j.tag in ("shoulder_pitch", "shoulder_roll", "shoulder_yaw", "elbow") else \
                 big if j.tag in ("hip_yaw", "hip_roll", "hip_pitch", "knee") else mid
@@ -311,6 +311,17 @@ def _casing(r, P):
     return r
 
 
+def _human_wrist(side, sy, servo):
+    """A human's wrist (``space_units.WRIST``): the forearm's twist first (pronation / supination about its axis,
+    the radius rolling round the ulna), then at the wrist flexion / extension and radial / ulnar deviation, each in
+    a human's range - no full turn."""
+    import space_units as sun
+    lim = {k: (math.radians(a), math.radians(b)) for k, (a, b) in sun.wrist_limits(sy).items()}
+    return [Joint(f"{side}_wrist_roll", axis=(0, 0, 1), range=lim["pr"], tag="wrist_roll", servo=servo),
+            Joint(f"{side}_wrist_pitch", axis=(0, 1, 0), range=lim["fl"], tag="wrist_pitch", servo=servo),
+            Joint(f"{side}_wrist_yaw", axis=(1, 0, 0), range=lim["dv"], tag="wrist_yaw", servo=servo)]
+
+
 def _hands(r, P):
     """Real hands on the bare frame (``space_unit_specs.hand_layout``): a wrist with two modules (pitch, and roll
     about the forearm: pronation, ``qdd 60 Nm``) carrying the palm; four fingers of three phalanges each, every
@@ -330,8 +341,9 @@ def _hands(r, P):
         lay = su.hand_layout(P, sy)
         pt, pw, pl = (v * mm for v in lay["palm"])
         hand = Link(f"{side}_hand", pos=(0.0, 0.0, -Lf),
-                    joints=[Joint(f"{side}_wrist_pitch", axis=(0, 1, 0), range=(-1.2, 1.2), tag="wrist_pitch", servo=wrist_servo),
-                            Joint(f"{side}_wrist_roll", axis=(0, 0, 1), range=(-3.14, 3.14), tag="wrist_roll", servo=wrist_servo)],   # a full turn: the grip taken whichever way round
+                    joints=_human_wrist(side, sy, wrist_servo) if P.get("human_wrist") else
+                    [Joint(f"{side}_wrist_pitch", axis=(0, 1, 0), range=(-1.2, 1.2), tag="wrist_pitch", servo=wrist_servo),
+                     Joint(f"{side}_wrist_roll", axis=(0, 0, 1), range=(-3.14, 3.14), tag="wrist_roll", servo=wrist_servo)],   # a full turn: the grip taken whichever way round
                     geoms=[bk.box(f"{side}_palm", (pt / 2, pw / 2, pl / 2), (0.0, 0.0, -pl / 2 - 0.004), role="link", rgba=bk.DARK),
                            bk.capsule(f"{side}_wrist", d * 0.28, (0.0, 0.0, 0.0), (0.0, 0.0, -0.02), role="link", rgba=bk.DARK)],
                     masses=[PointMass(f"{side}_wrist_actuators", 2 * 1.4)])

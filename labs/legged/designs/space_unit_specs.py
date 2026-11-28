@@ -80,7 +80,8 @@ CENTURION_EXTRA = {k: v for k, v in MARINE_EXTRA.items() if not k.startswith("sh
 #: Kerchak2: Kerchak's frame (the Marine's skeleton, bare) with a human's limb proportions instead of an ape's: legs
 #: longer than the arms (thigh ~0.245 and shin ~0.25 of the height, upper arm ~0.19, forearm ~0.155 - Drillis and
 #: Contini's segment fractions), the trunk and the joint modules as Kerchak's; about 1.9 m tall.
-KERCHAK2 = dict(MARINE, thigh_length=460.0, shin_length=450.0, upper_arm_length=350.0, forearm_length=290.0)
+KERCHAK2 = dict(MARINE, thigh_length=460.0, shin_length=450.0, upper_arm_length=350.0, forearm_length=290.0,
+                human_wrist=True)   # and a human's wrist (space_units.WRIST)
 
 BREACHER = dict(MARINE, elbow_bend_deg=20.0,
                 shield_width=680.0, shield_height=1750.0, shield_thickness=30.0, shield_boss_diameter=200.0,    # the tower shield: the whole body

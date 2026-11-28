@@ -28,10 +28,41 @@ WHITE, STEEL, WOOD = "#f2f0ea", "#55595e", "#c8a165"
 
 
 def _grip(p, sy):
-    """Where the ``sy`` fist's curled fingers close (the gripper's: across the hand, along y)."""
-    c, u, _ = hand_frame(p, sy)
-    d = p["arm_diameter"]
-    return _add(c, (-d * 0.55, u), (d * 0.45, (1.0, 0.0, 0.0)))
+    """Where the ``sy`` fist's curled fingers close: the hollow's centre where the built frame has it."""
+    return tuple(sun.hand_point(p, sy, sun.fist_hole(p)[0]))
+
+
+def _rest(p, B):
+    """Where the bat's barrel rests: on the outside of the right upper arm, ``rest_on_arm`` of the way down."""
+    c, _, _ = hand_frame(p, -1)
+    zs = c[2] + p["upper_arm_length"] + p["forearm_length"] * math.cos(math.radians(p["elbow_bend_deg"]))
+    return np.array([0.0, c[1] - (p["arm_diameter"] / 2 + B["barrel_d"] / 2 + 4), zs - p["upper_arm_length"] * B["rest_on_arm"]])
+
+
+def bat_wrist(p):
+    """The right wrist (pronation, flexion, deviation) [deg] within a human's ranges (``space_units.wrist_limits``)
+    that lines the fist's hollow up with the bat - from the fist to its rest on the upper arm: a grid over the
+    ranges, then a finer one round the best."""
+    lim = sun.wrist_limits(-1)
+    best = (9.0, (0.0, 0.0, 0.0))
+
+    def score(w):
+        q = dict(p, wrist_R=w)
+        g = np.array(_grip(q, -1))
+        h = sun.hand_axis(q, -1, sun.fist_hole(q)[1])
+        a = _rest(q, BAT) - g
+        return math.acos(min(1.0, abs(np.dot(h, a)) / (np.linalg.norm(h) * np.linalg.norm(a))))
+    for step, span in ((10.0, None), (2.0, 10.0)):
+        c0 = best[1]
+        rng = [np.arange(lim[k][0], lim[k][1] + 1e-6, step) if span is None else
+               np.arange(max(lim[k][0], c0[i] - span), min(lim[k][1], c0[i] + span) + 1e-6, step) for i, k in enumerate(("pr", "fl", "dv"))]
+        for pr in rng[0]:
+            for fl in rng[1]:
+                for dv in rng[2]:
+                    s_ = score((pr, fl, dv))
+                    if s_ < best[0]:
+                        best = (s_, (float(pr), float(fl), float(dv)))
+    return best[1], math.degrees(best[0])
 
 
 def scutum(p):
@@ -51,7 +82,7 @@ def scutum(p):
                                          (2 * R * math.cos(half), 2 * R * math.sin(half))]).close().extrude(H)
     board = ring.intersect(wedge).translate((ax[0], ax[1], g[2] - H / 2))  # its middle at the fist's height
     yb = d * 0.8                                                          # the bar's half length: past the fist's width
-    bar = sk.rod((g[0], g[1] - yb, g[2]), (g[0], g[1] + yb, g[2]), S["bar_d"] / 2)
+    bar = sk.rod((g[0], g[1] - yb, g[2]), (g[0], g[1] + yb, g[2]), S["bar_d"] / 2)   # along the fist's hollow (across: the left wrist neutral)
     for sy in (-1, 1):
         y_ = g[1] + sy * yb
         x_in = ax[0] + math.sqrt((R - t) ** 2 - (y_ - ax[1]) ** 2)        # the board's inner face at the post
@@ -61,15 +92,12 @@ def scutum(p):
 
 
 def bat(p):
-    """The bat in the right fist, the handle held hard just above the knob, the barrel laid back up against the
-    outside of the upper arm (resting on it ``rest_on_arm`` of the way down from the shoulder). Piece: ``bat``."""
-    B, d = BAT, p["arm_diameter"]
+    """The bat in the right fist, held hard just above the knob through the curled fingers' hollow, the wrist
+    turned (within a human's ranges, ``bat_wrist``) so the hollow runs at the barrel's rest on the outside of the
+    upper arm. Piece: ``bat``."""
+    B = BAT
     g = np.array(_grip(p, -1))
-    c, _, v = hand_frame(p, -1)
-    zs = c[2] + p["upper_arm_length"] + p["forearm_length"] * math.cos(math.radians(p["elbow_bend_deg"]))
-    # the rest: on the upper arm's outer side (-y for the right arm), touching it with the barrel's surface
-    rest = np.array([0.0, g[1] - (d / 2 + B["barrel_d"] / 2 + 4), zs - p["upper_arm_length"] * B["rest_on_arm"]])
-    a = rest - g
+    a = _rest(p, B) - g
     a /= np.linalg.norm(a)
     L = B["length"]
     prof = [(0, 0), (B["knob_d"] / 2, 0), (B["knob_d"] / 2, 12), (B["handle_d"] / 2, 24), (B["handle_d"] / 2, L * 0.36),
@@ -89,6 +117,8 @@ FRAMES = {"kerchak": sun.SpaceMarine, "kerchak2": sun.Kerchak2}
 def build(frame="kerchak"):
     d = FRAMES[frame]()
     p = d.resolve()
+    p["wrist_R"], miss = bat_wrist(p)                                     # the right wrist turned for the bat
+    print(f"{frame}: right wrist (pronation, flexion, deviation) {p['wrist_R']} deg, the fist {miss:.1f} deg off the bat")
     parts = {"skeleton": d.build(dict(p, part="skeleton"))}
     for name, shape in d.actuator_parts(p).items():
         parts[f"module_{name}"] = shape
