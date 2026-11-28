@@ -210,6 +210,9 @@ ARM = {"base_x": 0.055, "base_y": 0.033, "base_z": -0.042, "upper": 0.115, "fore
 #: (``myropod_robot.ARM_V2``: the robot's jointed arms; the video poses their joints)
 ARM_TUCK = {"g": np.array([0.11, 0.035, -0.045]), "c": np.array([0.105, -0.035, -0.045])}
 HOLE_R = R_DUCT + 0.004                                                   # the hole the cutter cuts: the full bore
+ARM_FLOOR = 0.012                                                         # the arms' clearance above the floor
+PAD_IN = 0.0                                                              # pads set in from the bore: the hooks clear it
+ARM_JAW = 0.022                                                           # the pincer's jaws past the forearm
 CARRY_AHEAD, CARRY_DROP = 0.20, 0.035                                    # the cutter carried at the path 0.2 m ahead
 USB_HALF = 0.0225                                                         # the pendrive body's half length
 USB_PLUG = USB_HALF + 0.012                                               # its centre to the plug's tip
@@ -358,7 +361,7 @@ def build(width, height, cache: Path):
     step = 12
     for i in range(0, len(C) - step, step):
         a, b = C[i], C[min(i + step, len(C) - 1)]
-        G(world, type="cylinder", size=f"{R_DUCT + 0.003:.4f}", fromto=_s(np.concatenate([a, b])), material="duct")
+        G(world, type="cylinder", size=f"{R_DUCT + 0.005:.4f}", fromto=_s(np.concatenate([a, b])), material="duct")
     G(world, type="cylinder", size=f"{R_DUCT + 0.02:.4f} 0.012", pos=_s(C[0]), zaxis="1 0 0", material="metal")
     G(world, type="box", size="0.004 0.17 0.17", pos=f"{X_MOUTH + 0.25} 0.45 0.02", euler="0 1.45 0.4",
       material="metal")                                                   # the intake's grille, unscrewed
@@ -657,7 +660,7 @@ def simulate(model, info, render=None):
             if np.linalg.norm(r) < 1e-6:
                 r = -Rs[:, 2]
             r /= np.linalg.norm(r)
-            return c + r * (R_DUCT - r_pad), -r
+            return c + r * (R_DUCT - r_pad - PAD_IN), -r
         q = ps + Rs @ (hip[key] + np.array([0.0, mr.LEG_SIDES[key][1] * STANCE[0], 0.0]))
         if st.get("gift") in ("dropping", "armed"):                       # never on or against the gift
             gp = data.mocap_pos[gift_m]
@@ -741,7 +744,7 @@ def simulate(model, info, render=None):
         best = None
         for off in np.linspace(-0.05, 0.05, 11):
             for a_ in np.radians(np.arange(0.0, 360.0, 6.0)):
-                q_ = c + t * off + (R_DUCT - r_pad) * (math.cos(a_) * u + math.sin(a_) * v)
+                q_ = c + t * off + (R_DUCT - r_pad - PAD_IN) * (math.cos(a_) * u + math.sin(a_) * v)
                 if in_reach(lg, q_):
                     dd = float(np.linalg.norm(q_ - target))
                     if best is None or dd < best[0]:
@@ -765,9 +768,35 @@ def simulate(model, info, render=None):
                 return q_
         return target
 
+    def into_bore(foot):
+        """A foot (pad centre) within the duct's length that would sit in its wall, pulled radially into the bore."""
+        z = pipe_zone(foot)
+        lim = R_DUCT - r_pad - PAD_IN
+        if z is None or not (lim < z[2] < R_DUCT + r_pad + 0.03):
+            return foot
+        c = z[0]
+        return c + (foot - c) * (lim / z[2])
+
     def leg_ik(lg, foot_w):
         for adr, val in zip(jadr[lg], leg_angles(lg, foot_w)[0]):
             data.qpos[adr] = val
+
+    foot_g = {lg: model.geom(f"{mr.leg_name(*lg)} foot").id for lg in legs}
+    q_good = {}
+
+    def keep_out_of_wall():
+        """After the legs' IK: a leg whose solved foot would sit in the duct's wall (its target out of reach, the
+        clamped joints pushing it through) keeps its last good joint angles for this frame instead."""
+        mujoco.mj_kinematics(model, data)
+        for lg in legs:
+            x = data.geom_xpos[foot_g[lg]]
+            z = pipe_zone(x)
+            bad = z is not None and z[2] + r_pad > R_DUCT + 0.006 and z[2] < R_DUCT + r_pad + 0.04
+            if bad and lg in q_good:
+                for adr, val in zip(jadr[lg], q_good[lg]):
+                    data.qpos[adr] = val
+            elif not bad:
+                q_good[lg] = [float(data.qpos[a_]) for a_ in jadr[lg]]
 
     st = {"t": 0.0, "sc": s_start, "usb": "held", "copy": 0.0, "snips": {},
           "arm": {"g": (ARM_TUCK["g"].copy(), 0.0), "c": (ARM_TUCK["c"].copy(), 0.3)}, "grip": None, "seat": 0.0,
@@ -806,6 +835,9 @@ def simulate(model, info, render=None):
             tip = el + L2 * dirn(ph_c)
             in_duct = duct_hit(hp) is not None                            # in the duct: elbow down (no ceiling
             err = float(np.linalg.norm(tip - np.asarray(tip_h))) + (0.005 if (sgn > 0) == in_duct else 0.0)  # room)
+            if not in_duct:                                               # out of the duct: none of it under the floor
+                for pt in [el, el + (tip - el) * 0.5, tip]:
+                    err += 2.0 * max(0.0, ARM_FLOOR - (hp + hR @ pt)[2])
             if in_duct:                                                   # no part of the arm out through the wall
                 for pt in [b + (el - b) * u_ for u_ in (0.5, 1.0)] + [el + (tip - el) * u_ for u_ in (0.5, 0.85)]:
                     zz = pipe_zone(hp + hR @ pt)
@@ -828,6 +860,34 @@ def simulate(model, info, render=None):
         el = b + ARM["upper"] * dirn(-q[1])
         dv = dirn(-q[1] - q[2])
         return hp + hR @ (el + ARM["fore"] * dv), hR @ dv
+
+    def arm_low(arm, q):
+        """How far the arm with joint angles q dips below the floor clearance (0 when clear; the duct's bottom is the floor)."""
+        hp, hR = data.xpos[head].copy(), data.xmat[head].reshape(3, 3)
+        sy = 1.0 if arm == "g" else -1.0
+        b = np.array([ARM["base_x"], sy * ARM["base_y"], ARM["base_z"]])
+
+        def dirn(a):
+            return np.array([math.cos(a) * math.cos(q[0]), math.cos(a) * math.sin(q[0]), math.sin(a)])
+        el = b + ARM["upper"] * dirn(-q[1])
+        dv = dirn(-q[1] - q[2])
+        pts = [el, el + 0.5 * ARM["fore"] * dv, el + (ARM["fore"] + ARM_JAW) * dv]
+        return max(0.0, max(ARM_FLOOR - (hp + hR @ x)[2] for x in pts))
+
+    def lift_arm(arm, q):
+        """q, or the nearest joint angles (shoulder pitch and elbow nudged) that keep the arm off the floor."""
+        if arm_low(arm, q) <= 0.0:
+            return q
+        rng = mr.ARM_RANGES
+        best = None
+        for dp in np.radians(np.arange(-60.0, 61.0, 4.0)):
+            for de in np.radians(np.arange(-90.0, 91.0, 6.0)):
+                q_ = [q[0], float(np.clip(q[1] + dp, *rng["shoulder_pitch"])), float(np.clip(q[2] + de, *rng["elbow"]))]
+                lo = arm_low(arm, q_)
+                cost = 50.0 * lo + abs(q_[1] - q[1]) + abs(q_[2] - q[2])
+                if best is None or cost < best[0]:
+                    best = (cost, q_)
+        return best[1]
 
     gift_m = model.body("gift").mocapid[0]
     gift_led = model.material("gift_led").id
@@ -943,6 +1003,8 @@ def simulate(model, info, render=None):
                 qt = [mr.ARM_TUCK["shoulder_yaw"], mr.ARM_TUCK["shoulder_pitch"], mr.ARM_TUCK["elbow"]]
                 q = [(1 - w) * a_ + w * b_ for a_, b_ in zip(qt, q)]
                 tip, d = arm_fk(arm, q)
+            q = lift_arm(arm, q)                                          # never through the floor
+            tip, d = arm_fk(arm, q)
             st["q_last"][arm] = list(q)
             jaw = float(np.clip(0.04 + 0.55 * opening, *mr.ARM_RANGES["jaw"]))
             for adr, val in zip(arm_q[arm], [*q, jaw, jaw]):                # the robot's arm joints
@@ -1084,6 +1146,7 @@ def simulate(model, info, render=None):
                     if lg not in swing:
                         F[lg] = feet[lg]
                 leg_ik(lg, feet[lg])
+            keep_out_of_wall()
             st["feet_target"], st["swing"], st["planted"] = feet, swing, F
             st["t"] += step
             n_tick += 1  # noqa: SIM113
@@ -1101,6 +1164,7 @@ def simulate(model, info, render=None):
             place_body(st["sc"])
             for lg in legs:
                 leg_ik(lg, F[lg])
+            keep_out_of_wall()
             tick(phase, caption, speed)
 
     s_mouth = float(S[np.argmin(np.linalg.norm(P - C[0], axis=1))])
