@@ -99,7 +99,7 @@
    "best_range_minutes": 97.1955022284093,
    "joiner_moment_6g_Nm": 19.641494118749996
   },
-  "STERNA-L, 120 g, 2 modules": {
+  "Talassa, 120 g, 2 modules": {
    "span_mm": 2300.0,
    "length_mm": 1320.0,
    "S_m2": 0.47790740000000004,
@@ -134,7 +134,7 @@
    "best_range_minutes": 99.31371179534139,
    "joiner_moment_6g_Nm": 47.83386728505
   },
-  "STERNA-L, 500 g, 2 modules": {
+  "Talassa, 500 g, 2 modules": {
    "span_mm": 2300.0,
    "length_mm": 1320.0,
    "S_m2": 0.47790740000000004,
@@ -169,7 +169,7 @@
    "best_range_minutes": 92.68622962025148,
    "joiner_moment_6g_Nm": 47.83386728505
   },
-  "STERNA-L, 800 g, 2 modules": {
+  "Talassa, 800 g, 2 modules": {
    "span_mm": 2300.0,
    "length_mm": 1320.0,
    "S_m2": 0.47790740000000004,
@@ -204,7 +204,7 @@
    "best_range_minutes": 80.99739432030623,
    "joiner_moment_6g_Nm": 47.83386728505
   },
-  "STERNA-L, 250 g, 3 modules": {
+  "Talassa, 250 g, 3 modules": {
    "span_mm": 2300.0,
    "length_mm": 1320.0,
    "S_m2": 0.47790740000000004,
@@ -239,7 +239,7 @@
    "best_range_minutes": 137.5183674526132,
    "joiner_moment_6g_Nm": 47.83386728505
   },
-  "STERNA-L, 500 g, 3 modules": {
+  "Talassa, 500 g, 3 modules": {
    "span_mm": 2300.0,
    "length_mm": 1320.0,
    "S_m2": 0.47790740000000004,
@@ -274,7 +274,7 @@
    "best_range_minutes": 121.3377824528085,
    "joiner_moment_6g_Nm": 47.83386728505
   },
-  "STERNA-L, 120 g, 4 modules": {
+  "Talassa, 120 g, 4 modules": {
    "span_mm": 2300.0,
    "length_mm": 1320.0,
    "S_m2": 0.47790740000000004,

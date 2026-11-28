@@ -87,7 +87,7 @@ class Sterna(Design):
         # ---- propulsion and balance
         Parameter("prop_diameter", 280.0, "mm", min=150.0, description="folding, 11 in class"),
         Parameter("cg_x", 401.0, "mm", description="the design CG from the spinner tip: 30 % MAC"),
-        # ---- size (the variants: sterna_long)
+        # ---- size (the variants: talassa)
         Parameter("scale", 1.0, "", min=0.5, max=3.0, description="the fuselage, fin, rails and spinner scaled by this (their tables are STERNA's); the wing and tailplane are set by their own parameters"),
         Parameter("mtow_g", 2450.0, "g", min=500.0, description="the design mass limit"),
     ]

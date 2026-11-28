@@ -1,25 +1,26 @@
-"""STERNA and STERNA-L — every calculation from one script, one progress bar. RUN BY YOU.
+"""STERNA and Talassa — every calculation from one script, one progress bar. RUN BY YOU.
 
     labs/aero/sims/sterna_run.sh --list                      # what would run; nothing is meshed or solved
     labs/aero/sims/sterna_run.sh                             # everything, both aircraft
     labs/aero/sims/sterna_run.sh --cfd                       # only the CFD
     labs/aero/sims/sterna_run.sh --stability --flight        # only those two (no solver: seconds)
-    labs/aero/sims/sterna_run.sh --fea --variant sterna-l    # one aircraft
+    labs/aero/sims/sterna_run.sh --fea --variant talassa    # one aircraft
     labs/aero/sims/sterna_run.sh --cfd --quality fine --processors 8
 
 The steps (a flag each; with no step flag, all of them):
 
 - ``--cad``        the aircraft and the joiner as STEP (the STL goes to _runs/sterna/cad/)        (CadQuery; seconds)
+- ``--export``     the Yax exchange file ``<aircraft>.yx2`` with its description: mass, inertia, the CAD mesh, coefficients
 - ``--cfd``        the airframe without propeller at -2, 1, 4 and 8 degrees, 14 m/s           (OpenFOAM; ~1 min a case, screening)
 - ``--fea``        the wing joiner tube at 6 g and the design mass                             (Gmsh + CalculiX; seconds)
 - ``--stability``  neutral point and margin (lattice, and the CFD's when it has run), trim, modes, the CG of the loadings
 - ``--flight``     the mission in MuJoCo, without the video: launch, climb, orbit, glide, landing
 
 Results: ``labs/aero/sims/output/<aircraft>_<step>.yaml``, written after every case: stop and restart freely, a solved
-CFD case is kept (``--fresh`` starts over). The CAD goes to ``labs/aero/designs/data/sterna/``. ``FOAM_PREFIX`` names an
+CFD case is kept (``--fresh`` starts over). The CAD and the ``.yx2`` files go to ``labs/aero/designs/data/sterna/``. ``FOAM_PREFIX`` names an
 OpenFOAM conda prefix that is not found by itself.
 
-STERNA flies its standard loading (the daylight pallet, one battery module); STERNA-L 500 g and three modules.
+STERNA flies its standard loading (the daylight pallet, one battery module); Talassa 500 g and three modules.
 """
 import argparse
 import math
@@ -36,14 +37,14 @@ sys.path.insert(0, str(ROOT / "labs" / "aero" / "designs"))
 import sterna as st  # noqa: E402
 import sterna_cfd as sc  # noqa: E402
 import sterna_flight as am  # noqa: E402
-import sterna_long as sl  # noqa: E402
+import talassa as sl  # noqa: E402
 import sterna_mass as sm  # noqa: E402
 import sterna_model as mo  # noqa: E402
 
 OUT = ROOT / "labs" / "aero" / "sims" / "output"
 RUNS = ROOT / "labs" / "aero" / "_runs" / "sterna"
 DATA = ROOT / "labs" / "aero" / "designs" / "data" / "sterna"
-STEPS = ("cad", "cfd", "fea", "stability", "flight")
+STEPS = ("cad", "export", "cfd", "fea", "stability", "flight")
 CL_MAX_2D = sl.CL_MAX_2D
 N_LIMIT = 6.0
 TUBE_ALLOWABLE = 600.0             # MPa: a hand allowable for a wrapped carbon tube in bending (not tested)
@@ -54,7 +55,7 @@ def variants() -> dict:
     L = sl.parameters()
     return {"sterna": {"title": "STERNA", "over": {}, "loading": "daylight_1", "drive": {}, "launch": "hand",
                        "loadings": list(sm.CASES)},
-            "sterna-l": {"title": "STERNA-L", "over": L, "loading": sl.case(500.0, 3, L), "drive": sl.DRIVE, "launch": "line",
+            "talassa": {"title": "Talassa", "over": L, "loading": sl.case(500.0, 3, L), "drive": sl.DRIVE, "launch": "line",
                          "loadings": [sl.case(g, n, L) for g, n in ((120.0, 2), (500.0, 2), (250.0, 3), (500.0, 3), (120.0, 4))]}}
 
 
@@ -81,8 +82,12 @@ def coefficients(v: dict, loading=None, cfd_rows=None):
 
 
 def cfd_fit_rows(name: str):
+    """The solved CFD cases of the attached range: this script's own, else (STERNA) the notebook's kept rows."""
     doc = load(OUT / f"{name}_cfd.yaml")
     rows = [c for c in (doc or {}).get("cases", {}).values() if c.get("status") == "solved" and c["alpha_deg"] <= sc.FIT_MAX_ALPHA]
+    if len(rows) < 3 and name == "sterna":
+        kept = load(ROOT / "labs" / "aero" / "designs" / "data" / "sterna_cfd_screening.yaml")
+        rows = [c for c in (kept or {}).get("rows", []) if c.get("status") in ("solved", "success") and c["alpha_deg"] <= sc.FIT_MAX_ALPHA]
     return rows if len(rows) >= 3 else None
 
 
@@ -96,6 +101,12 @@ def do_cad(name, v, a):
     st.Sterna().generate(**v["over"], part="joiner").export_step(str(DATA / f"{stem}_joiner.step"))
     m = g.measure()
     return f"{m['dimensions'][0]:.0f} x {m['dimensions'][1]:.0f} x {m['dimensions'][2]:.0f} mm, {m['n_solids']} solid"
+
+
+def do_export(name, v, a):
+    import sterna_export
+    res = sterna_export.export_yx2(name, v, DATA / f"{name.replace('-', '_')}.yx2", cfd_rows=cfd_fit_rows(name), cl_max_2d=CL_MAX_2D)
+    return f"{res['file']}: {res['mass_kg']:.2f} kg, {res['triangles']} triangles, {res['bytes'] / 1e3:.0f} kB"
 
 
 def do_cfd_case(name, v, a, alpha):
@@ -218,7 +229,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     for s in STEPS:
         ap.add_argument(f"--{s}", action="store_true", help=f"run the {s} step (no step flag: all)")
-    ap.add_argument("--variant", nargs="*", default=["sterna", "sterna-l"], choices=("sterna", "sterna-l"))
+    ap.add_argument("--variant", nargs="*", default=["sterna", "talassa"], choices=("sterna", "talassa"))
     ap.add_argument("--quality", default="screening", choices=tuple(sc.QUALITY))
     ap.add_argument("--processors", type=int, default=4)
     ap.add_argument("--timeout", type=float, default=3 * 3600.0, help="seconds per CFD case")
@@ -236,7 +247,7 @@ def main(argv=None) -> int:
             if s == "cfd":
                 tasks += [(f"{n} cfd {al:+.0f} deg", do_cfd_case, (n, v, a, al)) for al in sc.ALPHAS]
             else:
-                tasks.append((f"{n} {s}", {"cad": do_cad, "fea": do_fea, "stability": do_stability, "flight": do_flight}[s], (n, v, a)))
+                tasks.append((f"{n} {s}", {"cad": do_cad, "export": do_export, "fea": do_fea, "stability": do_stability, "flight": do_flight}[s], (n, v, a)))
     if a.list:
         for n in a.variant:
             v = V[n]

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# STERNA and STERNA-L: CAD, CFD, FEA, stability, flight. Run  labs/aero/sims/sterna_run.sh --help  for how.
+# STERNA and Talassa: CAD, CFD, FEA, stability, flight. Run  labs/aero/sims/sterna_run.sh --help  for how.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
