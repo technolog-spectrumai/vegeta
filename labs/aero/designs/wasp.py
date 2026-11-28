@@ -243,7 +243,7 @@ def fastest(rows, max_g: float, pairs_only: bool = True):
 # ------------------------------------------------------------------------------------------------------------ WASP-1
 WASP1 = Config("tm-f1404-4600", "apc41x41e", "geprc-f411-35", "gnb-4s-300", 1, 1)         # under 250 g
 WASP1_FAST = Config("tm-f1507-3800", "apc41x41e", "geprc-f411-35", "tattu-r-4s-550", 1, 1)  # the lightest at ER1's speed
-VARIANTS = {"WASP-1": WASP1, "WASP-1F": WASP1_FAST}
+VARIANTS = {"WASP-1": WASP1, "Vespula": WASP1_FAST}
 
 
 def card(c) -> dict:

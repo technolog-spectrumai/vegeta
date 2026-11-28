@@ -7,14 +7,14 @@ Two campaigns, ÉMERILLON's (``emerillon_campaigns``), on a WASP build:
 - ``alpha``: the body at 0, 3, 6, 10, 15, 30, 60 and 90 degrees at 60 % of the top speed -> the normal force the
   level-flight trim leans on, and the pitching moment about the CG that ``wasp_stability`` reads.
 
-Steady RANS k-omega SST with wall functions, no transition model, no propellers, incompressible (WASP-1F tops out at
-Mach 0.23, WASP-M2 at 0.17). At these sizes the body's Reynolds number is about 1.5e6 at top speed and the arms' about 1.5e5: partly
+Steady RANS k-omega SST with wall functions, no transition model, no propellers, incompressible (Vespula tops out at
+Mach 0.23, Cotesia at 0.17). At these sizes the body's Reynolds number is about 1.5e6 at top speed and the arms' about 1.5e5: partly
 laminar in reality, fully turbulent here. Trends, and an upper estimate of the friction drag.
 
 Writes ``labs/aero/sims/output/<build>_cfd.yaml`` after every case: stop and restart freely, a solved case is kept.
 
     python labs/aero/sims/wasp_cfd.py --list                     # the cases, nothing run
-    python labs/aero/sims/wasp_cfd.py                            # WASP-M2, both campaigns, screening mesh, 4 processors
+    python labs/aero/sims/wasp_cfd.py                            # Cotesia, both campaigns, screening mesh, 4 processors
     python labs/aero/sims/wasp_cfd.py --campaign drag --quality fine --processors 8
 """
 import argparse

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# WASP-M2 and WASP-1F: CAD, BOM, yx2 export, CFD, FEA, stability. Run  labs/aero/sims/wasp_run.sh --help  for how.
+# Cotesia and Vespula: CAD, BOM, yx2 export, CFD, FEA, stability. Run  labs/aero/sims/wasp_run.sh --help  for how.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"

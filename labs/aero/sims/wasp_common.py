@@ -12,7 +12,7 @@ import wasp_family as fam  # noqa: E402
 OUT = ROOT / "labs" / "aero" / "sims" / "output"
 RUNS = ROOT / "labs" / "aero" / "_runs" / "wasp"
 BUILDS = list(fam.OFFICIAL)
-DEFAULT = "WASP-M2"
+DEFAULT = "Cotesia"
 
 
 def slug(build: str) -> str:

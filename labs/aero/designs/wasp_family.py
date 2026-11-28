@@ -3,8 +3,10 @@
 ``wasp`` (ÉMERILLON small, for speed) and ``wasp_micro`` (smaller still, with a payload bay) each produced two builds.
 On one basis (``compare``: the same payloads, the same delivery range at 100 km/h) two cover what all four did:
 
-- **WASP-M2** (first called WASP-ML) — the small carrier: 176 g with a 10 g payload, about 200 km/h, 6 km;
-- **WASP-1F** — the fast one: 290 g, about 290 km/h, the most spare thrust.
+- **Cotesia** (first WASP-ML, then WASP-M2) — the small carrier: 176 g with a 10 g payload, about 200 km/h, 6 km.
+  Named after the small parasitoid wasps that deliver their load precisely;
+- **Vespula** (first WASP-1F) — the fast one: 290 g, about 290 km/h, the most spare thrust. Named after the
+  yellowjackets.
 
 ``OFFICIAL`` is the family. Everything a script needs of a build goes through this module, whichever of the two
 studies it came from: ``ctx`` (the model at that build's scale), ``vehicle`` (mass, CG, inertia, speeds, thrust),
@@ -25,18 +27,18 @@ import wasp
 import wasp_micro as wm
 
 BUILDS = {  # name -> (configuration, wasp_micro's airframe constants?, the payload it is quoted with [g])
-    "WASP-M2": (wm.WASP_M2, True, 10.0), "WASP-1F": (wasp.WASP1_FAST, False, 0.0),
+    "Cotesia": (wm.WASP_M2, True, 10.0), "Vespula": (wasp.WASP1_FAST, False, 0.0),
     "WASP-M": (wm.WASP_M, True, 10.0), "WASP-1": (wasp.WASP1, False, 0.0),
 }
 OFFICIAL = {
-    "WASP-M2": "the small carrier: under 250 g with its payload, 20 g of load, 200 km/h, the cheapest way to move a few grams a few kilometres",
-    "WASP-1F": "the fast one: the highest top speed and thrust margin, and the longest range with a payload",
+    "Cotesia": "the small carrier: under 250 g with its payload, 20 g of load, 200 km/h, the cheapest way to move a few grams a few kilometres",
+    "Vespula": "the fast one: the highest top speed and thrust margin, and the longest range with a payload",
 }
 KEPT = OFFICIAL
 RETIRED = {
-    "WASP-1": "between the two kept builds: slower and shorter-ranged than WASP-1F; against WASP-M2 it is 65 g heavier and goes two thirds "
-              "as far for 20 km/h more top speed; its one reason was the 250 g line, which WASP-M2 is also under",
-    "WASP-M": "WASP-M2 with a smaller pack: 40 g lighter, the same speed, less than half the range; nothing it does that WASP-M2 does not",
+    "WASP-1": "between the two kept builds: slower and shorter-ranged than Vespula; against Cotesia it is 65 g heavier and goes two thirds "
+              "as far for 20 km/h more top speed; its one reason was the 250 g line, which Cotesia is also under",
+    "WASP-M": "Cotesia with a smaller pack: 40 g lighter, the same speed, less than half the range; nothing it does that Cotesia does not",
 }
 
 

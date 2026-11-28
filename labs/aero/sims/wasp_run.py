@@ -1,10 +1,10 @@
-"""WASP-M2 and WASP-1F — every calculation and export from one script, one progress bar. RUN BY YOU.
+"""Cotesia and Vespula — every calculation and export from one script, one progress bar. RUN BY YOU.
 
     labs/aero/sims/wasp_run.sh --list                        # what would run; nothing is meshed or solved
     labs/aero/sims/wasp_run.sh                               # everything, both builds
     labs/aero/sims/wasp_run.sh --cfd                         # only the CFD
     labs/aero/sims/wasp_run.sh --stability                   # only the stability calculation (no solver: seconds)
-    labs/aero/sims/wasp_run.sh --fea --build WASP-M2         # one build
+    labs/aero/sims/wasp_run.sh --fea --build Cotesia         # one build
     labs/aero/sims/wasp_run.sh --cad --bom --export          # the files to build from and to hand on
     labs/aero/sims/wasp_run.sh --cfd --quality fine --processors 8
 

@@ -17,7 +17,7 @@ this is about the fast flight, where the air's moment on the body grows with the
 Writes ``labs/aero/sims/output/<build>_stability.yaml``. No solver is run here; it takes seconds.
 
     python labs/aero/sims/wasp_stability.py
-    python labs/aero/sims/wasp_stability.py --build WASP-1F
+    python labs/aero/sims/wasp_stability.py --build Vespula
 """
 import argparse
 import math

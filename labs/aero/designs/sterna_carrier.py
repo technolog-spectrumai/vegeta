@@ -1,6 +1,6 @@
 """STERNA-C — STERNA made bigger to carry WASPs (the carrier of ``wasp.py``'s speed quadcopters).
 
-STERNA (notebook 51) takes 250 g of payload; a WASP-1F is 290 g. The carrier is STERNA scaled geometrically by ``k``
+STERNA (notebook 51) takes 250 g of payload; a Vespula is 290 g. The carrier is STERNA scaled geometrically by ``k``
 until, with ``n`` WASPs on their racks, the camera pallet and the battery aboard, the **wing loading is back at
 STERNA's own limit** (2.45 kg on 0.313 m2: 7.8 kg/m2) — so the stall speed and the handling it was designed for stay,
 and what grows is the airframe.
@@ -80,7 +80,7 @@ def size(n_wasps: int = 3, modules: int = 2, pallet: str = "daylight", wasp_g: f
             "joiner_moment_6g_Nm": 6.0 * W / 2 * (0.43 * hi * p["span"] / 2 - hi * 50.0) / 1000}
 
 
-def cad(k: float, with_wasps: bool = True, wasp_build: str = "WASP-1F"):
+def cad(k: float, with_wasps: bool = True, wasp_build: str = "Vespula"):
     """The carrier's solid: STERNA scaled by ``k``; with the WASPs on top at the CG station (pictures, not a rack design)."""
     import cadquery as cq
     import wasp

@@ -9,7 +9,7 @@ Writes into ``labs/aero/designs/data/wasp/``:
 - ``<build>_nose.step``: the nose cone as a printed shell.
 
     python labs/aero/sims/wasp_bom_cad.py
-    python labs/aero/sims/wasp_bom_cad.py --build WASP-1F
+    python labs/aero/sims/wasp_bom_cad.py --build Vespula
 """
 import argparse
 import csv

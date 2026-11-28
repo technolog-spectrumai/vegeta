@@ -125,7 +125,7 @@
     "payload": 30.0
    }
   },
-  "WASP-M2, 0 g": {
+  "Cotesia, 0 g": {
    "label": "tm-f1204-6500 / gf-2540-3 / 3S1P gnb-3s-450 / geprc-taker-f411-12",
    "payload_g": 0.0,
    "mass_g": 161.2,
@@ -149,7 +149,7 @@
     "airframe": 65.5
    }
   },
-  "WASP-M2, 5 g": {
+  "Cotesia, 5 g": {
    "label": "tm-f1204-6500 / gf-2540-3 / 3S1P gnb-3s-450 / geprc-taker-f411-12",
    "payload_g": 5.0,
    "mass_g": 168.4,
@@ -174,7 +174,7 @@
     "payload": 5.0
    }
   },
-  "WASP-M2, 10 g": {
+  "Cotesia, 10 g": {
    "label": "tm-f1204-6500 / gf-2540-3 / 3S1P gnb-3s-450 / geprc-taker-f411-12",
    "payload_g": 10.0,
    "mass_g": 175.6,
@@ -199,7 +199,7 @@
     "payload": 10.0
    }
   },
-  "WASP-M2, 20 g": {
+  "Cotesia, 20 g": {
    "label": "tm-f1204-6500 / gf-2540-3 / 3S1P gnb-3s-450 / geprc-taker-f411-12",
    "payload_g": 20.0,
    "mass_g": 189.9,
@@ -224,7 +224,7 @@
     "payload": 20.0
    }
   },
-  "WASP-M2, 30 g": {
+  "Cotesia, 30 g": {
    "label": "tm-f1204-6500 / gf-2540-3 / 3S1P gnb-3s-450 / geprc-taker-f411-12",
    "payload_g": 30.0,
    "mass_g": 204.3,

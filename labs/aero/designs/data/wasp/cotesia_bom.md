@@ -1,4 +1,4 @@
-# WASP-M2 — bill of materials
+# Cotesia — bill of materials
 
 `tm-f1204-6500 / gf-2540-3 / 3S1P gnb-3s-450 / geprc-taker-f411-12`
 

@@ -1,4 +1,4 @@
-# WASP-1F — bill of materials
+# Vespula — bill of materials
 
 `tm-f1507-3800 / apc41x41e / 4S1P tattu-r-4s-550 / geprc-f411-35`
 

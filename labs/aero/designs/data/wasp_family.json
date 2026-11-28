@@ -1,15 +1,15 @@
 {
  "official": {
-  "WASP-M2": "the small carrier: under 250 g with its payload, 20 g of load, 200 km/h, the cheapest way to move a few grams a few kilometres",
-  "WASP-1F": "the fast one: the highest top speed and thrust margin, and the longest range with a payload"
+  "Cotesia": "the small carrier: under 250 g with its payload, 20 g of load, 200 km/h, the cheapest way to move a few grams a few kilometres",
+  "Vespula": "the fast one: the highest top speed and thrust margin, and the longest range with a payload"
  },
  "retired": {
-  "WASP-1": "between the two kept builds: slower and shorter-ranged than WASP-1F; against WASP-M2 it is 65 g heavier and goes two thirds as far for 20 km/h more top speed; its one reason was the 250 g line, which WASP-M2 is also under",
-  "WASP-M": "WASP-M2 with a smaller pack: 40 g lighter, the same speed, less than half the range; nothing it does that WASP-M2 does not"
+  "WASP-1": "between the two kept builds: slower and shorter-ranged than Vespula; against Cotesia it is 65 g heavier and goes two thirds as far for 20 km/h more top speed; its one reason was the 250 g line, which Cotesia is also under",
+  "WASP-M": "Cotesia with a smaller pack: 40 g lighter, the same speed, less than half the range; nothing it does that Cotesia does not"
  },
  "rows": [
   {
-   "build": "WASP-M2",
+   "build": "Cotesia",
    "official": true,
    "payload_g": 0.0,
    "mass_g": 161.2,
@@ -28,7 +28,7 @@
    "label": "tm-f1204-6500 / gf-2540-3 / 3S1P gnb-3s-450 / geprc-taker-f411-12"
   },
   {
-   "build": "WASP-M2",
+   "build": "Cotesia",
    "official": true,
    "payload_g": 10.0,
    "mass_g": 175.6,
@@ -47,7 +47,7 @@
    "label": "tm-f1204-6500 / gf-2540-3 / 3S1P gnb-3s-450 / geprc-taker-f411-12"
   },
   {
-   "build": "WASP-M2",
+   "build": "Cotesia",
    "official": true,
    "payload_g": 20.0,
    "mass_g": 189.9,
@@ -66,7 +66,7 @@
    "label": "tm-f1204-6500 / gf-2540-3 / 3S1P gnb-3s-450 / geprc-taker-f411-12"
   },
   {
-   "build": "WASP-1F",
+   "build": "Vespula",
    "official": true,
    "payload_g": 0.0,
    "mass_g": 289.9,
@@ -85,7 +85,7 @@
    "label": "tm-f1507-3800 / apc41x41e / 4S1P tattu-r-4s-550 / geprc-f411-35"
   },
   {
-   "build": "WASP-1F",
+   "build": "Vespula",
    "official": true,
    "payload_g": 10.0,
    "mass_g": 306.9,
@@ -104,7 +104,7 @@
    "label": "tm-f1507-3800 / apc41x41e / 4S1P tattu-r-4s-550 / geprc-f411-35"
   },
   {
-   "build": "WASP-1F",
+   "build": "Vespula",
    "official": true,
    "payload_g": 20.0,
    "mass_g": 323.9,

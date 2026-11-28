@@ -17,22 +17,22 @@
             string version = "0.1"
         }
     }
-    defaultPrim = "wasp_m2"
+    defaultPrim = "cotesia"
     kilogramsPerUnit = 1
     metersPerUnit = 1
     upAxis = "Z"
 )
 
-def Xform "wasp_m2" (
+def Xform "cotesia" (
     prepend apiSchemas = ["PhysicsArticulationRootAPI"]
     customData = {
-        string name = "wasp_m2"
+        string name = "cotesia"
         int yax = 2
     }
 )
 {
     custom string yax:data = "{\"provenance\":{\"design\":\"labs/aero/designs/wasp_family.py\",\"notes\":\"mass and inertia from the mass budget (point masses at the parts' stations); performance from emerillon_flight's model on shop-listed parts; nothing built or tested\"},\"wasp\":{\"battery\":{\"capacity_Ah\":0.45,\"cells\":3,\"energy_Wh\":4.995000000000001,\"kg\":0.042,\"name\":\"GNB 3S 450 mAh 80C HV\"},\"board\":\"GEPRC TAKER F411 12A AIO (ELRS built in), 2-4S\",\"config\":\"tm-f1204-6500 / gf-2540-3 / 3S1P gnb-3s-450 / geprc-taker-f411-12\",\"dimensions_m\":{\"across_propeller_tips\":0.1365855905514296,\"body_diameter\":0.031858633371878664,\"length\":0.31635843528147867,\"motor_axis_radius\":0.051679316685939336},\"mass_groups_kg\":{\"airframe\":0.0699,\"avionics\":0.0111,\"battery\":0.042,\"payload\":0.01,\"propulsion\":0.0426},\"model\":{\"cruise_m_s\":27.77777777777778,\"cruise_power_W\":53.43843551213343,\"hover_power_W\":48.8235024968837,\"range_m\":5955.0301723610955,\"static_thrust_N\":3.7714748846940083,\"top_speed_m_s\":56.38718843460083},\"motor\":{\"kg\":0.006900000000000001,\"kv_rpm_per_V\":6500.0,\"max_current_A\":7.0,\"name\":\"T-Motor F1204 6500KV\",\"resistance_ohm\":0.14},\"payload_bay\":{\"bore_m\":0.024,\"pos\":[0.06601482581251386,0.0,0.0]},\"payload_kg\":0.01,\"rotors\":[{\"axis\":[1.0,0.0,0.0],\"blades\":3,\"diameter_m\":0.0635,\"kg\":0.001,\"name\":\"rotor_1\",\"pitch_m\":0.1016,\"pos\":[0.02352109949567721,-0.0365427952757148,0.0365427952757148],\"spin\":1},{\"axis\":[1.0,0.0,0.0],\"blades\":3,\"diameter_m\":0.0635,\"kg\":0.001,\"name\":\"rotor_2\",\"pitch_m\":0.1016,\"pos\":[0.02352109949567721,0.0365427952757148,0.0365427952757148],\"spin\":-1},{\"axis\":[1.0,0.0,0.0],\"blades\":3,\"diameter_m\":0.0635,\"kg\":0.001,\"name\":\"rotor_3\",\"pitch_m\":0.1016,\"pos\":[0.02352109949567721,-0.0365427952757148,-0.0365427952757148],\"spin\":-1},{\"axis\":[1.0,0.0,0.0],\"blades\":3,\"diameter_m\":0.0635,\"kg\":0.001,\"name\":\"rotor_4\",\"pitch_m\":0.1016,\"pos\":[0.02352109949567721,0.0365427952757148,-0.0365427952757148],\"spin\":1}]}}"
-    custom string yax:producer = '{"lab":"aero","machine":"wasp_m2","tool":"vegeta labs/aero wasp_family"}'
+    custom string yax:producer = '{"lab":"aero","machine":"cotesia","tool":"vegeta labs/aero wasp_family"}'
     custom string yax:tags = '{"table":{"data:provenance":["00prov"],"data:provenance/design":["00prov"],"data:provenance/notes":["00prov"],"link:body/collision:hull":["00geom"],"link:body/inertia":["00inert"],"link:body/mass":["00mass"],"link:body/pose":["00core"],"link:body/visual:cad":["00geom"],"producer":["00prov"]},"withheld":[]}'
 
     def Xform "body" (
@@ -68,7 +68,7 @@ def Xform "wasp_m2" (
             custom double3 yax:pos = (0, 0, 0)
             custom double4 yax:quat = (1, 0, 0, 0)
             custom token yax:role = "visual"
-            custom string yax:uri = "vegeta designs:wasp_family.WASP-M2"
+            custom string yax:uri = "vegeta designs:wasp_family.Cotesia"
             custom string yx2:id = "shape:body/cad"
         }
 

@@ -178,9 +178,9 @@ def pick(rows, top_min: float = TOP_KMH_MIN):
 
 # ----------------------------------------------------------------------------------------------------------- WASP-M
 WASP_M = Config("tm-f1204-6500", "gf-2540-3", "geprc-taker-f411-12-2s", "gnb-2s-300", 1, 1)       # the small one
-WASP_M2 = Config("tm-f1204-6500", "gf-2540-3", "geprc-taker-f411-12", "gnb-3s-450", 1, 1)         # the one that goes furthest: the kept build
-WASP_M_LONG = WASP_M2                                                                             # its first name (WASP-M2)
-VARIANTS = {"WASP-M": WASP_M, "WASP-M2": WASP_M2}
+WASP_M2 = Config("tm-f1204-6500", "gf-2540-3", "geprc-taker-f411-12", "gnb-3s-450", 1, 1)         # Cotesia (first WASP-ML, then WASP-M2): the one that goes furthest, the kept build
+WASP_M_LONG = WASP_M2                                                                             # its first name (Cotesia)
+VARIANTS = {"WASP-M": WASP_M, "Cotesia": WASP_M2}
 PAYLOAD_G = 10.0
 
 

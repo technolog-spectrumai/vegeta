@@ -17,22 +17,22 @@
             string version = "0.1"
         }
     }
-    defaultPrim = "wasp_1f"
+    defaultPrim = "vespula"
     kilogramsPerUnit = 1
     metersPerUnit = 1
     upAxis = "Z"
 )
 
-def Xform "wasp_1f" (
+def Xform "vespula" (
     prepend apiSchemas = ["PhysicsArticulationRootAPI"]
     customData = {
-        string name = "wasp_1f"
+        string name = "vespula"
         int yax = 2
     }
 )
 {
     custom string yax:data = "{\"provenance\":{\"design\":\"labs/aero/designs/wasp_family.py\",\"notes\":\"mass and inertia from the mass budget (point masses at the parts' stations); performance from emerillon_flight's model on shop-listed parts; nothing built or tested\"},\"wasp\":{\"battery\":{\"capacity_Ah\":0.55,\"cells\":4,\"energy_Wh\":8.14,\"kg\":0.06,\"name\":\"Tattu R-Line 4S 550 mAh 95C\"},\"board\":\"GEPRC GEP-F411-35A AIO, 2-6S\",\"config\":\"tm-f1507-3800 / apc41x41e / 4S1P tattu-r-4s-550 / geprc-f411-35\",\"dimensions_m\":{\"across_propeller_tips\":0.21427999999999997,\"body_diameter\":0.03843784863137726,\"length\":0.3289395220619881,\"motor_axis_radius\":0.07788074087988633},\"mass_groups_kg\":{\"airframe\":0.12409999999999999,\"avionics\":0.0166,\"battery\":0.06,\"propulsion\":0.0892},\"model\":{\"cruise_m_s\":27.77777777777778,\"cruise_power_W\":84.4182802378009,\"hover_power_W\":49.7392249380147,\"range_m\":6731.969546988011,\"static_thrust_N\":15.941378797645003,\"top_speed_m_s\":79.89962339401245},\"motor\":{\"kg\":0.015,\"kv_rpm_per_V\":3800.0,\"max_current_A\":23.0,\"name\":\"T-Motor F1507 3800KV\",\"resistance_ohm\":0.081},\"payload_kg\":0.0,\"rotors\":[{\"axis\":[1.0,0.0,0.0],\"blades\":2,\"diameter_m\":0.10413999999999998,\"kg\":0.0031,\"name\":\"rotor_1\",\"pitch_m\":0.10413999999999998,\"pos\":[0.028358803691745232,-0.05506999999999999,0.05506999999999999],\"spin\":1},{\"axis\":[1.0,0.0,0.0],\"blades\":2,\"diameter_m\":0.10413999999999998,\"kg\":0.0031,\"name\":\"rotor_2\",\"pitch_m\":0.10413999999999998,\"pos\":[0.028358803691745232,0.05506999999999999,0.05506999999999999],\"spin\":-1},{\"axis\":[1.0,0.0,0.0],\"blades\":2,\"diameter_m\":0.10413999999999998,\"kg\":0.0031,\"name\":\"rotor_3\",\"pitch_m\":0.10413999999999998,\"pos\":[0.028358803691745232,-0.05506999999999999,-0.05506999999999999],\"spin\":-1},{\"axis\":[1.0,0.0,0.0],\"blades\":2,\"diameter_m\":0.10413999999999998,\"kg\":0.0031,\"name\":\"rotor_4\",\"pitch_m\":0.10413999999999998,\"pos\":[0.028358803691745232,0.05506999999999999,-0.05506999999999999],\"spin\":1}]}}"
-    custom string yax:producer = '{"lab":"aero","machine":"wasp_1f","tool":"vegeta labs/aero wasp_family"}'
+    custom string yax:producer = '{"lab":"aero","machine":"vespula","tool":"vegeta labs/aero wasp_family"}'
     custom string yax:tags = '{"table":{"data:provenance":["00prov"],"data:provenance/design":["00prov"],"data:provenance/notes":["00prov"],"link:body/collision:hull":["00geom"],"link:body/inertia":["00inert"],"link:body/mass":["00mass"],"link:body/pose":["00core"],"link:body/visual:cad":["00geom"],"producer":["00prov"]},"withheld":[]}'
 
     def Xform "body" (
@@ -68,7 +68,7 @@ def Xform "wasp_1f" (
             custom double3 yax:pos = (0, 0, 0)
             custom double4 yax:quat = (1, 0, 0, 0)
             custom token yax:role = "visual"
-            custom string yax:uri = "vegeta designs:wasp_family.WASP-1F"
+            custom string yax:uri = "vegeta designs:wasp_family.Vespula"
             custom string yx2:id = "shape:body/cad"
         }
 

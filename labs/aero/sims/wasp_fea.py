@@ -16,7 +16,7 @@ loaded face; the hand value beside it is a cantilever's.
 Writes ``labs/aero/sims/output/<build>_fea.yaml`` after every case.
 
     python labs/aero/sims/wasp_fea.py --list
-    python labs/aero/sims/wasp_fea.py                            # WASP-M2, all four cases
+    python labs/aero/sims/wasp_fea.py                            # Cotesia, all four cases
     python labs/aero/sims/wasp_fea.py --cases A modes --element-size 1.0
 """
 import argparse
