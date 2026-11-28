@@ -1,6 +1,6 @@
-"""STERNA-L — STERNA bigger, with a longer wing (a variant of notebook 51's aircraft).
+"""Talassa — STERNA bigger, with a longer wing (a variant of notebook 51's aircraft; first called STERNA-L).
 
-STERNA is 1.5 m and 2 to 2.45 kg: one person throws it. STERNA-L gives that up for reach and load: the fuselage, fin
+STERNA is 1.5 m and 2 to 2.45 kg: one person throws it. Talassa gives that up for reach and load: the fuselage, fin
 and rails 1.2 times the size, and a wing of 2.3 m — more span than the scale alone gives, at nearly the same chord, so
 the aspect ratio goes from 7.2 to about 11. A longer, narrower wing loses less to induced drag at the low speeds a
 survey flies at; the bigger airframe carries more battery and a heavier pallet at STERNA's own wing loading.
