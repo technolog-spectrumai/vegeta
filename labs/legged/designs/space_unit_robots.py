@@ -673,7 +673,7 @@ def bare(name: str = "Belisario", casing: str = "none", P=None, upright: bool = 
 
 def kerchak2(casing: str = "none"):
     """Kerchak2: the bare frame (``bare``) with a human's limb proportions (``space_unit_specs.KERCHAK2``)."""
-    r = bare("Kerchak2", casing=casing, P=su.KERCHAK2)
+    r = bare("Kerchak2", casing=casing, P=su.KERCHAK2, upright=True)      # it stands and walks on two
     r.notes = "Kerchak2: Kerchak's bare frame with a human's limb proportions (design stage)."
     return r
 
